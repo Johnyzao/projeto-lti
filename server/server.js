@@ -5,4 +5,4 @@ app.get("/", (req, res) => {
     res.send("Teste");
 });
 
-app.listen(5000, () => {console.log("Teste")});
+app.listen(3000, () => {console.log("Teste")});

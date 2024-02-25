@@ -1,11 +1,14 @@
 import React from 'react';
 
+import Registo from "./Components/Registo";
+
 function App() {
+
   return (
     <div>
-      <p> Teste 123 ao servidor </p>
+      <Registo/>
     </div>
-  )
+  );
 }
 
 export default App;

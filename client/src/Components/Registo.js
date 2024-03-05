@@ -140,7 +140,7 @@ class Registo extends Component {
                 "dnasc": dnasc }
 
             async function registarUser() {
-                return await axios.post("http://localhost:3000/register", novoUtilizador, { headers: {
+                return await axios.post("http://localhost:3001/register", novoUtilizador, { headers: {
                     'Content-Type': 'application/json'}});
             }
             

@@ -1,24 +1,24 @@
 import React from 'react';
-
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Route, BrowserRouter, Routes } from "react-router-dom";
 
 import Registo from "./Components/Registo";
-import Login from './Components/Login';
-
-// PÃ¡gina para as Routes.
-// https://www.w3schools.com/react/react_router.asp
+import Home from "./Components/Home";
+import Login from "./Components/Login";
+import EditarUser from './Components/EditarUser';
 
 function App() {
 
   return (
-    <>
-      <Router>
+    <div>
+      <BrowserRouter>
         <Routes>
-          <Route path="register" element={<Registo/>}/> 
-          <Route path="login" element={<Login/>}/>
+          <Route index path="/" element={<Home/>}/>
+          <Route path="/register" element={<Registo/>}/>
+          <Route path="/login" element={<Login/>}/>
+          <Route path="/editUser" element={<EditarUser/>}/>
         </Routes>
-      </Router>
-    </>
+      </BrowserRouter>
+    </div>
   );
 }
 

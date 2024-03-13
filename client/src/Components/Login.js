@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // https://www.npmjs.com/package/axios
 // https://axios-http.com/docs/res_schema 
@@ -10,11 +10,12 @@ import { useFormik } from 'formik';
 import validator from 'validator';
 
 function Login() {
+  let [erroCreds, setErroCreds] = useState("");
+  let [erroServidor, setErroServidor] = useState("");
+
   const validate = values => {
     const errors = {};
 
-    // @TODO: Verificação para mail ou pass errados!
-    // @TODO: Definir como mostrar erros quando há um 401 e um 200
     if ( !validator.isEmail( values.mail ) ) {
       errors.mail = "Insira um mail válido.";
     } else if ( !values.mail ) {
@@ -39,23 +40,30 @@ function Login() {
 
     await axios.post(
        "http://localhost:3000/login" , 
-        JSON.stringify(creds) , 
+        creds ,
+        { validateStatus: function (status) {
+          return true;
+        }},
         { headers: {'Content-Type': 'application/json'}}
     ).then( (res) => {
         // Strings de debug
-        console.log( "Dados recebidos do pedido GET /login:" + res.data );
+        console.log("Dados recebidos do pedido GET /login:" + res.data );
         console.log(res.statusText);
 
         if ( res.status === 500 ) {
-            // Demonstrar mensagem de erro.
+          setErroCreds("");
+          setErroServidor("Por favor tente de novo, ocorreu um erro.");
         } 
 
         if ( res.status === 401 ) {
-          // Informar user que o login foi inválido (401)
+          setErroServidor("");
+          setErroCreds("Email ou password errados, por favor insira as suas credenciais de novo.");
         }
 
         if ( res.status === 200 ) {
-          // Redirecionar para o home idk.
+          setErroCreds("");
+          setErroServidor("");
+          // @TODO: Redirecionar para o home idk.
         } 
 
     });
@@ -103,11 +111,16 @@ function Login() {
         <div>{formik.errors.pass}</div>
       ) : null}
 
+      {erroServidor !== "" ? (
+        <div>{erroServidor}</div>
+      ) : null}
+
+      {erroCreds !== "" ? (
+        <div>{erroCreds}</div>
+      ) : null}
+
       <button type="submit">Submit</button>
     </form>
-    {formik.touched.pass && formik.errors.pass ? (
-        <div>{formik.errors.pass}</div>
-      ) : null}
     </div>
   );
 }

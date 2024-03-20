@@ -9,7 +9,11 @@ import { useFormik } from 'formik';
 
 import validator from 'validator';
 
+import { useNavigate } from 'react-router-dom';
+
 function Login() {
+  const navigate = useNavigate();
+
   let [erroCreds, setErroCreds] = useState("");
   let [erroServidor, setErroServidor] = useState("");
 
@@ -25,10 +29,28 @@ function Login() {
     if ( values.pass.length < 8) {
       errors.pass = "Insira uma pass válida.";
     } else if ( !values.pass) {
-      errors.mail = "Pass requerida para efetuar login."
+      errors.pass = "Pass requerida para efetuar login."
     }
 
     return errors;
+  }
+
+  async function obterDadosUser(mail) {
+    await axios.get(
+      "http://localhost:3000/user",
+      {mail: mail},
+      { validateStatus: function (status) {
+        return true;
+      }},
+      { headers: {'Content-Type': 'application/json'}}
+    ).then( (res) => {
+        if (res.status === 200) {
+            localStorage.setItem( "dados", JSON.stringify( res.data ) );
+            navigate("/");
+        } else {
+            setErroServidor( "Por favor tente de novo, ocorreu um erro." );
+        }
+    })
   }
 
   // Função a ser usada no handleSubmit do form.
@@ -63,7 +85,9 @@ function Login() {
         if ( res.status === 200 ) {
           setErroCreds("");
           setErroServidor("");
-          // @TODO: Redirecionar para o home idk.
+
+          obterDadosUser(mailUser);
+
         } 
 
     });
@@ -74,9 +98,11 @@ function Login() {
       mail: '',
       pass: '',
     },
+    validateOnChange:false,
+    validateOnBlur:false,
     validate,
     onSubmit: values => {
-      autenticarUtilizador(values.mail, values.pass)
+      autenticarUtilizador(values.mail, values.pass);
     },
   });
 
@@ -102,7 +128,7 @@ function Login() {
       <input
         id="pass"
         name="pass"
-        type="text"
+        type="password"
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
         value={formik.values.pass}
@@ -119,6 +145,7 @@ function Login() {
         <div>{erroCreds}</div>
       ) : null}
 
+      <br/>
       <button type="submit">Submit</button>
     </form>
     </div>

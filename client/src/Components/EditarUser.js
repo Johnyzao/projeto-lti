@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Link from 'react';
 
 // https://www.npmjs.com/package/axios
 // https://axios-http.com/docs/res_schema 
@@ -10,10 +9,19 @@ import { useFormik } from 'formik';
 
 import validator from 'validator';
 
+import PopupAlterarPass from '../Popups/PopupAlterarPass';
+import PopupApagarConta from '../Popups/PopupApagarConta';
+import PopupDesativarConta from '../Popups/PopupDesativarConta';
+
+
 function EditarUser() {
     const [modoEdicao, setModoEdicao] = useState(false);
     const [dadosAtuais, setDadosAtuais] = useState({});
     const [mailDuplicado, setMailDuplicado] = useState(false);
+
+    const [sucesso, setSucesso] = useState("");
+    const [erroInterno, setErroInterno] = useState(false);
+
 
     function verificarMailDuplicado(novoMail) {
         axios.get(
@@ -55,22 +63,27 @@ function EditarUser() {
             ? errors.telemovel = ""
             : errors.telemovel = "Número de telemóvel inválido.";
 
+        !erroInterno 
+            ? errors.erroInterno = ""
+            : errors.erroInterno = "Erro interno, por favor tente de novo.";
+
         return errors;
     }
 
     function obterInfoUtilizador() {
         axios.get(
-            "http://localhost:3000/getSession",
+            "http://localhost:3000/user",
             { headers: {'Content-Type': 'application/json'}},
             { validateStatus: function (status) {
                 return true;
             }}
         ).then( ( res ) => {
+            console.log(res);
             setDadosAtuais( res.data );
         });
     }
 
-    // TODO
+    // TODO: Falta o redirect.
     async function atualizarUtilizador(novaInfoUser) {
     
         await axios.put(
@@ -82,19 +95,17 @@ function EditarUser() {
             { headers: {'Content-Type': 'application/json'}}
         ).then( (res) => {
             // Strings de debug
-            console.log("Dados recebidos do pedido PUT /edit:" + res.data );
+            console.log("Dados recebidos do pedido PUT /user:" + res.data );
             console.log(res.statusText);
     
             if ( res.status === 500 ) {
-                // TODO
+                setErroInterno(true);
             } 
     
-            if ( res.status === 401 ) {
-                // TODO
-            }
-    
             if ( res.status === 200 ) {
-                // TODO
+                setModoEdicao(false);
+                // Redirect
+                // Maybe popup a dizer que foram alterados os dados.
             } 
     
         });
@@ -118,7 +129,7 @@ function EditarUser() {
     });
 
     return (
-        <>
+        <div className='container-sm bg-light'>
             <h1> Informações pessoais </h1>
                 <h4> Editar informações pessoais </h4>
             <form onSubmit={formik.handleSubmit}>
@@ -231,7 +242,7 @@ function EditarUser() {
             </form>
 
         { !modoEdicao ? (
-            <button onClick={ () => {setModoEdicao(true)} }> Editar Informações </button>
+            <button className='btn btn-primary' onClick={ () => {setModoEdicao(true)} }> Editar Informações </button>
         ) : (
             <div>
                 <button onClick={ () => {
@@ -246,29 +257,43 @@ function EditarUser() {
                         }
                     })
                 }}> Reset </button>
-                <button onClick={ () => {setModoEdicao(false)} }> Cancelar </button>
+                <button onClick={ () => {
+                    setModoEdicao(false);
+                    formik.resetForm({
+                        values: {
+                            nome: dadosAtuais.nome,
+                            mail: dadosAtuais.mail,
+                            nic: dadosAtuais.nic, 
+                            telemovel: dadosAtuais.telemovel, 
+                            gen: dadosAtuais.gen, 
+                            morada: dadosAtuais.morada 
+                        }
+                    })
+                }}> Cancelar </button>
             </div>
         )}
 
         <br/>
         <br/>
         <br/>
-        <br/>
 
         <div>
             <h4> Alterar a sua password </h4>
-            {/** TODO! */}
+            <PopupAlterarPass nif={dadosAtuais.nif}/>
         </div>
+
+        <br/>
+        <br/>
+        <br/>
 
         <div>
-            <h4> Remoção de conta </h4>
+            <h4> Gestão de conta </h4>
             <p> Desativar a sua conta significa que pode voltar a ativá-la a qualquer momento. </p>
-
-            { /** TODO: Adicionar espaço entre os dois botões! */ }
-            <button onClick={ () => {} }> Desativar conta </button>
-            <button onClick={ () => {} }> Apagar conta </button>
+            <PopupDesativarConta nif={dadosAtuais.nif}/>
+            {' '}
+            <PopupApagarConta nif={dadosAtuais.nif}/>
         </div>
-        </>
+        </div>
     )
 }
 

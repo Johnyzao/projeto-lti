@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const session = require('express-session');
 const cookieParser = require('cookie-parser')
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors')
@@ -25,10 +25,6 @@ app.use(session({
 
 app.get("/", (req, res) => {
     req.session.secret = req.sessionID;
-});
-
-app.get("/getSession", (req, res) => {
-    res.json( req.session.utilizador );
 });
 
 //Função para encriptar a password do utilizador
@@ -166,50 +162,170 @@ app.post("/register", async (req, res) => {
 
 });
 
-app.post("/login", async (req, res) => {
+// TODO: Completar o código.
+app.post("/login", (req, res) => {
     try {
         const {mail, pass} = req.body;
         console.log( req.body );
         console.log( "Info de login recebida: Email - " + mail + " Pass - " + pass);
-        
-        //Query parametrizada que procura por um utilizador
-        const queryGetUser = {
-            name: "get-user",
-            text: "SELECT * FROM Utilizador WHERE email = $1",
-            values: [mail]
+
+        if ( true ) {
+            res.status(200).send();
+            // Criar session aqui.
+        } else {
+            res.status(401).send(); 
         }
 
-        //Se não for um mail válido
-        if(!validator.isEmail(mail)){
-            res.status(400).send();
-            return;
-        }
 
-        //Limpeza dos caracteres
-        validator.escape(validator.trim(mail));
-
-        //Query
-        const row = await dbClient.query(queryGetUser);
-
-        //Se não obtiver resultados
-        if(length(row) === 0){
-            res.status(404).send();
-            return;
-        }
-
-        const user = row[0];
-
-        //Compara a pass introduzida com a pass encriptada
-        if (! await bcrypt.compare(pass, user.password)) {
-            res.status(401).send();
-            return;
-        }
-        // Criar session aqui.
-        res.status(201).send();        
     } catch (error) {
         res.status(500).send();
         console.log("Erro no /login " + error);
-        return;
+    }
+});
+
+// TODO: Completar e testar.
+app.put("/user", (req, res) => {
+
+});
+
+
+// TODO: Completar e testar.
+app.get("user/:userNif/verifyPassword", (req, res) => {
+
+});
+
+// TODO: Completar e testar.
+app.delete("/user/:userNif", (req, res) => {
+    try{
+        const queryApagarrUser = {
+            text: "DELETE FROM user WHERE nif=$1",
+            values: [req.params.userNif]
+        }
+
+        if (true) {
+            res.status(200).send();
+            console.log(req.params.userNif);
+        }
+
+    } catch (error) {
+        res.status(500).send();  
+        console.log("Erro no DELETE /user " + error); 
+    }
+});
+
+// TODO: Completar e testar.
+app.put("/user/:userNif/deactivate", (req, res) => {
+    try{
+        const queryDesativarUser = {
+            text: "UPDATE user SET estado= 'd' WHERE nif=$1",
+            values: [req.params.userNif]
+        }
+
+        // TODO
+        if (true) {
+            res.status(200).send();
+            console.log(req.params.userNif);
+        }
+
+    } catch (error) {
+        res.status(500).send();  
+        console.log("Erro no /deactivate " + error); 
+    }
+});
+
+// TODO: Completar e testar.
+app.put("/user/:userNif/activate", (req, res) => {
+    try{
+        const queryDesativarUser = {
+            text: "UPDATE user SET estado= 'a' WHERE nif=$1",
+            values: [req.params.userNif]
+        }
+
+        // TODO
+        if (true) {
+            res.status(200).send();
+            console.log(req.params.userNif);
+        }
+
+    } catch (error) {
+        res.status(500).send();  
+        console.log("Erro no /activate " + error); 
+    }
+});
+
+// TODO: Completar e testar.
+app.get("/checkMailDuplicate", (req, res) => {
+    try {
+        const queryMailDuplicado = {
+            text: "SELECT * FROM user WHERE mail=$1",
+            values: [ req.body.novoMail ]
+        };
+
+        // Correr a query e associar ao if.
+        if ( true ) {
+            res.status(200).send();
+        } else {
+            res.status(409).send();
+        }
+
+    } catch (error) {
+        res.status(500).send();  
+        console.log("Erro no /checkMailDuplicado " + error); 
+    }
+
+});
+
+// TODO
+app.put("/user/:userNif/changePassword", (req, res) => {
+    try{
+        let nif = req.params.userNif;
+        let novaPass = req.body.novaPass;
+    
+        let queryUser = {
+            text: "SELECT * FROM user WHERE nif=$1",
+            values: [nif]
+        }
+    
+        let queryAtualizacao = {
+            text: "UPDATE user SET pass=$1 WHERE nif=$2",
+            values:[novaPass, nif]
+        }
+    
+        // Verificar se as passes são iguais aqui.
+        // Se sim -> atualizar.
+        if (true) {
+            res.status(200).send()
+        } else {
+            res.status(401).send();
+        }
+    } catch (error) {
+
+    }
+});
+
+app.get("/user", (req, res) => {
+    try{
+        queryUser = {
+            text: "SELECT * FROM user WHERE mail=$1",
+            values: [req.body.mail]
+        }
+    
+        if (true) {
+            let dados = {
+                nome: "Teste",
+                mail: "teste@gmail.com",
+                telemovel: "968181077",
+                genero: "m",
+                morada: "Rua lol",
+                nif: "225881209",
+                nic: "",
+                dnasc: "01/01/2000"
+            }
+    
+            res.status(200).send( dados );
+        } 
+    } catch (error) {
+        res.status(500).send();
     }
 });
 

@@ -1,24 +1,22 @@
 import React from 'react';
-import { Route, BrowserRouter, Routes } from "react-router-dom";
-
-import Registo from "./Components/Registo";
-import Home from "./Components/Home";
-import Login from "./Components/Login";
-import EditarUser from './Components/EditarUser';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route
+} from "react-router-dom";
+import Home from './Components/Home';
+import Login from './Components/Login';
+import Registo from './Components/Registo';
 
 function App() {
-
   return (
-    <div>
-      <BrowserRouter>
-        <Routes>
-          <Route index path="/" element={<Home/>}/>
-          <Route path="/register" element={<Registo/>}/>
-          <Route path="/login" element={<Login/>}/>
-          <Route path="/editUser" element={<EditarUser/>}/>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/registo" element={<Registo />} />
+      </Routes>
+    </Router>
   );
 }
 

@@ -163,23 +163,45 @@ app.post("/register", async (req, res) => {
 });
 
 // TODO: Completar o código.
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
     try {
         const {mail, pass} = req.body;
         console.log( req.body );
         console.log( "Info de login recebida: Email - " + mail + " Pass - " + pass);
 
-        if ( true ) {
-            res.status(200).send();
-            // Criar session aqui.
-        } else {
-            res.status(401).send(); 
+        const queryGetUser = {
+            name: "get-user",
+            text: "SELECT * FROM Utilizador WHERE email = $1",
+            values: [mail]
         }
+
+         //Limpeza dos caracteres
+         validator.escape(validator.trim(mail));
+
+         //Query
+         const row = await dbClient.query(queryGetUser);
+ 
+         //Se não obtiver resultados
+         if(length(row) === 0){
+             res.status(404).send();
+             return;
+         }
+ 
+         const user = row[0];
+ 
+         //Compara a pass introduzida com a pass encriptada
+         if (! await bcrypt.compare(pass, user.password)) {
+             res.status(401).send();
+             return;
+         }
+         // Criar session aqui.
+         res.status(201).send();
 
 
     } catch (error) {
         res.status(500).send();
         console.log("Erro no /login " + error);
+        return;
     }
 });
 

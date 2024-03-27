@@ -1,15 +1,16 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
+import './CSS/App.css';
+
 
 class Home extends Component {
   render() {
     return (
-      <div>
-        <p>Esta é a página principal.</p>
-        <Link to="./Login"><button>Login</button></Link>
-        <Link to="./Registo"><button>Register</button></Link>
-       
-      </div>
+      <>
+        <div className='item3'>
+          <p>Esta é a página principal.</p>
+        </div>
+      </>
     );
   }
 }

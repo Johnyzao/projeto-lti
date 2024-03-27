@@ -81,7 +81,7 @@ function Login() {
   });
 
   return (
-    <div className='item3'>
+    <div>
     <form onSubmit={formik.handleSubmit}>
       <label htmlFor="mail">Mail</label>
       <input
@@ -122,7 +122,6 @@ function Login() {
       <button type="submit">Submit</button>
     </form>
     </div>
-    
   );
 }
 

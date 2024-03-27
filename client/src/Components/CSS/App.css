@@ -1,0 +1,78 @@
+/* App.css */
+
+.item1 { grid-area: title; }
+.item2 { grid-area: menu; }
+.item3 { grid-area: main;}
+.item4 { grid-area: footer; }
+
+.grid-container {
+  min-height: 100vh;
+
+  display: grid;
+  grid-template-areas:
+    'logo title header header header header'
+    'menu menu menu menu menu menu'
+    'main main main main main main'
+    'footer footer footer footer footer footer';
+  gap: 10px;
+  background-color: rgb(255, 255, 255);
+  padding: 10px;
+  grid-template-columns: 7% 10% 80%; /* Define rows to fit content */
+  /*grid-template-rows: 50% 50% 40% 20%; /* Define columns to fit content */
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.grid-container > div {
+
+  padding: 10px 0;
+  font-size: 30px;
+}
+
+.item0 {
+ background-color: rgb(255, 255, 255);
+ text-align: center;
+ grid-area: logo; 
+}
+
+.item1 {
+    background-color:white;
+    text-align: center;
+    font-size: 50px !important;
+    margin: auto;
+}
+
+.item2 {
+ background-color:rgb(5,29,64);
+ text-align: center;
+}
+
+.item3 {
+ background-color:white;
+ text-align: center;
+}
+
+.item4 {
+ background-color:rgb(5, 29, 64);
+ text-align: center;
+ color: aliceblue;
+ 
+}
+
+.App-logo {
+    height: auto;
+    width: 100%;
+    border-radius: 50%; /* torna a imagem redonda */
+    margin-top: 10px;
+    margin-bottom: 10px;
+    float: left;
+  }
+
+
+h1 {
+  font-size: 2.5em;
+  font-weight: 700;
+  line-height: 1.1;
+  float: center;
+
+  color: #ff0000;
+}

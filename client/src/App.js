@@ -11,7 +11,8 @@ import {
 import Home from './Components/Home';
 import Login from './Components/Login';
 import Register from './Components/Register';
-
+import AboutUs from "./Components/AboutUs";
+import Contacts from "./Components/Contacts";
 
 function App() {
   return (
@@ -37,8 +38,8 @@ function App() {
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
-          <Dropdown.Item href="/login">About Us</Dropdown.Item>
-          <Dropdown.Item href="/register">Contacts</Dropdown.Item>
+          <Dropdown.Item href="/AboutUs">About Us</Dropdown.Item>
+          <Dropdown.Item href="/Contacts">Contacts</Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
       </div>
@@ -53,6 +54,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+            <Route path="/AboutUs" element={<AboutUs />} />
+            <Route path="/Contacts" element={<Contacts/>} />
         </Routes>
       </Router>
     </div>

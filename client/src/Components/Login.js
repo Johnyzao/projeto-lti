@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Col from 'react-bootstrap/Col';
+import Row from 'react-bootstrap/Row';
+
 // https://www.npmjs.com/package/axios
 // https://axios-http.com/docs/res_schema 
 import axios from 'axios';
@@ -11,8 +17,13 @@ import validator from 'validator';
 
 import { useNavigate } from 'react-router-dom';
 
+import useSignIn from 'react-auth-kit/hooks/useSignIn';
+
+import config from '../config';
+
 function Login() {
   const navigate = useNavigate();
+  const signIn = useSignIn();
 
   let [erroCreds, setErroCreds] = useState("");
   let [erroServidor, setErroServidor] = useState("");
@@ -35,33 +46,37 @@ function Login() {
     return errors;
   }
 
-  async function obterDadosUser(mail) {
+/** 
+  async function obterDadosUser(nif) {
     await axios.get(
       "http://localhost:3000/user",
-      {mail: mail},
+      {nif: nif},
       { validateStatus: function (status) {
         return true;
       }},
       { headers: {'Content-Type': 'application/json'}}
     ).then( (res) => {
-        if (res.status === 200) {
+        try{
+          if (res.status === 200) {
             localStorage.setItem( "dados", JSON.stringify( res.data ) );
             navigate("/");
-        } else {
-            setErroServidor( "Por favor tente de novo, ocorreu um erro." );
+          } 
+        } catch (error) {
+          setErroServidor( "Por favor tente de novo, ocorreu um erro." );
         }
     })
   }
+**/
 
   // Função a ser usada no handleSubmit do form.
-  async function autenticarUtilizador(mailUser, passUser) {
+  function autenticarUtilizador(mailUser, passUser) {
     let creds = {
       mail: validator.escape(validator.trim( mailUser )) , 
       pass: validator.escape(validator.trim( passUser ))
     };
 
-    await axios.post(
-       "http://localhost:3000/login" , 
+    axios.post(
+      config.LINK_API + "localhost:3000/login" , 
         creds ,
         { validateStatus: function (status) {
           return true;
@@ -72,25 +87,33 @@ function Login() {
         console.log("Dados recebidos do pedido GET /login:" + res.data );
         console.log(res.statusText);
 
-        if ( res.status === 500 ) {
-          setErroCreds("");
-          setErroServidor("Por favor tente de novo, ocorreu um erro.");
-        } 
-
-        if ( res.status === 401 ) {
-          setErroServidor("");
-          setErroCreds("Email ou password errados, por favor insira as suas credenciais de novo.");
-        }
+        signIn({
+          auth: {
+            token: '<jwt token>',
+            type: 'Bearer'
+          },
+          userState: { nif: res.data.token.nif },
+          refresh: <refresh jwt token/>
+        })
 
         if ( res.status === 200 ) {
           setErroCreds("");
           setErroServidor("");
-
-          obterDadosUser(mailUser);
-
+          navigate("/");
         } 
 
-    });
+    }).catch(function (error) {
+      if ( error.response ) {
+        let codigo = error.response.status;
+
+        codigo === 409 
+          ? setErroServidor("")
+          : setErroCreds("Email ou password errados, por favor insira as suas credenciais de novo."); 
+
+        codigo === 500 
+          ? setErroCreds("")
+          : setErroServidor("Por favor tente de novo, ocorreu um erro.");
+    }});
   };
 
   const formik = useFormik({
@@ -107,16 +130,20 @@ function Login() {
   });
 
   return (
-    <div>
-    <form onSubmit={formik.handleSubmit}>
-      <label htmlFor="mail">Mail</label>
-      <input
-        id="mail"
-        name="mail"
-        type="text"
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        value={formik.values.mail}
+    <Container fluid="sm">
+    <Row>
+    </Row>
+    <Row sm={2} >
+    <Form noValidate onSubmit={formik.handleSubmit} className="text-center">
+      <Form.Group className="mb-3">
+      <Form.Label htmlFor="mail">Mail</Form.Label>
+      <Form.Control
+          id="mail"
+          name="mail"
+          type="text"
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          value={formik.values.mail}
       />
       {formik.touched.mail && formik.errors.mail ? (
         <div>{formik.errors.mail}</div>
@@ -124,8 +151,8 @@ function Login() {
 
       <br></br>
 
-      <label htmlFor="pass">Pass</label>
-      <input
+      <Form.Label htmlFor="pass">Pass</Form.Label>
+      <Form.Control
         id="pass"
         name="pass"
         type="password"
@@ -146,9 +173,11 @@ function Login() {
       ) : null}
 
       <br/>
-      <button type="submit">Submit</button>
-    </form>
-    </div>
+    </Form.Group>
+    <Button type="submit">Submit</Button>
+    </Form>
+    </Row>
+    </Container>
   );
 }
 

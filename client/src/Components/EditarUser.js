@@ -15,13 +15,20 @@ import PopupDesativarConta from '../Popups/PopupDesativarConta';
 
 
 function EditarUser() {
+    let templateDados = {
+        nome: "",
+        mail: "",
+        telemovel: "",
+        genero: "",
+        morada: "",
+        nif: "",
+        nic: "",
+        dnasc: "01/01/2000"
+    };
     const [modoEdicao, setModoEdicao] = useState(false);
-    const [dadosAtuais, setDadosAtuais] = useState({});
+    const [dadosAtuais, setDadosAtuais] = useState(templateDados);
     const [mailDuplicado, setMailDuplicado] = useState(false);
-
-    const [sucesso, setSucesso] = useState("");
     const [erroInterno, setErroInterno] = useState(false);
-
 
     function verificarMailDuplicado(novoMail) {
         axios.get(
@@ -70,9 +77,10 @@ function EditarUser() {
         return errors;
     }
 
-    function obterInfoUtilizador() {
+    function obterInfoUtilizador(nif) {
         axios.get(
             "http://localhost:3000/user",
+            {nif: nif},
             { headers: {'Content-Type': 'application/json'}},
             { validateStatus: function (status) {
                 return true;
@@ -100,9 +108,11 @@ function EditarUser() {
     
             if ( res.status === 500 ) {
                 setErroInterno(true);
+                console.log( "Nok" );
             } 
     
             if ( res.status === 200 ) {
+                console.log( "Ok" );
                 setModoEdicao(false);
                 // Redirect
                 // Maybe popup a dizer que foram alterados os dados.
@@ -122,8 +132,11 @@ function EditarUser() {
         gen: dadosAtuais.gen, 
         morada: dadosAtuais.morada
     },
+    validateOnChange:false,
+    validateOnBlur:false,
     validate,
     onSubmit: values => {
+        console.log("aqui");
         atualizarUtilizador( values );
     },
     });
@@ -217,8 +230,6 @@ function EditarUser() {
                 ) : null}
                 <br/>
 
-                { /** TODO: Género **/ }
-
                 { /** Morada **/ }
                 <label htmlFor="nic">Morada:</label>
                 <input
@@ -236,9 +247,9 @@ function EditarUser() {
                 ) : null}
                 <br/>
 
-            { modoEdicao ? (
-                <button type="submit"> Submeter Alterações </button>
-            ) : null }
+                { modoEdicao ? (
+                    <button type="submit" onClick={formik.handleSubmit}> Submeter Alterações </button>
+                ) : null }
             </form>
 
         { !modoEdicao ? (

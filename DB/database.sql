@@ -20,15 +20,17 @@ DROP TABLE IF EXISTS Posto;
 
 CREATE TABLE Utilizador (
     nif INT PRIMARY KEY,
-    nic VARCHAR(20) NOT NULL,
+    nic VARCHAR(20),
     nome VARCHAR(255) NOT NULL,
     genero CHAR(1) NOT NULL,
-    ano_nascimento INT NOT NULL,
+    ano_nascimento DATE NOT NULL,
     telemovel INT NOT NULL,
     email VARCHAR(255) NOT NULL,
-    morada VARCHAR(255) NOT NULL,
-    tipo_conta CHAR(1) NOT NULL
-);
+    password VARCHAR(255) NOT NULL,
+    morada VARCHAR(255),
+    tipo_conta CHAR(1) NOT NULL,
+    estado CHAR(1) NOT NULL
+)
 
 CREATE TABLE Dono (
     nif INT PRIMARY KEY,

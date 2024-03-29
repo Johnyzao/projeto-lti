@@ -51,16 +51,16 @@ function PopupAlterarPass(props) {
     }
 
     validator.isStrongPassword( values.passNova ) 
-        ? errors.passNova = ""  
+        ? delete errors.passNova 
         : errors.passNova = "Password fraca, por favor introduza uma nova.";
 
     values.passAtual === values.confirmacao
-        ? errors.confirmacao = ""
+        ? delete errors.confirmacao
         : errors.confirmacao = "Passwords são diferentes, por favor escreva a mesma password."
 
     insucesso 
         ? errors.passAtual = "Password errada, por favor insira a sua password atual"
-        : errors.passAtual = "";
+        : delete errors.passAtual;
 
     return errors;
   }

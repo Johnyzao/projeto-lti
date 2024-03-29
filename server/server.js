@@ -7,25 +7,14 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors')
 const validator = require('validator');
+const jwt = require('jsonwebtoken');
 
 const dbClient = require('./connect_db');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json()) ;
 app.use(cookieParser());
-app.use(cors())
-
-// genuuid em falta? 
-app.use(session({
-    secret: "algo",
-    resave: true,
-    saveUninitialized: true
-}));
-
-
-app.get("/", (req, res) => {
-    req.session.secret = req.sessionID;
-});
+app.use(cors());
 
 //Função para encriptar a password do utilizador
 async function passHash(password){
@@ -46,21 +35,23 @@ async function passHash(password){
 
 //Função para validar os dados de registo
 function validateData(data){
+    console.log( data );
     
     const validacaoDados = {
         nome: validator.isAlpha(data.nome),
         mail: validator.isEmail(data.mail), 
-        telemovel: validator.isMobilePhone(data.telemovel.toString(), "pt-PT"), //Ex: +351911234567
+        telemovel: validator.isMobilePhone(data.telemovel.toString(), "pt-PT") || data.telemovel === "", //Ex: +351911234567
         pass: validator.isStrongPassword(data.pass),
         nif: data.nif.toString().length == 9, //validator.isVat() so aceita entradas do tipo PT123456789
-        nic: validator.isNumeric(data.nic.toString()) && data.nic.toString().length === 9,
-        gen: data.gen === "m" || data.gen === "f" || data.gen === "o" || data.gen === "pnd",
+        nic: validator.isNumeric(data.nic.toString()) && data.nic.toString().length === 9 || data.nic === "",
+        gen: data.gen === "Masculino" || data.gen === "Feminino" || data.gen === "Outro" || data.gen === "Prefiro não dizer",
         //morada: null,
         dnasc: validator.isDate(data.dnasc)
     }
 
     return validacaoDados;
 }
+
 
 app.post("/register", async (req, res) => {
     try{
@@ -81,7 +72,6 @@ app.post("/register", async (req, res) => {
             //console.log(validacaoDados);
             //const errosDetetados = Object.keys(validacaoDados).filter(key => !validacaoDados[key]);
             res.status(400).send();
-            return;
         }
 
         //Limpeza de caracteres
@@ -97,30 +87,27 @@ app.post("/register", async (req, res) => {
         // #######################################
         // #### 2. Inserção na base de dados. ####
         // #######################################
-        const {nif, nic, nome, gen, dnasc, telemovel, mail, pass} = parametros
+        const {nif, nic, nome, gen, dnasc, telemovel, mail, pass, morada} = parametros
         //Query parametrizada que regista um utilizador
         const queryRegisto = {
             name: 'register-user',
-            text: 'INSERT INTO utilizador(nif, nic, nome, genero, dnasc, telemovel, email, password) \
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-            values: [nif,nic,nome,gen,dnasc,telemovel,mail,pass]
-            } 
+            text: 'INSERT INTO utilizador(nif, nic, nome, genero, ano_nascimento, telemovel, email, password, morada, tipo_conta, estado) \
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            values: [parseInt(nif),nic,nome,gen,dnasc,parseInt(telemovel),mail,pass, morada, 'u', 'a']
+        } 
             
-        const results = dbClient.query(queryRegisto)
-        
+        const results = dbClient.query(queryRegisto);
         //Se não encontrar resultados
-        if(length(results) === 0){
+        if((await results).rowCount === 0){
             //statusMessage.faltaRecurso = true;
             res.status(404).send();
-            return;
+        } else {
+            res.status(200).send();
         }
-
-        //statusMessage.userCriado = true;
-        res.status(201).send();
 
     } catch (error) { //Se a query ou o servidor falharem
         console.error(error);
-        switch (error.code){
+        switch (error.code) {
             case '23505': //<UNIQUE> error
                 //const constraintTypes = {
                 //    utilizador_nif_pkey: "userDuplicado",
@@ -130,8 +117,8 @@ app.post("/register", async (req, res) => {
                 //}   
                 //onst constraintType = constraintTypes[error.constraint];
                 //statusMessage[constraintType] = true;
-                res.status(409);
-                break;
+                res.status(409).send();
+                return;
 
             case '23502': //<NOT NULL> error
                 //const notNullErrors = {
@@ -145,32 +132,44 @@ app.post("/register", async (req, res) => {
                 //    genero: 'notNullgen'
                 //};
                 //const errorType = notNullErrors[error.column];
-                //statusMessage[errorType] = true;
-                res.status(422);
-                break;
+                //statusMessage[errorType] = true
+                res.status(422).send();
+                return;
 
                 default: //Outros tipos de erros
-                    res.status(500);
-                    //statusMessage.erroInterno = true;
-                    break;
-                }
-
-        //Devolver a respetiva mensagem de erro para ser tratada no front-end
-        res.send();
-        return;                  
+                    res.status(500).send();
+                    return;
+                    //statusMessage.erroInterno = true
+        }               
     }
 
 });
 
 // TODO: Completar o código.
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
     try {
         const {mail, pass} = req.body;
         console.log( req.body );
         console.log( "Info de login recebida: Email - " + mail + " Pass - " + pass);
 
-        if ( true ) {
-            res.status(200).send();
+        const queryLogin = {
+            name: "login",
+            text: "SELECT * FROM utilizador WHERE email = $1",
+            values: [ mail ]
+        };
+
+        let results = await dbClient.query(queryLogin);
+        let existeUtilizador = results.rowCount === 1 ? true : false;
+        let passwordCorreta = existeUtilizador && bcrypt.compare(pass, results.rows[0].pass) 
+            ? true 
+            : false;
+
+        if ( passwordCorreta ) {
+            const token = jwt.sign(
+            { nif: results.rows[0].nif }, 
+            "daf3d765ddbcc17ab43f4ad71c6e83cdb339080ce157a943650982ef095d5dc8"
+            );
+            res.status(200).send({token: token});
             // Criar session aqui.
         } else {
             res.status(401).send(); 
@@ -185,7 +184,14 @@ app.post("/login", (req, res) => {
 
 // TODO: Completar e testar.
 app.put("/user", (req, res) => {
-
+    try{
+        if (true) {
+            res.status(200).send();
+        } 
+    } catch(error) {
+        res.status(500).send();
+        console.log("Erro no PUT /user " + error);
+    }
 });
 
 
@@ -253,21 +259,27 @@ app.put("/user/:userNif/activate", (req, res) => {
     }
 });
 
-// TODO: Completar e testar.
-app.get("/checkMailDuplicate", (req, res) => {
+app.get("/checkMailDuplicate/:userMail", async (req, res) => {
     try {
         const queryMailDuplicado = {
-            text: "SELECT * FROM user WHERE mail=$1",
-            values: [ req.body.novoMail ]
+            name: "fetch-emails",
+            text: "SELECT * FROM utilizador WHERE email = $1",
+            values: [ req.params.userMail ]
         };
 
-        // Correr a query e associar ao if.
-        if ( true ) {
+        let results = await dbClient.query(queryMailDuplicado);
+        console.log( results.rowCount );
+        
+        let existeDuplicado = false;
+        results.rowCount === 0 
+            ? existeDuplicado = true 
+            : existeDuplicado = false;
+
+        if ( existeDuplicado ) {
             res.status(200).send();
         } else {
-            res.status(409).send();
+            res.status(401).send();
         }
-
     } catch (error) {
         res.status(500).send();  
         console.log("Erro no /checkMailDuplicado " + error); 
@@ -306,8 +318,8 @@ app.put("/user/:userNif/changePassword", (req, res) => {
 app.get("/user", (req, res) => {
     try{
         queryUser = {
-            text: "SELECT * FROM user WHERE mail=$1",
-            values: [req.body.mail]
+            text: "SELECT * FROM user WHERE nif=$1",
+            values: [req.body.nif]
         }
     
         if (true) {

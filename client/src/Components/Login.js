@@ -25,9 +25,6 @@ function Login() {
   const navigate = useNavigate();
   const signIn = useSignIn();
 
-  const [, updateState] = React.useState();
-  const forceUpdate = React.useCallback(() => updateState({}), []);
-
   let [erroCreds, setErroCreds] = useState(false);
   let [erroServidor, setErroServidor] = useState(false);
 
@@ -96,12 +93,11 @@ function Login() {
               type: 'Bearer'
             },
             userState: { nif: res.data.token.nif, nome: res.data.token.nome },
-            refresh: <refresh jwt token/>
           })
 
           setErroCreds("");
           setErroServidor("");
-          navigate("/");
+          navigate("/home");
         } 
 
         res.status === 401
@@ -112,12 +108,6 @@ function Login() {
     .catch(function (error) {
       if ( error.response ) {
         let codigo = error.response.status;
-        console.log(codigo);
-
-        codigo === 401
-          ? setErroCreds(true)
-          : setErroCreds(false); 
-
         codigo === 500 
           ? setErroServidor(true)
           : setErroServidor(false);
@@ -134,7 +124,6 @@ function Login() {
     validateOnBlur:false,
     validate,
     onSubmit: values => {
-      console.log("aqui");
       autenticarUtilizador(values.mail, values.pass);
     },
   });
@@ -185,7 +174,7 @@ function Login() {
         ? (<p className='text-danger'>Email ou password errados, por favor insira as suas credenciais de novo.</p>) 
         : null 
       }
-      
+
     <Button type="submit">Submit</Button>
     </Form>
     </Row>

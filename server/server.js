@@ -161,7 +161,7 @@ app.post("/login", async (req, res) => {
 
         let results = await dbClient.query(queryLogin);
         let existeUtilizador = results.rowCount === 1 ? true : false;
-        let passwordCorreta = existeUtilizador && bcrypt.compare(pass, results.rows[0].pass) 
+        let passwordCorreta = existeUtilizador && bcrypt.compare(pass, results.rows[0].password) 
             ? true 
             : false;
 
@@ -171,7 +171,6 @@ app.post("/login", async (req, res) => {
             "daf3d765ddbcc17ab43f4ad71c6e83cdb339080ce157a943650982ef095d5dc8"
             );
             res.status(200).send({token: token});
-            // Criar session aqui.
         } else {
             res.status(401).send(); 
         }

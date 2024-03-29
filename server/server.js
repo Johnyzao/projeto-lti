@@ -94,7 +94,7 @@ app.post("/register", async (req, res) => {
             name: 'register-user',
             text: 'INSERT INTO utilizador(nif, nic, nome, genero, ano_nascimento, telemovel, email, password, morada, tipo_conta, estado) \
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-            values: [parseInt(nif),nic,nome,gen,dnasc,parseInt(telemovel),mail,pass, morada, 'u', 'a']
+            values: [parseInt(nif),nic,nome,gen,dnasc,telemovel,mail,pass, morada, "u", "a"]
         } 
             
         const results = dbClient.query(queryRegisto);
@@ -167,7 +167,7 @@ app.post("/login", async (req, res) => {
 
         if ( passwordCorreta ) {
             const token = jwt.sign(
-            { nif: results.rows[0].nif }, 
+            { nif: results.rows[0].nif, nome: results.rows[0].nome }, 
             "daf3d765ddbcc17ab43f4ad71c6e83cdb339080ce157a943650982ef095d5dc8"
             );
             res.status(200).send({token: token});
@@ -203,7 +203,7 @@ app.get("user/:userNif/verifyPassword", (req, res) => {
 });
 
 // TODO: Completar e testar.
-app.delete("/user/:userNif", (req, res) => {
+app.delete("/user/:userNif", async (req, res) => {
     try{
 
         const nif = req.params.userNif;

@@ -66,7 +66,8 @@ function FormRegisto() {
         return true;
       }}
     ).then ( (res) => {
-        if (res.status === 201) {
+        if (res.status === 200) {
+          console.log("aqui")
           setErroInterno(false)
           setErroUserDuplciado(false);
           navigate("/register/success");

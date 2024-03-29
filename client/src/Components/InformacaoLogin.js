@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 function InformacaoLogin() {
 
-    let dados = JSON.parse( localStorage.getItem("dados") );
+    let dados = null;
     let nomeUser = (dados === null) ? null : dados.nome;
 
     // TODO: Ver ícones

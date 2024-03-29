@@ -25,24 +25,25 @@ function Login() {
   const navigate = useNavigate();
   const signIn = useSignIn();
 
-  let [erroCreds, setErroCreds] = useState("");
-  let [erroServidor, setErroServidor] = useState("");
+  const [, updateState] = React.useState();
+  const forceUpdate = React.useCallback(() => updateState({}), []);
+
+  let [erroCreds, setErroCreds] = useState(false);
+  let [erroServidor, setErroServidor] = useState(false);
 
   const validate = values => {
     const errors = {};
 
-    if ( !validator.isEmail( values.mail ) ) {
-      errors.mail = "Insira um mail válido.";
-    } else if ( !values.mail ) {
-      errors.mail = "Mail requerido para efetuar login."
-    }
+    validator.isEmail( values.mail ) && values.mail !== ""
+      ? delete errors.mail
+      : errors.mail = "Email inválido.";
 
-    if ( values.pass.length < 8) {
-      errors.pass = "Insira uma pass válida.";
-    } else if ( !values.pass) {
-      errors.pass = "Pass requerida para efetuar login."
-    }
+    /** Verificacoes da Pass **/
+    values.pass !== ""
+      ? delete errors.pass
+      : errors.pass = "Por favor insira uma password.";
 
+    console.table(errors);
     return errors;
   }
 
@@ -76,7 +77,7 @@ function Login() {
     };
 
     axios.post(
-      config.LINK_API + "localhost:3000/login" , 
+      config.LINK_API + "/login" , 
         creds ,
         { validateStatus: function (status) {
           return true;
@@ -87,36 +88,44 @@ function Login() {
         console.log("Dados recebidos do pedido GET /login:" + res.data );
         console.log(res.statusText);
 
-        signIn({
-          auth: {
-            token: '<jwt token>',
-            type: 'Bearer'
-          },
-          userState: { nif: res.data.token.nif },
-          refresh: <refresh jwt token/>
-        })
-
         if ( res.status === 200 ) {
+
+          signIn({
+            auth: {
+              token: '<jwt token>',
+              type: 'Bearer'
+            },
+            userState: { nif: res.data.token.nif, nome: res.data.token.nome },
+            refresh: <refresh jwt token/>
+          })
+
           setErroCreds("");
           setErroServidor("");
           navigate("/");
         } 
 
-    }).catch(function (error) {
+        res.status === 401
+          ? setErroCreds(true)
+          : setErroCreds(false); 
+
+    })
+    .catch(function (error) {
       if ( error.response ) {
         let codigo = error.response.status;
+        console.log(codigo);
 
-        codigo === 409 
-          ? setErroServidor("")
-          : setErroCreds("Email ou password errados, por favor insira as suas credenciais de novo."); 
+        codigo === 401
+          ? setErroCreds(true)
+          : setErroCreds(false); 
 
         codigo === 500 
-          ? setErroCreds("")
-          : setErroServidor("Por favor tente de novo, ocorreu um erro.");
+          ? setErroServidor(true)
+          : setErroServidor(false);
     }});
   };
 
   const formik = useFormik({
+    enableReinitialize: true,
     initialValues: {
       mail: '',
       pass: '',
@@ -125,6 +134,7 @@ function Login() {
     validateOnBlur:false,
     validate,
     onSubmit: values => {
+      console.log("aqui");
       autenticarUtilizador(values.mail, values.pass);
     },
   });
@@ -134,19 +144,19 @@ function Login() {
     <Row>
     </Row>
     <Row sm={2} >
-    <Form noValidate onSubmit={formik.handleSubmit} className="text-center">
+    <Form onSubmit={formik.handleSubmit} className="text-center">
       <Form.Group className="mb-3">
       <Form.Label htmlFor="mail">Mail</Form.Label>
       <Form.Control
           id="mail"
           name="mail"
-          type="text"
+          type="mail"
           onChange={formik.handleChange}
           onBlur={formik.handleBlur}
           value={formik.values.mail}
       />
       {formik.touched.mail && formik.errors.mail ? (
-        <div>{formik.errors.mail}</div>
+        <div className='text-danger'>{formik.errors.mail}</div>
       ) : null}
 
       <br></br>
@@ -161,19 +171,21 @@ function Login() {
         value={formik.values.pass}
       />
       {formik.touched.pass && formik.errors.pass ? (
-        <div>{formik.errors.pass}</div>
-      ) : null}
-
-      {erroServidor !== "" ? (
-        <div>{erroServidor}</div>
-      ) : null}
-
-      {erroCreds !== "" ? (
-        <div>{erroCreds}</div>
+        <div className='text-danger'>{formik.errors.pass}</div>
       ) : null}
 
       <br/>
     </Form.Group>
+
+    { erroServidor 
+        ? (<p className='text-danger'>Por favor tente de novo, ocorreu um erro.</p>) 
+        : null }
+
+      { erroCreds 
+        ? (<p className='text-danger'>Email ou password errados, por favor insira as suas credenciais de novo.</p>) 
+        : null 
+      }
+      
     <Button type="submit">Submit</Button>
     </Form>
     </Row>

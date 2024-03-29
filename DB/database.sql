@@ -22,14 +22,14 @@ CREATE TABLE Utilizador (
     nif INT PRIMARY KEY,
     nic VARCHAR(20),
     nome VARCHAR(255) NOT NULL,
-    genero CHAR(1) NOT NULL,
+    genero TEXT NOT NULL,
     ano_nascimento DATE NOT NULL,
-    telemovel INT NOT NULL,
+    telemovel TEXT NOT NULL,
     email VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     morada VARCHAR(255),
-    tipo_conta CHAR(1) NOT NULL,
-    estado CHAR(1) NOT NULL
+    tipo_conta TEXT NOT NULL,
+    estado TEXT NOT NULL
 )
 
 CREATE TABLE Dono (

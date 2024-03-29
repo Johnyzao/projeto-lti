@@ -10,6 +10,7 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 
 const dbClient = require('./connect_db');
+const queries = require('./utils/queries')
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json()) ;
@@ -179,6 +180,7 @@ app.post("/login", async (req, res) => {
     } catch (error) {
         res.status(500).send();
         console.log("Erro no /login " + error);
+        return;
     }
 });
 
@@ -203,16 +205,20 @@ app.get("user/:userNif/verifyPassword", (req, res) => {
 // TODO: Completar e testar.
 app.delete("/user/:userNif", (req, res) => {
     try{
-        const queryApagarrUser = {
-            text: "DELETE FROM user WHERE nif=$1",
-            values: [req.params.userNif]
+
+        const nif = req.params.userNif;
+
+        const queryApagarUser = queries.queryDeleteUser(nif);
+
+        const row = await dbClient.query(queryApagarUser);
+
+        if(row.rowCount == 0){
+            res.status(404).send()
+            return;
         }
 
-        if (true) {
-            res.status(200).send();
-            console.log(req.params.userNif);
-        }
-
+        res.status(200).send();
+        
     } catch (error) {
         res.status(500).send();  
         console.log("Erro no DELETE /user " + error); 
@@ -220,38 +226,43 @@ app.delete("/user/:userNif", (req, res) => {
 });
 
 // TODO: Completar e testar.
-app.put("/user/:userNif/deactivate", (req, res) => {
+app.put("/user/:userNif/deactivate", async (req, res) => {
     try{
-        const queryDesativarUser = {
-            text: "UPDATE user SET estado= 'd' WHERE nif=$1",
-            values: [req.params.userNif]
+        const nif = req.params.userNif;
+
+        const queryDesativarUser = queries.queryDeactivateUser(nif);
+        const row = await dbClient.query(queryDesativarUser);
+
+        if(row.rowCount == 0){
+            res.status(404).send();
+            return;
         }
 
-        // TODO
-        if (true) {
-            res.status(200).send();
-            console.log(req.params.userNif);
-        }
-
+        res.status(200).send();
+        
     } catch (error) {
         res.status(500).send();  
         console.log("Erro no /deactivate " + error); 
     }
 });
 
-// TODO: Completar e testar.
-app.put("/user/:userNif/activate", (req, res) => {
+// TODO: Testar
+// TODO: parse e validação dos dados
+// TODO: Reposta nif invalido
+app.put("/user/:userNif/activate", async (req, res) => {
     try{
-        const queryDesativarUser = {
-            text: "UPDATE user SET estado= 'a' WHERE nif=$1",
-            values: [req.params.userNif]
+        const nif = req.params.userNif;
+
+        const queryAtivarUser = queries.queryActivateUser(nif);
+
+        const row = await dbClient.query(queryAtivarUser);
+        
+        if(row.rowCount === 0){
+            res.status(404).send();
+            return;
         }
 
-        // TODO
-        if (true) {
-            res.status(200).send();
-            console.log(req.params.userNif);
-        }
+        res.status(200).send();
 
     } catch (error) {
         res.status(500).send();  
@@ -287,31 +298,46 @@ app.get("/checkMailDuplicate/:userMail", async (req, res) => {
 
 });
 
-// TODO
-app.put("/user/:userNif/changePassword", (req, res) => {
+// TODO: Testar
+// TODO: Validação e parse dos dados
+app.put("/user/:userNif/changePassword", async (req, res) => {
     try{
         let nif = req.params.userNif;
+        let {pass} = req;
         let novaPass = req.body.novaPass;
     
-        let queryUser = {
-            text: "SELECT * FROM user WHERE nif=$1",
-            values: [nif]
-        }
-    
-        let queryAtualizacao = {
-            text: "UPDATE user SET pass=$1 WHERE nif=$2",
-            values:[novaPass, nif]
-        }
+        let queryUser = queries.queryGetUserByNif(nif);
+        
+        let queryAtualizacao = queries.queryUpdatePass(novaPass, nif);
     
         // Verificar se as passes são iguais aqui.
         // Se sim -> atualizar.
-        if (true) {
-            res.status(200).send()
-        } else {
-            res.status(401).send();
-        }
-    } catch (error) {
+        const row = await dbClient.query(queryUser);
 
+        if(row.rowCount === 0){
+            res.status(404).send();
+            return;
+        }
+
+        const user = row[0];
+
+        if(!bcrypt.compare(pass, user.password)){
+            res.status(400).send();
+            return;
+        }
+
+        const update_row = await dbClient.query(queryAtualizacao);
+
+        if(update_row.rowCount === 0){
+            res.status(404).send();
+            return;
+        }
+
+        res.status(200).send();
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro interno do servidor");
+        return;
     }
 });
 

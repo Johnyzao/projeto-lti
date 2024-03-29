@@ -8,7 +8,7 @@ import axios from 'axios';
 
 // Possivelmente melhor: https://www.npmjs.com/package/react-hook-form
 
-class Registo extends Component {
+class Registo extends React.Component {
 
     constructor(props) {
       super(props)

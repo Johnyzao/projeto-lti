@@ -1,5 +1,4 @@
 import React from 'react';
-<<<<<<< HEAD
 import { Route, BrowserRouter, Routes } from "react-router-dom";
 
 import AuthProvider from 'react-auth-kit/AuthProvider';

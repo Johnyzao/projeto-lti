@@ -3,12 +3,14 @@ import Popup from 'reactjs-popup';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import { Link } from 'react-router-dom';
-
+import { useNavigate } from 'react-router-dom';
 
 function PopupApagarConta() {
+    const navigate = useNavigate();
+
     function terminarSessao() {
         localStorage.clear();
-        window.location.reload();
+        navigate("/home");
     }
 
     return (

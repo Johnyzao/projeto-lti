@@ -17,13 +17,13 @@ import validator from 'validator';
 
 import { useNavigate } from 'react-router-dom';
 
-import useSignIn from 'react-auth-kit/hooks/useSignIn';
+//import useSignIn from 'react-auth-kit/hooks/useSignIn';
 
 import config from '../config';
 
 function Login() {
   const navigate = useNavigate();
-  const signIn = useSignIn();
+  //const signIn = useSignIn();
 
   let [erroCreds, setErroCreds] = useState(false);
   let [erroServidor, setErroServidor] = useState(false);
@@ -44,29 +44,6 @@ function Login() {
     return errors;
   }
 
-/** 
-  async function obterDadosUser(nif) {
-    await axios.get(
-      "http://localhost:3000/user",
-      {nif: nif},
-      { validateStatus: function (status) {
-        return true;
-      }},
-      { headers: {'Content-Type': 'application/json'}}
-    ).then( (res) => {
-        try{
-          if (res.status === 200) {
-            localStorage.setItem( "dados", JSON.stringify( res.data ) );
-            navigate("/");
-          } 
-        } catch (error) {
-          setErroServidor( "Por favor tente de novo, ocorreu um erro." );
-        }
-    })
-  }
-**/
-
-  // Função a ser usada no handleSubmit do form.
   function autenticarUtilizador(mailUser, passUser) {
     let creds = {
       mail: validator.escape(validator.trim( mailUser )) , 
@@ -81,22 +58,24 @@ function Login() {
         }},
         { headers: {'Content-Type': 'application/json'}}
     ).then( (res) => {
-        // Strings de debug
         console.log("Dados recebidos do pedido GET /login:" + res.data );
         console.log(res.statusText);
 
         if ( res.status === 200 ) {
 
-          signIn({
-            auth: {
-              token: '<jwt token>',
-              type: 'Bearer'
-            },
-            userState: { nif: res.data.token.nif, nome: res.data.token.nome },
-          })
+          //signIn({
+          //  auth: {
+          //    token: '<jwt token>',
+          //    type: 'Bearer'
+          //  },
+          //  userState: { nif: res.data.token.nif, nome: res.data.token.nome },
+          //})
+          const {nome, mail, nif, estado} = res.data;
+          let dadosUser = { nome: nome, mail: mail, nif: nif, estado: estado };
+          localStorage.setItem("dados", JSON.stringify( dadosUser ));
 
-          setErroCreds("");
-          setErroServidor("");
+          setErroCreds(false);
+          setErroServidor(false);
           navigate("/home");
         } 
 
@@ -104,8 +83,7 @@ function Login() {
           ? setErroCreds(true)
           : setErroCreds(false); 
 
-    })
-    .catch(function (error) {
+    }).catch(function (error) {
       if ( error.response ) {
         let codigo = error.response.status;
         codigo === 500 

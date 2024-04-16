@@ -2,35 +2,50 @@ import React from 'react';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import PopupConfirmarLogout from '../Popups/PopupConfirmarLogout';
-import { Link } from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
+import { useNavigate } from 'react-router-dom';
 
 function InformacaoLogin() {
+    const navigate = useNavigate();
+
+    const irParaRegisto = () => {
+        localStorage.clear();
+        let pathRegisto = "/register";
+        navigate(pathRegisto);
+    }
+    const irParaLogin = () => {
+        let pathLogin = "/login";
+        navigate(pathLogin);
+    }
 
     let dados = null;
-    let nomeUser = (dados === null) ? null : dados.nome;
+    let logado = localStorage.getItem("dados") !== null;
+    
+    if (logado) {
+        dados = JSON.parse(localStorage.getItem("dados"));
+    }
 
-    // TODO: Ver ícones
     return (
     <>
-    { nomeUser === null ? 
+    { logado === false ? 
     (
         <>
-            <Navbar.Text> <Link to="/register"> Registar </Link> </Navbar.Text>
+            <Navbar.Text> <Button onClick={irParaRegisto}> Criar uma conta </Button> </Navbar.Text>
             &ensp;
             &ensp; 
-            <Navbar.Text> <Link to="/login"> Login </Link> </Navbar.Text>
+            <Navbar.Text> <Button onClick={irParaLogin}>Log In</Button> </Navbar.Text>
         </>
     ) 
     : 
     ( 
         <>
             <NavDropdown title="Menu" id="basic-nav-dropdown">
-                    <NavDropdown.Item href="/user">Gestão de conta</NavDropdown.Item>
-                    <NavDropdown.Item href="/user">Registar um objeto novo</NavDropdown.Item>
+                <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
+                <NavDropdown.Item href="/editUser">Registar um objeto novo</NavDropdown.Item>
             </NavDropdown>
                 &ensp;
                 &ensp;
-            <Navbar.Text> Logado como: { nomeUser } </Navbar.Text>
+            <Navbar.Text> Logado como: { dados.nome } </Navbar.Text>
                 &ensp;
                 &ensp;
             <Navbar.Text> <PopupConfirmarLogout/> </Navbar.Text>

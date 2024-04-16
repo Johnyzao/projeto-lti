@@ -5,63 +5,75 @@ import Button from 'react-bootstrap/Button';
 import { useFormik } from 'formik';
 import Form from 'react-bootstrap/Form';
 import validator from 'validator';
+import { useNavigate } from 'react-router-dom';
 
 // https://www.npmjs.com/package/react-password-strength-bar
-
 import axios from 'axios';
 
-function PopupAlterarPass(props) {
-  const [insucesso, setInsucesso] = useState(false);
-  const [erroInterno, setErroInterno] = useState(false);
-  const [alterado, setAlterado] = useState(false);
+// Informacoes da API.
+import config from '../config';
 
-  async function atualizarPassword(pass, nif) {
+function PopupAlterarPass(props) {
+  const navigate = useNavigate();
+  const [erroInternoPass, setErroInternoPass] = useState(false);
+  const [mesmaPass, setMesmaPass] = useState(false);
+
+  async function atualizarPassword(passNova, passAtual, nif) {
     await axios.put(
-      "http://localhost:3000/user/"+nif+"/changePassword",
-      {novaPass: pass},
+      config.LINK_API+"/user/"+nif+"/changePassword",
+      {novaPass: passNova, passAtual: passAtual},
       { headers: {'Content-Type': 'application/json'} },
       { validateStatus: function (status) {
           return true;
       }}
     ).then( ( res ) => {
       if ( res.status === 200 ) {
-        setInsucesso(false);
+          setMesmaPass(false);
+          localStorage.clear();
+          navigate("/user/passwordChange");
       }
+    }).catch( function (error) {
+      if ( error.response ) {
+        let codigo = error.response.status;
 
-      if ( res.status === 401 ) {
-        setInsucesso(true);
-      }
+        codigo === 500 
+          ? setErroInternoPass(true) 
+          : setErroInternoPass(false); 
 
-      if ( res.status === 500 ) {
-        setErroInterno(true);
-        setInsucesso(true);
-      }
-  });
+        if ( codigo === 406 ) {
+            setMesmaPass(true);
+        }
+    }});
   }
 
   const validate = values => {
     const errors = {};
 
-    if ( values.passAtual === "" ) {
-        errors.passAtual = "Por favor insira a sua password atual.";
-    }
+    values.passAtual === "" 
+        ? errors.passAtual = "Por favor insira a sua password atual." 
+        : delete errors.passAtual;
 
-    if ( values.passNova === "" ) {
-      errors.passAtual = "Por favor insira uma password nova.";
-    }
+    values.passNova === ""
+        ? errors.passNova = "Por favor insira uma password nova."
+        : delete errors.passNova;
 
-    validator.isStrongPassword( values.passNova ) 
+    values.passNova === values.passAtual
+        ? errors.passNova = "Por favor insira uma password diferente da atual."
+        : delete errors.passNova;
+
+    values.passNova !== ""  && validator.isStrongPassword( values.passNova ) 
         ? delete errors.passNova 
         : errors.passNova = "Password fraca, por favor introduza uma nova.";
 
-    values.passAtual === values.confirmacao
+    values.passNova === values.confirmacao
         ? delete errors.confirmacao
         : errors.confirmacao = "Passwords são diferentes, por favor escreva a mesma password."
 
-    insucesso 
-        ? errors.passAtual = "Password errada, por favor insira a sua password atual"
-        : delete errors.passAtual;
+    //insucesso 
+    //    ? errors.passAtual = "Password errada, por favor insira a sua password atual"
+    //    : delete errors.passAtual;
 
+    console.table(errors);
     return errors;
   }
 
@@ -75,21 +87,8 @@ function PopupAlterarPass(props) {
     validateOnBlur:false,
     validate,
     onSubmit: values => {
-      atualizarPassword(values.passNova, props.nif);
-
-      if (insucesso === false) {
-        formik.resetForm({
-          values: {
-            passAtual: "",
-            passNova: "",
-            confirmacao: ""
-          }
-        });
-
-        setAlterado(true);
-      }
-    },
-    });
+        atualizarPassword(values.passNova, values.passAtual ,props.nif);
+    }});
 
   return (
     <Popup trigger={<button className="btn btn-primary"> Mudar password </button>} modal>
@@ -110,10 +109,11 @@ function PopupAlterarPass(props) {
             <p>Preencha os seguintes campos de modo a alterar a sua password.</p>
             <p>Após alterar a sua password terá de efetuar login de novo.</p>
 
-            { alterado ? (<p className='text-success'>Password alterada com sucesso!</p>) : null }
-            { erroInterno ? (<p className='text-danger'> Erro interno, por favor tente de novo </p>) : null }
+            { erroInternoPass ? (<p className='text-danger'> Erro interno, por favor tente de novo. </p>) : null }
+            { mesmaPass ? (<p className='text-danger'> A nova palavra passe é igual à antiga, por favor escolha uma nova. </p>) : null }
 
             <Form onSubmit={formik.handleSubmit}>
+            <Form.Group>
             <Form.Label htmlFor="passAtual">Password atual: </Form.Label>
                 <Form.Control size="sm"
                     id="passAtual"
@@ -129,6 +129,7 @@ function PopupAlterarPass(props) {
             </small>
             ) : null}
             <br/>
+            </Form.Group>
               
             <Form.Label htmlFor="passNova">Password nova: </Form.Label>
                 <Form.Control size="sm"
@@ -145,7 +146,7 @@ function PopupAlterarPass(props) {
             </small>
             ) : null}
               
-            <Form.Label htmlFor="confirmacao">Confirme a password: </Form.Label>
+            <Form.Label htmlFor="confirmacao">Confirme a nova password: </Form.Label>
               <Form.Control size="sm"
                   id="confirmacao"
                   name="confirmacao"

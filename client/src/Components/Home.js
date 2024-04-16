@@ -1,17 +1,18 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Header from './Header';
+import Popup from 'reactjs-popup';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
 
-class Home extends Component {
-  render() {
-    return (
-      <>
-        <Header/>
-        <div>
-          <p>Esta é a página principal.</p>
-        </div>
-      </>
-    )
-  }
+function Home() {
+  return (
+    <>
+    <Header/>
+    <div>
+      <p>Esta é a página principal.</p>
+    </div>
+  </>
+  )
 }
 
 export default Home;

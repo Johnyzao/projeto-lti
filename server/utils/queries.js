@@ -15,7 +15,7 @@ let queryRegister = (args) => {
 
 let queryGetUserByMail = (mail) => {
     return {
-        text: "SELECT * FROM user WHERE email=$1",
+        text: "SELECT * FROM utilizador WHERE email=$1",
         values: [mail]
     };
 }
@@ -23,7 +23,7 @@ let queryGetUserByMail = (mail) => {
 //A pass ja é obtida com queryLoginMail
 let queryLoginPass = (pass) => {
     return {
-        text: "SELECT * FROM user WHERE pass=$1",
+        text: "SELECT * FROM utilizador WHERE password=$1",
         values: [pass]
     }
 }
@@ -32,7 +32,7 @@ let queryGetUserByNif = (nif) => {
 
     const queryGetUser = {
         name: "get-user",
-        text: "SELECT * FROM Utilizador WHERE nif = $1",
+        text: "SELECT * FROM utilizador WHERE nif = $1",
         values: [nif]
     };
 
@@ -41,14 +41,14 @@ let queryGetUserByNif = (nif) => {
 
 let queryUpdateUser = (args) => {
 
-    const {nic, nome, gen, telemovel, mail, morada} = args;
+    const {nif, nic, nome, telemovel, mail, morada} = args;
 
     const queryUpdateUser = {
         name: "update-user",
-        text: "UPDATE Utilizador SET " + 
-              "nome = $1, gen = $2, telemovel = $3, mail = $4, morada = $5 " + 
-              "WHERE nic = $6",
-        values: [nome, gen, telemovel, mail, morada, nic]
+        text: "UPDATE utilizador SET " + 
+              "nome = $1, telemovel = $2, email = $3, morada = $4, nic = $5 " + 
+              "WHERE nif = $5",
+        values: [nome, telemovel, mail, morada, nic ,nif]
     }
 
     return queryUpdateUser;
@@ -58,7 +58,7 @@ let queryDeleteUser = (nif) => {
 
     const queryApagarUser = {
         name: "delete-user",
-        text: "DELETE FROM user WHERE nif=$1",
+        text: "DELETE FROM utilizador WHERE nif=$1",
         values: [nif]
     }
 
@@ -68,7 +68,7 @@ let queryDeleteUser = (nif) => {
 let queryDeactivateUser = (nif) => {
     const queryDesativarUser = {
         name: "deactivate-user",
-        text: "UPDATE user SET estado= 'd' WHERE nif=$1",
+        text: "UPDATE utilizador SET estado='d' WHERE nif=$1",
         values: [nif]
     }
 
@@ -79,7 +79,7 @@ let queryActivateUser = (nif) => {
 
     const queryAtivarUser = {
         name: "activate-user",
-        text: "UPDATE user SET estado= 'a' WHERE nif=$1",
+        text: "UPDATE utilizador SET estado='a' WHERE nif=$1",
         values: [nif]
     }
 
@@ -89,7 +89,7 @@ let queryActivateUser = (nif) => {
 let queryUpdatePass = (newPass, nif) => {
     let queryAtualizacao = {
         name: "update-user-password",
-        text: "UPDATE user SET pass=$1 WHERE nif=$2",
+        text: "UPDATE utilizador SET password=$1 WHERE nif=$2",
         values:[newPass, nif]
     }
 

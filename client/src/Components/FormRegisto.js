@@ -42,7 +42,7 @@ function FormRegisto() {
       res.status === 200 
         ? setMailDuplicado(false)
         : setMailDuplicado(true);
-  }).catch(function (error) {
+    }).catch(function (error) {
     if ( error.response ) {
         let codigo = error.response.status;
 
@@ -53,8 +53,7 @@ function FormRegisto() {
         codigo === 500 
           ? setErroInterno(true) 
           : setErroInterno(false); 
-    }
-    })
+    }});
   }
 
   function registarUser(novoUtilizador) {
@@ -67,8 +66,8 @@ function FormRegisto() {
       }}
     ).then ( (res) => {
         if (res.status === 200) {
-          console.log("aqui")
-          setErroInterno(false)
+          console.log("Conta criada");
+          setErroInterno(false);
           setErroUserDuplciado(false);
           navigate("/register/success");
         } 
@@ -91,7 +90,7 @@ function FormRegisto() {
     const errors = {};
 
     /** Verificacoes do Nome **/
-    validator.isAlpha( values.nome ) && values.nome !== "" 
+    values.nome !== "" 
       ? delete errors.nome 
       : errors.nome = "Nome inválido, por favor altere-o.";
 
@@ -186,7 +185,7 @@ function FormRegisto() {
                     value={formik.values.nome}
                 />
                 <Form.Text className="text-muted">
-                  Utilize apenas letras no seu nome (a-z) e (A-Z).
+                  Utilize apenas letras e números no seu nome.
                 </Form.Text>
                 <Form.Control.Feedback type="invalid">
                   {formik.errors.nome}

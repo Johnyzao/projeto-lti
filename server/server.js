@@ -10,12 +10,13 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 
 const dbClient = require('./connect_db');
-const queries = require('./utils/queries')
+const queries = require('./utils/queries');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json()) ;
 app.use(cookieParser());
 app.use(cors());
+
 
 //Função para encriptar a password do utilizador
 async function passHash(password){
@@ -53,7 +54,6 @@ function validateData(data){
     return validacaoDados;
 }
 
-
 app.post("/register", async (req, res) => {
     try{
         // ###########################################################
@@ -72,7 +72,7 @@ app.post("/register", async (req, res) => {
         if(Object.values(validacaoDados).some(value => value === false)){
             //console.log(validacaoDados);
             //const errosDetetados = Object.keys(validacaoDados).filter(key => !validacaoDados[key]);
-            res.status(400).send();
+            //res.status(400).send();
         }
 
         //Limpeza de caracteres
@@ -146,7 +146,6 @@ app.post("/register", async (req, res) => {
 
 });
 
-// TODO: Completar o código.
 app.post("/login", async (req, res) => {
     try {
         const {mail, pass} = req.body;
@@ -161,20 +160,19 @@ app.post("/login", async (req, res) => {
 
         let results = await dbClient.query(queryLogin);
         let existeUtilizador = results.rowCount === 1 ? true : false;
-        let passwordCorreta = existeUtilizador && bcrypt.compare(pass, results.rows[0].password) 
-            ? true 
-            : false;
+        let passwordCorreta = await bcrypt.compare(pass, results.rows[0].password);
+        let autenticar = existeUtilizador && passwordCorreta;
 
-        if ( passwordCorreta ) {
-            const token = jwt.sign(
-            { nif: results.rows[0].nif, nome: results.rows[0].nome }, 
-            "daf3d765ddbcc17ab43f4ad71c6e83cdb339080ce157a943650982ef095d5dc8"
-            );
-            res.status(200).send({token: token});
+        if ( autenticar ) {
+            res.status(200).send({ 
+                nif: results.rows[0].nif, 
+                nome: results.rows[0].nome, 
+                mail:results.rows[0].email,
+                estado: results.rows[0].estado
+            });
         } else {
             res.status(401).send(); 
         }
-
 
     } catch (error) {
         res.status(500).send();
@@ -183,32 +181,29 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// TODO: Completar e testar.
-app.put("/user", (req, res) => {
+
+app.put("/user", async (req, res) => {
     try{
-        if (true) {
+        let resultado = await dbClient.query(queries.queryUpdateUser(req.body));
+        let userAtualizado = resultado.rowCount === 1 ? true : false;
+        
+        if (userAtualizado) {
             res.status(200).send();
-        } 
+        } else {
+            res.status(401).send();
+        }
+
     } catch(error) {
         res.status(500).send();
         console.log("Erro no PUT /user " + error);
     }
 });
 
-
-// TODO: Completar e testar.
-app.get("user/:userNif/verifyPassword", (req, res) => {
-
-});
-
-// TODO: Completar e testar.
 app.delete("/user/:userNif", async (req, res) => {
     try{
 
         const nif = req.params.userNif;
-
         const queryApagarUser = queries.queryDeleteUser(nif);
-
         const row = await dbClient.query(queryApagarUser);
 
         if(row.rowCount == 0){
@@ -224,7 +219,6 @@ app.delete("/user/:userNif", async (req, res) => {
     }
 });
 
-// TODO: Completar e testar.
 app.put("/user/:userNif/deactivate", async (req, res) => {
     try{
         const nif = req.params.userNif;
@@ -251,9 +245,7 @@ app.put("/user/:userNif/deactivate", async (req, res) => {
 app.put("/user/:userNif/activate", async (req, res) => {
     try{
         const nif = req.params.userNif;
-
         const queryAtivarUser = queries.queryActivateUser(nif);
-
         const row = await dbClient.query(queryAtivarUser);
         
         if(row.rowCount === 0){
@@ -278,7 +270,6 @@ app.get("/checkMailDuplicate/:userMail", async (req, res) => {
         };
 
         let results = await dbClient.query(queryMailDuplicado);
-        console.log( results.rowCount );
         
         let existeDuplicado = false;
         results.rowCount === 0 
@@ -297,74 +288,120 @@ app.get("/checkMailDuplicate/:userMail", async (req, res) => {
 
 });
 
-// TODO: Testar
-// TODO: Validação e parse dos dados
 app.put("/user/:userNif/changePassword", async (req, res) => {
     try{
         let nif = req.params.userNif;
-        let {pass} = req;
         let novaPass = req.body.novaPass;
+        let passAtual = req.body.passAtual;
     
         let queryUser = queries.queryGetUserByNif(nif);
-        
-        let queryAtualizacao = queries.queryUpdatePass(novaPass, nif);
     
         // Verificar se as passes são iguais aqui.
         // Se sim -> atualizar.
         const row = await dbClient.query(queryUser);
-
         if(row.rowCount === 0){
             res.status(404).send();
             return;
         }
 
-        const user = row[0];
-
-        if(!bcrypt.compare(pass, user.password)){
+        const user = row.rows[0];
+        let comparacao = await bcrypt.compare(passAtual, user.password);
+        if(!comparacao){
             res.status(400).send();
             return;
         }
 
-        const update_row = await dbClient.query(queryAtualizacao);
-
-        if(update_row.rowCount === 0){
-            res.status(404).send();
+        if ( await bcrypt.compare(novaPass, user.password)  ) {
+            res.status(406).send();
             return;
         }
 
+        let novaPassHashed = await passHash(novaPass);
+        let queryAtualizacao = queries.queryUpdatePass(novaPassHashed, nif);
+        const update_row = await dbClient.query(queryAtualizacao);
+        if(update_row.rowCount === 0){
+            res.status(500).send();
+            return;
+        }
+
+        console.log("atualizado.");
         res.status(200).send();
+
     } catch (error) {
         res.status(500).send();
-        console.log("Erro interno do servidor");
+        console.log(error);
         return;
     }
 });
 
-app.get("/user", (req, res) => {
+app.get("/user/:userNif", async (req, res) => {
     try{
         queryUser = {
-            text: "SELECT * FROM user WHERE nif=$1",
-            values: [req.body.nif]
+            text: "SELECT * FROM utilizador WHERE nif=$1",
+            values: [req.params.userNif]
         }
+
+        let resultado = await dbClient.query(queryUser);
+        let existeUser = resultado.rowCount === 1 ? true : false;
     
-        if (true) {
+        if (existeUser) {
+            let user = resultado.rows[0];
+
             let dados = {
-                nome: "Teste",
-                mail: "teste@gmail.com",
-                telemovel: "968181077",
-                genero: "m",
-                morada: "Rua lol",
-                nif: "225881209",
-                nic: "",
-                dnasc: "01/01/2000"
+                nome: user.nome,
+                mail: user.email,
+                telemovel: user.telemovel,
+                morada: user.morada,
+                nif: user.nif,
+                nic: user.nic,
             }
     
             res.status(200).send( dados );
-        } 
+        } else {
+            res.status(404).send();
+        }
     } catch (error) {
         res.status(500).send();
+        console.log(error)
     }
 });
+
+app.post("/policeStation", async (req, res) => {
+    const {codp, morada} = req.body;
+
+    const querySelectPostos = {
+        text: "SELECT * FROM posto",
+    };
+
+    let resultsNumeroPostos = await dbClient.query(querySelectPostos);
+    let id = resultsNumeroPostos.rowCount + 1;
+
+    const queryCriarPosto = {
+        text: "INSERT INTO posto(id, codpostal, morada) VALUES ($1, $2, $3)",
+        values: [id, codp, morada]
+    };
+
+    let results = await dbClient.query( queryCriarPosto );
+    if ( results.rowCount === 1 ) {
+        res.send(201);
+    } else {
+        res.send(409);
+    }
+});
+
+app.get("/allPoliceStations", async (req, res) => {
+    const querySelectPostos = {
+        text: "SELECT * FROM posto",
+    };
+
+    let resultado = await dbClient.query(querySelectPostos);
+    let postos = resultado.rows;
+
+    console.log( postos );
+    res.status(200).send( postos );
+});
+
+
 
 app.listen(3000, (err) => {
     if ( err ) console.log(err);

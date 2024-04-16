@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+// Informacoes da API.
+import config from '../config';
+
 // https://www.npmjs.com/package/axios
 // https://axios-http.com/docs/res_schema 
 import axios from 'axios';
@@ -13,18 +16,29 @@ import PopupAlterarPass from '../Popups/PopupAlterarPass';
 import PopupApagarConta from '../Popups/PopupApagarConta';
 import PopupDesativarConta from '../Popups/PopupDesativarConta';
 
+// Imports do bootstrap.
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Col from 'react-bootstrap/Col';
+import Row from 'react-bootstrap/Row';
+import PasswordStrengthBar from 'react-password-strength-bar';
+
 
 function EditarUser() {
+    let nif = JSON.parse( localStorage.getItem( "dados" ) ).nif;
+
     let templateDados = {
         nome: "",
         mail: "",
         telemovel: "",
         genero: "",
         morada: "",
-        nif: "",
-        nic: "",
+        nif: 0,
+        nic: 0,
         dnasc: "01/01/2000"
     };
+    
     const [modoEdicao, setModoEdicao] = useState(false);
     const [dadosAtuais, setDadosAtuais] = useState(templateDados);
     const [mailDuplicado, setMailDuplicado] = useState(false);
@@ -32,96 +46,112 @@ function EditarUser() {
 
     function verificarMailDuplicado(novoMail) {
         axios.get(
-            "http://localhost:3000/checkMailDuplicate",
-            {mail: novoMail},
-            { headers: {'Content-Type': 'application/json'}}
+            config.LINK_API + "/checkMailDuplicate/" + novoMail,
+            { headers: {'Content-Type': 'application/json'}},
+            { validateStatus: function (status) {
+              return true;
+            }}
         ).then( (res) => {
-            res.status === 200 
-                ? setMailDuplicado(false)
-                : setMailDuplicado(true);
-        });
-    }
+          res.status === 200 
+            ? setMailDuplicado(false)
+            : setMailDuplicado(true);
+      }).catch(function (error) {
+        if ( error.response ) {
+            let codigo = error.response.status;
+    
+            codigo === 401
+              ? setMailDuplicado(true) 
+              : setMailDuplicado(false); 
+    
+            codigo === 500 
+              ? setErroInterno(true) 
+              : setErroInterno(false); 
+        }
+        })
+      }
 
     const validate = values => {
         const errors = {};
 
         /** Verificacoes do Nome **/
         validator.isAlpha( values.nome ) && values.nome !== "" 
-            ? errors.nome = ""  
+            ? delete errors.nome  
             :  errors.nome = "Nome inválido.";
         
         /** Verificacoes do Mail **/
         validator.isEmail( values.mail ) && values.mail !== ""  
-            ? errors.mail = ""
+            ? delete errors.mail
             : errors.mail = "Email inválido.";
         
         verificarMailDuplicado(values.mail);
-        mailDuplicado
+        values.mail === dadosAtuais.mail && mailDuplicado
             ? errors.mail = "Email já existe, por favor insira outro."
-            : errors.mail = "";
+            : delete errors.mail;
 
         /** Verificacoes do NIC **/
         ( (validator.isNumeric(values.nic) && (values.nic.length === 8) ) || values.nic === "") 
-            ? errors.nic = ""
+            ? delete errors.nic 
             : errors.nic = "NIC inválido.";
 
         /** Verificacoes do Telemovel **/
         validator.isMobilePhone( values.telemovel ) || values.telemovel === "" 
-            ? errors.telemovel = ""
+            ? delete errors.telemovel
             : errors.telemovel = "Número de telemóvel inválido.";
 
         !erroInterno 
-            ? errors.erroInterno = ""
+            ? delete errors.erroInterno
             : errors.erroInterno = "Erro interno, por favor tente de novo.";
 
+        console.table(errors);
         return errors;
     }
 
-    function obterInfoUtilizador(nif) {
-        axios.get(
-            "http://localhost:3000/user",
-            {nif: nif},
+    async function obterInfoUtilizador(nif) {
+        await axios.get(
+            config.LINK_API + "/user/" + nif,
             { headers: {'Content-Type': 'application/json'}},
-            { validateStatus: function (status) {
-                return true;
-            }}
         ).then( ( res ) => {
             console.log(res);
             setDadosAtuais( res.data );
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                codigo === 500 
+                  ? setErroInterno(true) 
+                  : setErroInterno(false); 
+            }
         });
     }
 
-    // TODO: Falta o redirect.
     async function atualizarUtilizador(novaInfoUser) {
     
         await axios.put(
-           "http://localhost:3000/user" , 
+           config.LINK_API + "/user" , 
             novaInfoUser ,
-            { validateStatus: function (status) {
-              return true;
-            }},
             { headers: {'Content-Type': 'application/json'}}
         ).then( (res) => {
             // Strings de debug
             console.log("Dados recebidos do pedido PUT /user:" + res.data );
-            console.log(res.statusText);
-    
-            if ( res.status === 500 ) {
-                setErroInterno(true);
-                console.log( "Nok" );
-            } 
     
             if ( res.status === 200 ) {
-                console.log( "Ok" );
                 setModoEdicao(false);
                 // Redirect
                 // Maybe popup a dizer que foram alterados os dados.
             } 
     
-        });
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                
+                codigo === 500 
+                  ? setErroInterno(true) 
+                  : setErroInterno(false); 
+            }
+        })
     };
 
-    useEffect( () => { obterInfoUtilizador() }, [] );
+    // Colorcar o nif no user aqui.
+    useEffect( () => { obterInfoUtilizador(nif) }, [] );
     const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -129,14 +159,12 @@ function EditarUser() {
         mail: dadosAtuais.mail,
         nic: dadosAtuais.nic, 
         telemovel: dadosAtuais.telemovel, 
-        gen: dadosAtuais.gen, 
         morada: dadosAtuais.morada
     },
-    validateOnChange:false,
-    validateOnBlur:false,
+    //validateOnChange:false,
+    //validateOnBlur:false,
     validate,
     onSubmit: values => {
-        console.log("aqui");
         atualizarUtilizador( values );
     },
     });
@@ -145,10 +173,12 @@ function EditarUser() {
         <div className='container-sm bg-light'>
             <h1> Informações pessoais </h1>
                 <h4> Editar informações pessoais </h4>
-            <form onSubmit={formik.handleSubmit}>
+            <Form onSubmit={formik.handleSubmit}>
+                <Row>
+                <Col>
                 { /** Nome **/ }
-                <label htmlFor="nome">Nome: </label>
-                <input
+                <Form.Label htmlFor="nome">Nome: </Form.Label>
+                <Form.Control
                     id="nome"
                     name="nome"
                     type="text"
@@ -161,14 +191,12 @@ function EditarUser() {
                 {formik.touched.nome && formik.errors.nome ? (
                     <div>{formik.errors.nome}</div>
                 ) : null}
+                </Col>
 
-                { /** NIF **/ }
-                { /** Faria sentido deixar alterar o NIF?? */}
-                <p>O seu NIF: {dadosAtuais.nif} </p>
-
+                <Col>
                 { /** Mail **/ }
-                <label htmlFor="mail">Mail:</label>
-                <input
+                <Form.Label htmlFor="mail">Mail:</Form.Label>
+                <Form.Control
                     id="mail"
                     name="mail"
                     type="mail"
@@ -182,23 +210,14 @@ function EditarUser() {
                     <div>{formik.errors.mail}</div>
                 ) : null}
                 <br/>
-
-                { /** Mail **/ }
-                <label htmlFor="dnasc">Data de Nascimento:</label>
-                <input
-                    id="dnasc"
-                    name="dnasc"
-                    type="date"
-                    disabled={!modoEdicao}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.dnasc}
-                />
-                <br/>
+                </Col>
+                </Row>
 
                 { /** NIC **/ }
-                <label htmlFor="nic">NIC:</label>
-                <input
+                <Row>
+                <Col>
+                <Form.Label htmlFor="nic">NIC:</Form.Label>
+                <Form.Control
                     id="nic"
                     name="nic"
                     type="text"
@@ -212,10 +231,12 @@ function EditarUser() {
                     <div>{formik.errors.nic}</div>
                 ) : null}
                 <br/>
+                </Col>
 
                 { /** Número de telemóvel **/ }
-                <label htmlFor="nic">Número de telemóvel:</label>
-                <input
+                <Col>
+                <Form.Label htmlFor="nic">Número de telemóvel:</Form.Label>
+                <Form.Control
                     id="telemovel"
                     name="telemovel"
                     type="text"
@@ -229,10 +250,12 @@ function EditarUser() {
                     <div>{formik.errors.telemovel}</div>
                 ) : null}
                 <br/>
+                </Col>
 
                 { /** Morada **/ }
-                <label htmlFor="nic">Morada:</label>
-                <input
+                <Col>
+                <Form.Label htmlFor="nic">Morada:</Form.Label>
+                <Form.Control
                     id="morada"
                     name="morada"
                     type="text"
@@ -246,17 +269,24 @@ function EditarUser() {
                     <div>{formik.errors.morada}</div>
                 ) : null}
                 <br/>
+                </Col>
+                </Row>
 
                 { modoEdicao ? (
-                    <button type="submit" onClick={formik.handleSubmit}> Submeter Alterações </button>
+                    <Container className='text-center'>
+                    <Button className='text-center' type="submit" onClick={formik.handleSubmit}> Submeter Alterações </Button>
+                    <br/>
+                    <br/>
+                    </Container>
                 ) : null }
-            </form>
-
+            </Form>
+        
+        <Container className='text-center'>
         { !modoEdicao ? (
-            <button className='btn btn-primary' onClick={ () => {setModoEdicao(true)} }> Editar Informações </button>
+            <Button className='btn btn-primary' onClick={ () => {setModoEdicao(true)} }> Editar Informações </Button>
         ) : (
             <div>
-                <button onClick={ () => {
+                <Button onClick={ () => {
                     formik.resetForm({
                         values: {
                             nome: dadosAtuais.nome,
@@ -267,8 +297,9 @@ function EditarUser() {
                             morada: dadosAtuais.morada 
                         }
                     })
-                }}> Reset </button>
-                <button onClick={ () => {
+                }}> Reset </Button>
+                <span> &ensp; </span>
+                <Button onClick={ () => {
                     setModoEdicao(false);
                     formik.resetForm({
                         values: {
@@ -280,9 +311,10 @@ function EditarUser() {
                             morada: dadosAtuais.morada 
                         }
                     })
-                }}> Cancelar </button>
+                }}> Cancelar </Button>
             </div>
         )}
+        </Container>
 
         <br/>
         <br/>

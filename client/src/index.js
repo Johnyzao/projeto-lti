@@ -5,25 +5,22 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.css';
 
-import AuthProvider from 'react-auth-kit/AuthProvider';
-
-//https://authkit.arkadip.dev/reference/react-auth-kit/createStore/#type-parameters
-import createStore from 'react-auth-kit/createStore';
-
-// meter cookieScure = true quando tivermos TLS.
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-const store = createStore({
-  authName:'auth',
-  authType:'localstorage'
- });
+/**
+ *     <Auth0Provider
+        domain="dev-bsdo6ujjdkx3ra55.eu.auth0.com"
+        clientId="1rdwnixb3In4mqS6xgAATkHY9BVo4y6n"
+        authorizationParams={{
+          redirect_uri: "http://localhost:3001/home"
+        }}
+      >
+ *    </Auth0Provider>
+ */
 
 root.render(
   <React.StrictMode>
-    <AuthProvider store={store}>
-        <App />
-    </AuthProvider>
+      <App/>
   </React.StrictMode>
 );
 

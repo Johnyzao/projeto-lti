@@ -111,12 +111,14 @@ CREATE TABLE Reclamado (
 
 CREATE TABLE Posto (
     id INT PRIMARY KEY,
+    codPostal VARCHAR(8) NOT NULL,
     morada VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Policia (
     id INT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     posto INT NOT NULL,
     FOREIGN KEY (posto) REFERENCES Posto(id)
 );

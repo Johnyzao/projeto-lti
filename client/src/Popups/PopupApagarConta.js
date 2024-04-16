@@ -3,9 +3,10 @@ import Popup from 'reactjs-popup';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import { useNavigate } from "react-router-dom";
-
 import axios from 'axios';
 
+// Informacoes da API.
+import config from '../config';
 
 function PopupApagarConta(props) {
     const navigate = useNavigate();
@@ -13,23 +14,28 @@ function PopupApagarConta(props) {
 
     function apagarConta(nif){
         axios.delete(
-            "http://localhost:3000/user/" + nif,
+            config.LINK_API+"/user/" + nif,
             { headers: {'Content-Type': 'application/json'}},
             { validateStatus: function (status) {
                 return true;
             }}
         ).then( ( res ) => {
-            res.status === 200 
-                ? setInsucesso(false) 
-                : setInsucesso(true);
+            if (res.status === 200) {
+                localStorage.clear();
+                navigate("/accountDeleted");
+            }
+        }).catch(function(error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                if (codigo === 500 || codigo === 404) {
+                    setInsucesso(true);
+                }
+            }
         });
     }
 
     const handleClick = () => {
         apagarConta(props.nif);
-        if (!insucesso) {
-            navigate("./deleted");
-        } 
     }
 
     return (

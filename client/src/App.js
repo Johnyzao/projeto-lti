@@ -1,12 +1,16 @@
 import React from 'react';
 import { Route, BrowserRouter, Routes } from "react-router-dom";
 import Home from "./Components/Home";
-import EditarUser from './Components/EditarUser';
+
 import ContaDesativada from './Pages/ContaDesativada';
 import ContaApagada from './Pages/ContaApagada';
 import RegistoComSucesso from './Pages/RegistoComSucesso';
 import RegistoNovoUtilizador from './Pages/RegistoNovoUtilizador';
 import LoginUtilizador from './Pages/LoginUtilizador';
+import PaginaEditarUser from './Pages/PaginaEditarUser';
+import PaginaPasswordAlterada from './Pages/PaginaPasswordAlterada';
+import GestaoDeConta from './Pages/GestaoDeConta';
+import PaginaAdmin from './Pages/PaginaAdmin';
 
 function App() {
   return (
@@ -17,9 +21,11 @@ function App() {
           <Route path="register/success" element={<RegistoComSucesso/>}/>
           <Route path="register" element={<RegistoNovoUtilizador/>}/>
           <Route path="login" element={<LoginUtilizador/>}/>
-          <Route path="user" element={<EditarUser/>}/>
-          <Route path="user/deactivated" element={<ContaDesativada/>}/>
-          <Route path="user/deleted" element={<ContaApagada/>}/>
+          <Route path="editUser" element={<GestaoDeConta/>}/>
+          <Route path="accountDeactivated" element={<ContaDesativada/>}/>
+          <Route path="accountDeleted" element={<ContaApagada/>}/>
+          <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>} />
+          <Route path="admin/police" element={<PaginaAdmin/>} />
         </Routes>
     </BrowserRouter>
     </>

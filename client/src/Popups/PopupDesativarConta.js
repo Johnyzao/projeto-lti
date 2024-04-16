@@ -5,29 +5,38 @@ import Button from 'react-bootstrap/Button';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 
+// Informacoes da API.
+import config from '../config';
+
 function PopupDesativarConta(props) {
     const navigate = useNavigate();
     const [insucesso, setInsucesso] = useState(false);
 
     function desativarConta(nif){
         axios.put(
-            "http://localhost:3000/user/"+nif+"/deactivate",
+            config.LINK_API+"/user/"+nif+"/deactivate",
             { headers: {'Content-Type': 'application/json'}},
             { validateStatus: function (status) {
                 return true;
             }}
         ).then( ( res ) => {
-            res.status === 200 
-                ? setInsucesso(false) 
-                : setInsucesso(true);
+            if ( res.status === 200 ) {
+                localStorage.clear();
+                navigate("../accountDeactivated");
+            }
+        }).catch( function(error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+
+                if (codigo === 404 || codigo === 500) {
+                    setInsucesso(true);
+                }
+            }
         });
     }
 
     const handleClick = () => {
         desativarConta(props.nif);
-        if (!insucesso) {
-            navigate("./deactivated");
-        } 
     }
 
     return (
@@ -50,7 +59,7 @@ function PopupDesativarConta(props) {
                 basta voltar a efetuar login e vir a esta página. 
                 Onde terá a possibilidade de a voltar a ativar.
             </p>
-            { !insucesso ? null : ( <p className='text-danger'> Ocorreu um erro, por favor tente de novo. </p> ) }
+            { insucesso ? null : ( <p className='text-danger'> Ocorreu um erro, por favor tente de novo. </p> ) }
         </Modal.Body>
 
         <Modal.Footer>

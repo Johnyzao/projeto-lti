@@ -11,7 +11,12 @@ const jwt = require('jsonwebtoken');
 
 const dbClient = require('./connect_db');
 const queries = require('./utils/queries');
+const locationDB = require('./persistent/locationDB');
+const categoryDB = require('./persistent/categoryDB');
+const objectDB = require('./persistent/objectDB');
+const lostObjectDB = require('./persistent/lostObjectDB');
 
+const {HttpException} = require('./utils/HttpException');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json()) ;
 app.use(cookieParser());
@@ -401,7 +406,299 @@ app.get("/allPoliceStations", async (req, res) => {
     res.status(200).send( postos );
 });
 
+app.post("/object", async (req, res) => {
+    try{
+        const params = {...req.body}
+        //const {id, descricao, nome} = params;
+        //Validação e sanitização
+  
+        /*
+        const validate_object = {
+            validate_id :  validator.isEmpty (id.toString()) ? false : validator.isInt(id.toString()) ,
+            validate_descricao : validator.isEmpty (descricao) ? false : true,
+            validate_nome : validator.isEmpty (nome) ? false : true
+        }
 
+        console.log(validate_object);
+
+        if(Object.values(validate_object).some(value => value === false)){
+            throw new HttpException(400, "");
+        }
+
+        Object.keys(params).forEach((key) => {
+            if(typeof params[key] === "string"){
+                params[key] = validator.escape(validator.trim(params[key]));
+            } 
+        });
+        */
+       
+        const result = await objectDB.insert(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.put("/object", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await objectDB.update(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.delete("/object", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await objectDB.delete_object(params.id);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.post("/category", async (req, res) => {
+    try{
+        const params = {...req.body}
+        console.log(params);
+        const result = await categoryDB.insert(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.put("/category", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await categoryDB.update(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.delete("/category", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await categoryDB.delete_category(params.nome);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.post("/location", async (req, res) => {
+    try{
+        const params = {...req.body}
+        console.log(params);
+        const result = await locationDB.insert(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.put("/location", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await locationDB.update(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.delete("/location", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await locationDB.delete_location(params.id);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.get("/lostObject", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await lostObjectDB.all();
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send(result);
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+app.post("/lostObject", async (req, res) => {
+    try{
+        const params = {...req.body}
+        console.log(params);
+        const result = await lostObjectDB.insert(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.put("/lostObject", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await lostObjectDB.update(params);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
+app.delete("/lostObject", async (req, res) => {
+    try{
+        const params = {...req.body}
+
+        const result = await lostObjectDB.delete_object(params.id);
+
+        if(result.rowCount === 0){
+            throw new HttpException(404, "");
+        }
+
+        res.status(200).send();
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
 
 app.listen(3000, (err) => {
     if ( err ) console.log(err);

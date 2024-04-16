@@ -6,6 +6,8 @@ import config from '../config';
 // https://axios-http.com/docs/res_schema 
 import axios from 'axios';
 
+import Table from 'react-bootstrap/Table';
+
 function TabelaPostos() {
 
     const [postos, setPostos] = useState({});
@@ -34,7 +36,7 @@ function TabelaPostos() {
     return (
         <>  
             <div>
-                <Table striped bordered hover>
+                <table>
                     <thead>
                         <tr>
                             <th>ID do Posto</th>
@@ -45,7 +47,7 @@ function TabelaPostos() {
                     <tbody>
 
                         {
-
+                            // TODO: Escrever as linhas da tabela.
                         }
                         <tr>
                             <td>1</td>
@@ -53,7 +55,7 @@ function TabelaPostos() {
                             <td>Otto</td>
                         </tr>
                     </tbody>
-                </Table>    
+                </table>    
             </div>
         </>
     )

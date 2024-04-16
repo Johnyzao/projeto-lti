@@ -9,6 +9,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
+
 import PasswordStrengthBar from 'react-password-strength-bar';
 
 // https://www.npmjs.com/package/axios

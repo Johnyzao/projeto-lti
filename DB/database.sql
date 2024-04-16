@@ -55,14 +55,15 @@ CREATE TABLE Localidade (
 CREATE TABLE Categoria ( 
     nome VARCHAR(255) PRIMARY KEY,
     valor INT NOT NULL,
-    tipo VARCHAR(100) NOT NULL
+    atributo VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE Objeto (
     id INT PRIMARY KEY,
     descricao VARCHAR(255) NOT NULL,
     nome VARCHAR(255) NOT NULL,
-    FOREIGN KEY (nome) REFERENCES Categoria(nome)
+    categoria VARCHAR(255),
+    FOREIGN KEY (categoria) REFERENCES Categoria(nome)
 );
 
 CREATE TABLE NaoAchado (

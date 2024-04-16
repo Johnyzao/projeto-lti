@@ -11,6 +11,7 @@ import PaginaEditarUser from './Pages/PaginaEditarUser';
 import PaginaPasswordAlterada from './Pages/PaginaPasswordAlterada';
 import GestaoDeConta from './Pages/GestaoDeConta';
 import PaginaAdmin from './Pages/PaginaAdmin';
+import FormObjetoPerdido from './Components/FormObjetoPerdido';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="accountDeleted" element={<ContaApagada/>}/>
           <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>} />
           <Route path="admin/police" element={<PaginaAdmin/>} />
+          <Route path="register/lostObject" element={<FormObjetoPerdido/>} />
         </Routes>
     </BrowserRouter>
     </>

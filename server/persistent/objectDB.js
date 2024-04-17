@@ -5,13 +5,13 @@ const dbClient = require("../connect_db");
 //INSERT
 const insert = async (object) =>{
     try{
-        const {id, descricao, nome} = object;
+        const {id, descricao, nome,categoria} = object;
 
         const insert_object = {
             name: 'insert-object',
-            text: 'INSERT INTO Objeto (id, descricao, nome) \
-                        VALUES ($1,$2,$3)',
-            values: [id,descricao,nome]
+            text: 'INSERT INTO Objeto (id, descricao, nome, categoria) \
+                        VALUES ($1,$2,$3, $4)',
+            values: [id,descricao,nome,categoria]
         }
 
         const row = await dbClient.query(insert_object);
@@ -30,6 +30,31 @@ const insert = async (object) =>{
         }               
     }
 }
+
+//SELECT ALL
+const select_all = async () =>{
+    try{
+        const select_all_objects = {
+            name: 'select-all-object',
+            text: 'SELECT * FROM Objeto',
+        }
+        const row = await dbClient.query(select_all_objects);
+        return row;
+    }catch(error){
+        console.error(error);
+        switch (error.code) {
+            case '23505': //<UNIQUE> error
+                throw new HttpException(409, "");
+            case '23502': //<NOT NULL> error
+                throw new HttpException(422, "");
+            case '23503': //<FOREIGN KEY> error
+                throw new HttpException(400, "");
+            default: //Outros tipos de erros
+                throw new HttpException(500, "");
+        }               
+    }
+}
+
 //SELECT
 const select = async (id) =>{
     try{
@@ -109,6 +134,7 @@ const delete_object = async (id) =>{
 
 module.exports = {
     insert,
+    select_all,
     select,
     update,
     delete_object

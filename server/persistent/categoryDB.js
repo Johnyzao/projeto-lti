@@ -8,7 +8,7 @@ const insert = async (category) =>{
 
         const insert_category = {
             name: 'insert-category',
-            text: 'INSERT INTO Categoria (nome, valor, tipo) \
+            text: 'INSERT INTO Categoria (nome, valor, atributo) \
                         VALUES ($1,$2, $3)',
             values: [nome,valor,tipo]
         }

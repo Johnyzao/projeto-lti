@@ -406,6 +406,20 @@ app.get("/allPoliceStations", async (req, res) => {
     res.status(200).send( postos );
 });
 
+app.get("/object", async (req,res) => {
+    try{
+        const result = await objectDB.select_all();
+        res.status(200).send(result);
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
+
 app.post("/object", async (req, res) => {
     try{
         const params = {...req.body}
@@ -431,14 +445,13 @@ app.post("/object", async (req, res) => {
             } 
         });
         */
-       
         const result = await objectDB.insert(params);
 
         if(result.rowCount === 0){
             throw new HttpException(404, "");
         }
 
-        res.status(200).send();
+        res.status(200).send(result);
     } catch(error){
         console.log(error);
         if(error instanceof HttpException){
@@ -494,7 +507,6 @@ app.delete("/object", async (req, res) => {
 app.post("/category", async (req, res) => {
     try{
         const params = {...req.body}
-        console.log(params);
         const result = await categoryDB.insert(params);
 
         if(result.rowCount === 0){
@@ -554,17 +566,30 @@ app.delete("/category", async (req, res) => {
     }
 });
 
+app.get("/location", async (req, res) => {
+    try{
+        const result = await locationDB.all();
+        res.status(200).send(result);
+    } catch(error){
+        console.log(error);
+        if(error instanceof HttpException){
+            res.status(error.status_code).send();
+        } else {
+            res.status(500).send();
+        }
+    }
+});
 app.post("/location", async (req, res) => {
     try{
         const params = {...req.body}
-        console.log(params);
+
         const result = await locationDB.insert(params);
 
         if(result.rowCount === 0){
             throw new HttpException(404, "");
         }
 
-        res.status(200).send();
+        res.status(200).send(result);
     } catch(error){
         console.log(error);
         if(error instanceof HttpException){
@@ -619,15 +644,9 @@ app.delete("/location", async (req, res) => {
 
 app.get("/lostObject", async (req, res) => {
     try{
-        const params = {...req.body}
-
         const result = await lostObjectDB.all();
-
-        if(result.rowCount === 0){
-            throw new HttpException(404, "");
-        }
-
         res.status(200).send(result);
+
     } catch(error){
         console.log(error);
         if(error instanceof HttpException){
@@ -637,17 +656,18 @@ app.get("/lostObject", async (req, res) => {
         }
     }
 });
+
 app.post("/lostObject", async (req, res) => {
     try{
         const params = {...req.body}
-        console.log(params);
+       
         const result = await lostObjectDB.insert(params);
 
         if(result.rowCount === 0){
             throw new HttpException(404, "");
         }
 
-        res.status(200).send();
+        res.status(200).send(result);
     } catch(error){
         console.log(error);
         if(error instanceof HttpException){

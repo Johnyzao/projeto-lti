@@ -29,7 +29,7 @@ const all = async() => {
 const insert = async (lost_object) =>{
     try{
         const {id, local} = lost_object;
-
+        
         const insert_object = {
             name: 'insert-lost-object',
             text: 'INSERT INTO NaoAchado (id, perdido_em) \

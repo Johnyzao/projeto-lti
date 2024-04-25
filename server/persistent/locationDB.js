@@ -5,10 +5,10 @@ const dbClient = require("../connect_db");
 const insert = async (location) =>{
     try{
         const {id, coordenadas,pais,distrito,municipio,freguesia,rua} = location;
-
+        console.log(location);
         const insert_location = {
             name: 'insert-location',
-            text: 'INSERT INTO Localidade (id, coordenadas, pais, distrito, municipio, freguesia, rua) \
+            text: 'INSERT INTO localidade (id, coordenadas, pais, distrito, municipio, freguesia, rua) \
                         VALUES ($1,$2, $3, $4, $5, $6, $7)',
             values: [id,coordenadas,pais,distrito,municipio,freguesia,rua]
         }
@@ -18,7 +18,6 @@ const insert = async (location) =>{
         console.error(error.status_code);
         switch (error.code) {
             case '23505': //<UNIQUE> error
-                console.log("AQUI UNIQUE");
                 throw new HttpException(409, "");
             case '23502': //<NOT NULL> error
                 throw new HttpException(422, "");
@@ -29,6 +28,30 @@ const insert = async (location) =>{
         }               
     }
 }
+//ALL
+const all = async () =>{
+    try{
+        const select_all_locations = {
+            name: 'select-all-locations',
+            text: 'SELECT * FROM localidade',
+        }
+        const row = await dbClient.query(select_all_locations);
+        return row;
+    }catch(error){
+        console.error(error);
+        switch (error.code) {
+            case '23505': //<UNIQUE> error
+                throw new HttpException(409, "");
+            case '23502': //<NOT NULL> error
+                throw new HttpException(422, "");
+            case '23503': //<FOREIGN KEY> error
+                throw new HttpException(400, "");
+            default: //Outros tipos de erros
+                throw new HttpException(500, "");
+        }               
+    }
+}
+
 //SELECT
 const select = async (id) =>{
     try{
@@ -108,6 +131,7 @@ const delete_location = async (id) =>{
 
 module.exports = {
     insert,
+    all,
     select,
     update,
     delete_location

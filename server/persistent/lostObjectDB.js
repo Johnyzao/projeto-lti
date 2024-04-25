@@ -28,8 +28,8 @@ const all = async() => {
 //INSERT
 const insert = async (found_object) =>{
     try{
-        const {id, local} = found_object;
-
+        const {id, local} = lost_object;
+        
         const insert_object = {
             name: 'insert-found-object',
             text: 'INSERT INTO naoachado (id, perdido_em) \

@@ -23,37 +23,99 @@ function FormObjetoPerdido() {
     const [localizacaoAceite, setLocalizacaoAceite] = useState(false);
 
     const [pais, setPais] = useState("pt");
-    const [distrito, setDistrito] = useState("");
+    const [distrito, setDistrito] = useState("Lisboa");
+
 
     async function criarLocalizacao(pais,distrito,municipio,freguesia,rua,coords) {
-        await axios.put(
-            config.LINK_API + "/location" , 
-             {pais: pais, distrito: distrito, municipio: municipio, freguesia: freguesia,rua:rua, coords: coords } ,
-             { headers: {'Content-Type': 'application/json'}}
-         ).then( (res) => {
-             if ( res.status === 200 ) {
 
-             } 
-     
-         }).catch( function (error) {
-             if ( error.response ) {
-                 let codigo = error.response.status;
+        let id = 0;
 
-             }
-         })
+        await axios.get(config.LINK_API + "/location")
+            .then((res) =>{
+                if ( res.status === 200 ) {
+                    id = res.data.rowCount + 1;
+                } 
+            });
+        
+        let new_location = {
+            "id" : id,
+            "coordenadas" : coords,
+            "pais" : pais,
+            "distrito" : distrito,
+            "municipio" : municipio,
+            "freguesia" : freguesia,
+            "rua" : rua
+        }
+
+        await axios.post(config.LINK_API + "/location" , new_location,{ headers: {'Content-Type': 'application/json'}})
+            .then( (res) => {
+                if ( res.status === 200 ) {
+                    console.log(" Nova Localização registada com sucesso");
+                    console.log(res.data);
+                } 
+            }).catch( function (error) {
+                console.log(error);
+            })
+        return id;
     }
 
     async function criarObjeto(nome, desc) {
+        
+        let id = 0;
 
-    }
+        await axios.get(config.LINK_API + "/object")
+            .then((res) =>{
+                if(res.status === 200){
+                    id = res.data.rowCount + 1;
+                }
+            })
+            .catch( function (error) {
+                console.log(error.code);
+            });
 
-    async function criarObjetoPerdido() {
+        let new_object = {
+            "id" : id,
+            "nome" : nome,
+            "descricao" : desc,
+            "categoria": "teste",
+        }
 
+        await axios.post(config.LINK_API + "/object", new_object, {headers: {'Content-Type': 'application/json'}})
+        .then((res) => {
+            if ( res.status === 200 ) {
+                console.log(" Novo objeto registado com sucesso");
+                console.log(res.data);
+            } 
+        })
+        .catch( function (error) {
+            console.log(error.code);
+        });
+
+        return id;
+    };
+
+    async function criarObjetoPerdido(id_obj, id_local) {
+     
+        let new_lost_object = {
+            "id": id_obj,
+            "local": id_local
+        }
+        
+        await axios.post(config.LINK_API + "/lostObject", new_lost_object, {headers: {'Content-Type': 'application/json'}})
+        .then((res) => {
+            if ( res.status === 200 ) {
+                console.log(" Novo objeto perdido registado com sucesso");
+                console.log(res.data);
+            } 
+        })
+        .catch( function (error) {
+            console.log(error.code);
+        });
     }
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        const data = new FormData();
+        /*const data = new FormData();
         for(var x = 0; x<file.length; x++) {
             data.append('file', file[x])
         }
@@ -61,6 +123,14 @@ function FormObjetoPerdido() {
         .then(res => { 
             console.log(res.statusText)
           })
+        */
+     
+          let {pais,distrito,municipio, freguesia, rua, coords} = formik.values;
+          let {nome,desc} = formik.values;
+          let id_local =  criarLocalizacao(pais, distrito, municipio, freguesia, rua, coords);
+          
+          let id_obj =  criarObjeto(nome,desc);
+          criarObjetoPerdido(id_obj, id_local)
     }
 
     const handleFileChange = (event) => {
@@ -71,19 +141,20 @@ function FormObjetoPerdido() {
     const validate = values => {
         const errors = {};
 
-        values.nome === ""
+        /*values.nome === ""
             ? delete errors.nome
             : errors.nome = "Por favor dê um nome ao objeto perdido.";
-
+        */
         return errors;
     };
-
+    
     const formik = useFormik({
+       
         initialValues: {
             nome:"",
             desc:"",
             pais:"",
-            distrito:"",
+            distrito: "",
             municipio:"",
             freguesia:"",
             rua:"",
@@ -91,10 +162,42 @@ function FormObjetoPerdido() {
             data: ""
         },
         validate,
-        onSubmit: values => {
-            let {municipio, freguesia, rua, coords} = values;
-            criarLocalizacao(pais, distrito, municipio, freguesia, rua, coords);
+        onSubmit: async values => {
+           
+            let {nome,desc,municipio, freguesia, rua, coords} = values;
+        
+            let id_local =  await criarLocalizacao(pais,distrito,municipio,freguesia,rua,coords);
+            let id_obj = await criarObjeto(nome,desc);
+          
+            await criarObjetoPerdido(id_obj, id_local);
 
+            await axios.get(config.LINK_API + "/lostObject")
+            .then((res) => {
+                if ( res.status === 200 ) {
+                    console.log("Registos na tabela NaoAchado - " + res.data.rowCount);
+                    console.log(res.data.rows);
+                } 
+            })
+
+            await axios.get(config.LINK_API + "/location")
+            .then((res) => {
+                if ( res.status === 200 ) {
+                    console.log("Registos na tabela Localidades - " + res.data.rowCount);
+                    console.log(res.data.rows);
+                } 
+            })
+
+            await axios.get(config.LINK_API + "/object")
+            .then((res) => {
+                if ( res.status === 200 ) {
+                    console.log("Registos na tabela Objetos " + res.data.rowCount);
+                    console.log(res.data.rows);
+                } 
+            })
+            
+            .catch( function (error) {
+                console.log(error.code);
+            });
         },
     });
 
@@ -122,7 +225,7 @@ function FormObjetoPerdido() {
                     <Form.Label>Descrição do anúncio: </Form.Label>
                     <Form.Control
                         id="desc"
-                        name="nodescme"
+                        name="desc"
                         type="textarea"
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}

@@ -44,12 +44,12 @@ CREATE TABLE Licitante (
 
 CREATE TABLE Localidade (
     id INT PRIMARY KEY,
-    coordenadas VARCHAR(255) NOT NULL,
     pais VARCHAR(255) NOT NULL,
-    distrito VARCHAR(255) NOT NULL,
-    municipio VARCHAR(255) NOT NULL,
-    freguesia VARCHAR(255) NOT NULL,
-    rua VARCHAR(255) NOT NULL
+    distrito VARCHAR(255) ,
+    municipio VARCHAR(255) ,
+    freguesia VARCHAR(255) ,
+    rua VARCHAR(255),
+    coordenadas VARCHAR(255) 
 );
 
 CREATE TABLE Categoria ( 
@@ -113,15 +113,16 @@ CREATE TABLE Reclamado (
 CREATE TABLE Posto (
     id INT PRIMARY KEY,
     codPostal VARCHAR(8) NOT NULL,
-    morada VARCHAR(255) NOT NULL
+    morada VARCHAR(255) NOT NULL,
+    localidade VARCHAR(255) NOT NULL,
+    telefone VARCHAR(10) NOT NULL,
 );
 
 CREATE TABLE Policia (
     id INT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
-    posto INT NOT NULL,
-    FOREIGN KEY (posto) REFERENCES Posto(id)
+    posto INT REFERENCES posto(id)
 );
 
 CREATE TABLE Entrega (

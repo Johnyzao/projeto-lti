@@ -47,7 +47,7 @@ let queryUpdateUser = (args) => {
         name: "update-user",
         text: "UPDATE utilizador SET " + 
               "nome = $1, telemovel = $2, email = $3, morada = $4, nic = $5 " + 
-              "WHERE nif = $5",
+              "WHERE nif = $6",
         values: [nome, telemovel, mail, morada, nic ,nif]
     }
 

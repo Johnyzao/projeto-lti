@@ -27,6 +27,7 @@ import PasswordStrengthBar from 'react-password-strength-bar';
 
 function EditarUser() {
     let nif = JSON.parse( localStorage.getItem( "dados" ) ).nif;
+    let mailAtual = JSON.parse( localStorage.getItem( "dados" ) ).mail;
 
     let templateDados = {
         nome: "",
@@ -42,7 +43,8 @@ function EditarUser() {
     const [modoEdicao, setModoEdicao] = useState(false);
     const [dadosAtuais, setDadosAtuais] = useState(templateDados);
     const [mailDuplicado, setMailDuplicado] = useState(false);
-    const [erroInterno, setErroInterno] = useState(false);
+    const [erroInternoEdicao, setErroInternoEdicao] = useState(false);
+    const [dadosAlterados, setDadosAlterados] = useState(false);
 
     function verificarMailDuplicado(novoMail) {
         axios.get(
@@ -52,9 +54,10 @@ function EditarUser() {
               return true;
             }}
         ).then( (res) => {
-          res.status === 200 
-            ? setMailDuplicado(false)
-            : setMailDuplicado(true);
+            res.status === 200 
+                ? setMailDuplicado(false)
+                : setMailDuplicado(true);
+
       }).catch(function (error) {
         if ( error.response ) {
             let codigo = error.response.status;
@@ -64,8 +67,13 @@ function EditarUser() {
               : setMailDuplicado(false); 
     
             codigo === 500 
-              ? setErroInterno(true) 
-              : setErroInterno(false); 
+              ? setErroInternoEdicao(true) 
+              : setErroInternoEdicao(false); 
+
+            
+            setTimeout(() => {
+                setErroInternoEdicao( false );
+            }, 5000);
         }
         })
       }
@@ -74,7 +82,7 @@ function EditarUser() {
         const errors = {};
 
         /** Verificacoes do Nome **/
-        validator.isAlpha( values.nome ) && values.nome !== "" 
+        values.nome !== "" 
             ? delete errors.nome  
             :  errors.nome = "Nome inválido.";
         
@@ -84,10 +92,14 @@ function EditarUser() {
             : errors.mail = "Email inválido.";
         
         verificarMailDuplicado(values.mail);
-        values.mail === dadosAtuais.mail && mailDuplicado
+        mailDuplicado
             ? errors.mail = "Email já existe, por favor insira outro."
             : delete errors.mail;
 
+        if (values.mail === mailAtual) {
+            delete errors.mail;
+        }
+            
         /** Verificacoes do NIC **/
         ( (validator.isNumeric(values.nic) && (values.nic.length === 8) ) || values.nic === "") 
             ? delete errors.nic 
@@ -98,7 +110,7 @@ function EditarUser() {
             ? delete errors.telemovel
             : errors.telemovel = "Número de telemóvel inválido.";
 
-        !erroInterno 
+        !erroInternoEdicao 
             ? delete errors.erroInterno
             : errors.erroInterno = "Erro interno, por favor tente de novo.";
 
@@ -111,14 +123,17 @@ function EditarUser() {
             config.LINK_API + "/user/" + nif,
             { headers: {'Content-Type': 'application/json'}},
         ).then( ( res ) => {
-            console.log(res);
             setDadosAtuais( res.data );
         }).catch( function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
                 codigo === 500 
-                  ? setErroInterno(true) 
-                  : setErroInterno(false); 
+                  ? setErroInternoEdicao(true) 
+                  : setErroInternoEdicao(false); 
+
+                setTimeout(() => {
+                    setErroInternoEdicao( false );
+                }, 5000);
             }
         });
     }
@@ -130,13 +145,16 @@ function EditarUser() {
             novaInfoUser ,
             { headers: {'Content-Type': 'application/json'}}
         ).then( (res) => {
-            // Strings de debug
-            console.log("Dados recebidos do pedido PUT /user:" + res.data );
     
             if ( res.status === 200 ) {
                 setModoEdicao(false);
-                // Redirect
-                // Maybe popup a dizer que foram alterados os dados.
+                setDadosAlterados(true);
+
+                setTimeout(() => {
+                    setDadosAlterados( false );
+                }, 5000);
+
+                obterInfoUtilizador(nif);
             } 
     
         }).catch( function (error) {
@@ -144,13 +162,16 @@ function EditarUser() {
                 let codigo = error.response.status;
                 
                 codigo === 500 
-                  ? setErroInterno(true) 
-                  : setErroInterno(false); 
+                  ? setErroInternoEdicao(true) 
+                  : setErroInternoEdicao(false); 
+
+                setTimeout(() => {
+                    setErroInternoEdicao( false );
+                }, 5000);
             }
         })
     };
 
-    // Colorcar o nif no user aqui.
     useEffect( () => { obterInfoUtilizador(nif) }, [] );
     const formik = useFormik({
     enableReinitialize: true,
@@ -161,11 +182,10 @@ function EditarUser() {
         telemovel: dadosAtuais.telemovel, 
         morada: dadosAtuais.morada
     },
-    //validateOnChange:false,
-    //validateOnBlur:false,
     validate,
     onSubmit: values => {
-        atualizarUtilizador( values );
+        let dadosNovos = {nome: values.nome, mail: values.mail, nic:values.nic, telemovel:values.telemovel, morada: values.morada, nif: nif};
+        atualizarUtilizador( dadosNovos );
     },
     });
 
@@ -189,7 +209,7 @@ function EditarUser() {
                 />
 
                 {formik.touched.nome && formik.errors.nome ? (
-                    <div>{formik.errors.nome}</div>
+                    <div className='text-danger'>{formik.errors.nome}</div>
                 ) : null}
                 </Col>
 
@@ -207,7 +227,7 @@ function EditarUser() {
                 />
 
                 {formik.touched.mail && formik.errors.mail ? (
-                    <div>{formik.errors.mail}</div>
+                    <div className='text-danger'>{formik.errors.mail}</div>
                 ) : null}
                 <br/>
                 </Col>
@@ -228,7 +248,7 @@ function EditarUser() {
                 />
 
                 {formik.touched.nic && formik.errors.nic ? (
-                    <div>{formik.errors.nic}</div>
+                    <div className='text-danger'>{formik.errors.nic}</div>
                 ) : null}
                 <br/>
                 </Col>
@@ -247,7 +267,7 @@ function EditarUser() {
                 />
 
                 {formik.touched.telemovel && formik.errors.telemovel ? (
-                    <div>{formik.errors.telemovel}</div>
+                    <div className='text-danger'>{formik.errors.telemovel}</div>
                 ) : null}
                 <br/>
                 </Col>
@@ -266,12 +286,16 @@ function EditarUser() {
                 />
 
                 {formik.touched.morada && formik.errors.morada ? (
-                    <div>{formik.errors.morada}</div>
+                    <div className='text-danger'>{formik.errors.morada}</div>
                 ) : null}
                 <br/>
                 </Col>
                 </Row>
 
+                { erroInternoEdicao ? (<p className='text-danger text-center'> Erro interno, por favor tente outra vez. </p>) : null }
+                { dadosAlterados ? (<p className='text-success text-center'> Dados alterados com sucesso. </p>) : null }
+                <br/>
+                <br/>
                 { modoEdicao ? (
                     <Container className='text-center'>
                     <Button className='text-center' type="submit" onClick={formik.handleSubmit}> Submeter Alterações </Button>
@@ -330,9 +354,7 @@ function EditarUser() {
         <br/>
 
         <div>
-            <h4> Gestão de conta </h4>
-            <p> Desativar a sua conta significa que pode voltar a ativá-la a qualquer momento. </p>
-            <PopupDesativarConta nif={dadosAtuais.nif}/>
+            <h4> Apagar conta </h4>
             {' '}
             <PopupApagarConta nif={dadosAtuais.nif}/>
         </div>

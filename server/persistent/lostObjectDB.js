@@ -4,9 +4,9 @@ const dbClient = require("../connect_db");
 //ALL
 const all = async() => {
     try{
-        const all_objects = {
+        const all_foundObjects = {
             name: 'select-all-objects',
-            text: 'SELECT * FROM NaoAchado',
+            text: 'SELECT * FROM encontrado',
         }
         const row = await dbClient.query(all_objects);
         return row;
@@ -26,13 +26,13 @@ const all = async() => {
 }
 
 //INSERT
-const insert = async (lost_object) =>{
+const insert = async (found_object) =>{
     try{
-        const {id, local} = lost_object;
+        const {id, local} = found_object;
 
         const insert_object = {
-            name: 'insert-lost-object',
-            text: 'INSERT INTO NaoAchado (id, perdido_em) \
+            name: 'insert-found-object',
+            text: 'INSERT INTO naoachado (id, perdido_em) \
                         VALUES ($1,$2)',
             values: [id,local]
         }

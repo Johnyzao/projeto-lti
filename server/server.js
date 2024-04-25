@@ -186,6 +186,39 @@ app.post("/login", async (req, res) => {
     }
 });
 
+app.post("/user/:nif/verifyPassword", async (req,res) => {
+    try {
+        let {pass} = req.body;
+        console.log(pass);
+
+        const queryVerificarPass = {
+            name: "verify-password",
+            text: "SELECT * FROM utilizador WHERE nif = $1",
+            values: [ req.params.nif ]
+        };
+
+        let results = await dbClient.query(queryVerificarPass);
+        let existeUtilizador = results.rowCount === 1 ? true : false;
+
+        if ( existeUtilizador ){
+            let passwordCorreta = await bcrypt.compare(pass, results.rows[0].password);
+            let autenticar = existeUtilizador && passwordCorreta; 
+
+            if ( autenticar ) {
+                res.status(200).send();
+            } else {
+                res.status(401).send();
+            }
+
+        } else {
+            res.status(404).send(); 
+        }
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no /login " + error);
+        return;
+}});
 
 app.put("/user", async (req, res) => {
     try{
@@ -244,10 +277,110 @@ app.put("/user/:userNif/deactivate", async (req, res) => {
     }
 });
 
+app.post("/police", async (req, res) => {
+    let { id, nome, pass, posto } = req.body;
+    console.log(req.body);
+
+    let querySelectPolicia = {
+        text: "SELECT * FROM policia WHERE id=$1",
+        values: [id]
+    }
+
+    let resultsDuplicado = await dbClient.query(querySelectPolicia);
+    if ( resultsDuplicado.rowCount === 1) {
+        res.status(401).send();
+    } else {
+        let queryInsertPolicia = {
+            text: "INSERT INTO policia(id, nome, password, posto) VALUES($1, $2, $3, $4)",
+            values: [id, nome, pass, posto]
+        }
+    
+        let results = await dbClient.query(queryInsertPolicia);
+    
+        if ( results.rowCount === 1 ) {
+            res.status(201).send();
+        }
+    }
+});
+
+app.put("/police", async (req, res) => {
+    let { id, nome, password, posto } = req.body;
+
+    let queryInsertPolicia = {
+        text: "UPDATE utilizador SET nome=$2, password=$3, posto=$4 WHERE id=$1",
+        values: [id, nome, password, posto]
+    }
+
+    let results = await dbClient.query(queryInsertPolicia);
+
+    if ( results.rowCount === 1 ) {
+        res.status(200).send();
+    } else {
+        res.status(401).send();
+    }
+});
+
+app.get("/police", async (req, res) => {
+    let querySelectPolicias = {
+        text: "SELECT * FROM policia",
+    }
+
+    let results = await dbClient.query(querySelectPolicias);
+
+    res.status(200).send(results.rows);
+});
+
+app.delete("/police/:id", async (req, res) => {
+    let queryInsertPolicia = {
+        text: "DELETE FROM policia WHERE id=$1",
+        values: [req.params.id]
+    }
+
+    let results = await dbClient.query(queryInsertPolicia);
+    if ( results.rowCount === 1 ) {
+        res.status(200).send();
+    } else {
+        res.status(401).send();
+    }
+});
+
+app.get("/police/policeStation/:stationId", async (req, res) => {
+    let queryVerificarPostoPolicia = {
+        text: "SELECT * FROM policia WHERE posto=$1",
+        values: [req.params.stationId]
+    }
+
+    let results = await dbClient.query(queryVerificarPostoPolicia);
+
+    res.status(200).send(results.rowCount === 0);
+});
+
+app.delete("/police/policeStation/:stationId", async (req, res) => {
+    let queryRemoverPolicasDoPosto = {
+        text: "DELETE FROM policia WHERE posto=$1",
+        values: [req.params.stationId]
+    }
+
+    let results = await dbClient.query(queryRemoverPolicasDoPosto);
+
+    res.status(200).send();
+});
+
+
+// TODO: Implementar
+app.get("/user/:nif/lostObjects", async (req, res) => {
+
+});
+
+// TODO: Implementar
+app.get("/user/:nif/foundObjects", async (req, res) => {
+
+})
+
 // TODO: Testar
 // TODO: parse e validação dos dados
 // TODO: Reposta nif invalido
-app.put("/user/:userNif/activate", async (req, res) => {
+app.put("/user/:userNif/reactivate", async (req, res) => {
     try{
         const nif = req.params.userNif;
         const queryAtivarUser = queries.queryActivateUser(nif);
@@ -372,7 +505,7 @@ app.get("/user/:userNif", async (req, res) => {
 });
 
 app.post("/policeStation", async (req, res) => {
-    const {codp, morada} = req.body;
+    const {codp, morada, localidade, telefone} = req.body;
 
     const querySelectPostos = {
         text: "SELECT * FROM posto",
@@ -382,8 +515,8 @@ app.post("/policeStation", async (req, res) => {
     let id = resultsNumeroPostos.rowCount + 1;
 
     const queryCriarPosto = {
-        text: "INSERT INTO posto(id, codpostal, morada) VALUES ($1, $2, $3)",
-        values: [id, codp, morada]
+        text: "INSERT INTO posto(id, codpostal, morada, localidade, telefone) VALUES ($1, $2, $3, $4, $5)",
+        values: [id, codp, morada, localidade, telefone]
     };
 
     let results = await dbClient.query( queryCriarPosto );
@@ -394,7 +527,30 @@ app.post("/policeStation", async (req, res) => {
     }
 });
 
-app.get("/allPoliceStations", async (req, res) => {
+app.delete("/policeStation/:id", async (req, res) => {
+    try {
+        const queryApagarPostos = {
+            name: "delete-station",
+            text: "DELETE FROM posto WHERE id=$1",
+            values: [req.params.id]
+        };
+    
+        let resultado = await dbClient.query(queryApagarPostos);
+        let postoApagado = resultado.rowCount;
+    
+        if ( postoApagado === 1 ) {
+            res.status(200).send();
+        } 
+
+    } catch (error) {
+        if(error.code === '23503') {
+            res.status(403).send();
+        }
+    }
+});
+
+app.get("/policeStation", async (req, res) => {
+
     const querySelectPostos = {
         text: "SELECT * FROM posto",
     };
@@ -404,6 +560,24 @@ app.get("/allPoliceStations", async (req, res) => {
 
     console.log( postos );
     res.status(200).send( postos );
+});
+
+app.get("/policeStation/:id", async (req, res) => {
+    const querySelectPostos = {
+        text: "SELECT * FROM posto WHERE id=$1",
+        values: [req.params.id]
+    };
+
+    let resultado = await dbClient.query(querySelectPostos);
+    let posto = resultado.rows;
+
+    console.log( posto );
+    res.status(200).send( posto );
+});
+
+// TODO: Implementar.
+app.get("/object/compare/:id_foundObject/:id_lostObject", async (req, res) => {
+
 });
 
 app.post("/object", async (req, res) => {
@@ -476,7 +650,7 @@ app.delete("/object", async (req, res) => {
 
         const result = await objectDB.delete_object(params.id);
 
-        if(result.rowCount === 0){
+        if(result.rowCount === 0) {
             throw new HttpException(404, "");
         }
 
@@ -637,6 +811,7 @@ app.get("/lostObject", async (req, res) => {
         }
     }
 });
+
 app.post("/lostObject", async (req, res) => {
     try{
         const params = {...req.body}
@@ -700,7 +875,83 @@ app.delete("/lostObject", async (req, res) => {
     }
 });
 
-app.listen(3000, (err) => {
+/** TODO: lostObject **/
+// Falta a correspondence, getAllFoundObjects
+/** TODO: lostObject **/
+
+/** TODO: foundObject **/
+app.post("/foundObject", async (req,res) => {
+
+});
+
+app.get("/foundObject", async (req,res) => {
+
+});
+
+app.put("/foundObject", async (req,res) => {
+
+});
+
+app.delete("/foundObject", async (req,res) => {
+
+});
+
+app.put("/foundObject/:id_foundObject/owner/:nif", async (req, res) =>{
+
+});
+/** TODO: foundObject **/
+
+/** TODO: auction **/
+app.post("/auction", async (req, res) => {
+
+});
+
+app.get("/auction/:auction_id", async (req, res) => {
+
+});
+
+app.put("/auction", async (req, res) => {
+
+});
+
+app.delete("/auction", async (req, res) => {
+
+});
+
+app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
+
+});
+
+app.put("/auction/:auction_id/subscribe/:nic", async (req, res) => {
+
+});
+
+app.put("/auction/:auction_id/unsubscribe/:nic", async (req, res) => {
+
+});
+
+app.get("/auction/:auction_id/notify", async (req, res) => {
+
+});
+
+app.put("/auction/:auction_id/begin", async (req, res) => {
+
+});
+
+app.put("/auction/:auction_id/end", async (req, res) => {
+
+});
+
+app.get("/auction/:auction_id/history", async (req, res) => {
+
+});
+
+app.post("/auction/:auction_id/user/:nif/makeOffer/:value", async (req, res) => {
+
+});
+/** TODO: auction **/
+
+app.listen(3001, (err) => {
     if ( err ) console.log(err);
     console.log("Servidor a correr.");
 });

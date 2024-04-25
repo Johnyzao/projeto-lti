@@ -177,7 +177,7 @@ function FormObjetoPerdido() {
                         <option values="Faro">Faro</option>
                         <option values="Guarda">Guarda</option>
                         <option values="Leiria">Leiria</option>
-                        <option selected values="Lisboa">Lisboa</option>
+                        <option values="Lisboa">Lisboa</option>
                         <option values="Portalegre">Portalegre</option>
                         <option values="Porto">Porto</option>
                         <option values="Santarem">Santarém</option>

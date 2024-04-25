@@ -17,6 +17,7 @@ function PopupAlterarPass(props) {
   const navigate = useNavigate();
   const [erroInternoPass, setErroInternoPass] = useState(false);
   const [mesmaPass, setMesmaPass] = useState(false);
+  const [passwordAtualErrada, setPasswordAtualErrada] = useState(false);
 
   async function atualizarPassword(passNova, passAtual, nif) {
     await axios.put(
@@ -29,6 +30,8 @@ function PopupAlterarPass(props) {
     ).then( ( res ) => {
       if ( res.status === 200 ) {
           setMesmaPass(false);
+          setPasswordAtualErrada(false);
+          setErroInternoPass(false);
           localStorage.clear();
           navigate("/user/passwordChange");
       }
@@ -41,17 +44,19 @@ function PopupAlterarPass(props) {
           : setErroInternoPass(false); 
 
         if ( codigo === 406 ) {
+            console.log("aqui");
             setMesmaPass(true);
+        }
+
+        if ( codigo === 400 ) {
+            setMesmaPass(false);
+            setPasswordAtualErrada(true);
         }
     }});
   }
 
   const validate = values => {
     const errors = {};
-
-    values.passAtual === "" 
-        ? errors.passAtual = "Por favor insira a sua password atual." 
-        : delete errors.passAtual;
 
     values.passNova === ""
         ? errors.passNova = "Por favor insira uma password nova."
@@ -69,11 +74,12 @@ function PopupAlterarPass(props) {
         ? delete errors.confirmacao
         : errors.confirmacao = "Passwords são diferentes, por favor escreva a mesma password."
 
-    //insucesso 
-    //    ? errors.passAtual = "Password errada, por favor insira a sua password atual"
-    //    : delete errors.passAtual;
+    passwordAtualErrada
+        ? errors.passAtual = "Password errada, por favor insira a sua password atual"
+        : delete errors.passAtual;
 
     console.table(errors);
+    console.log(mesmaPass);
     return errors;
   }
 
@@ -83,8 +89,6 @@ function PopupAlterarPass(props) {
       passNova: "",
       confirmacao: ""
     },
-    validateOnChange:false,
-    validateOnBlur:false,
     validate,
     onSubmit: values => {
         atualizarPassword(values.passNova, values.passAtual ,props.nif);

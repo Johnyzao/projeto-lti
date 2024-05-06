@@ -42,15 +42,17 @@ CREATE TABLE Licitante (
     FOREIGN KEY (nif) REFERENCES Utilizador(nif)
 );
 
-CREATE TABLE Localidade (
+CREATE TABLE localidade (
     id INT PRIMARY KEY,
-    pais VARCHAR(255) NOT NULL,
-    distrito VARCHAR(255) ,
-    municipio VARCHAR(255) ,
-    freguesia VARCHAR(255) ,
-    rua VARCHAR(255),
-    coordenadas VARCHAR(255) 
-);
+    pais TEXT NOT NULL,
+    dist TEXT NOT NULL,
+    munc TEXT,
+    freg TEXT,
+    rua TEXT,
+    morada TEXT,
+    codp TEXT,
+    coords TEXT
+)
 
 CREATE TABLE Categoria ( 
     nome VARCHAR(255) PRIMARY KEY,
@@ -58,17 +60,28 @@ CREATE TABLE Categoria (
     atributo VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE Objeto (
+-- Categorias por acrescentar
+CREATE TABLE objeto (
     id INT PRIMARY KEY,
-    descricao VARCHAR(255) NOT NULL,
-    nome VARCHAR(255) NOT NULL,
-    categoria VARCHAR(255),
-    FOREIGN KEY (categoria) REFERENCES Categoria(nome)
-);
+    nifUser INT,
+    descricao TEXT NOT NULL,
+    titulo TEXT NOT NULL,
+    imagens TEXT,
+    dataRegisto TEXT,
+    FOREIGN KEY (nifUser) REFERENCES utilizador(nif)
+)
 
-CREATE TABLE NaoAchado (
-    id INT PRIMARY KEY,
+CREATE TABLE perdido (
+    id INT,
+    idPerdido INT,
+    objetoAchado INT,
     perdido_em INT NOT NULL,
+    lostDate DATE,
+    lostTime TEXT,
+    lostDateInfLim DATE,
+    lostDateSupLim DATE,
+    PRIMARY KEY(id, idPerdido),
+    FOREIGN KEY (objetoAchado) REFERENCES Achado(id),
     FOREIGN KEY (perdido_em) REFERENCES Localidade(id),
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );

@@ -70,13 +70,13 @@ function Login() {
           //  },
           //  userState: { nif: res.data.token.nif, nome: res.data.token.nome },
           //})
-          const {nome, mail, nif, estado} = res.data;
-          let dadosUser = { nome: nome, mail: mail, nif: nif, estado: estado };
+          const {nome, mail, nif, estado, tipo} = res.data;
+          let dadosUser = { nome: nome, mail: mail, nif: nif, estado: estado, tipo: tipo};
           localStorage.setItem("dados", JSON.stringify( dadosUser ));
 
           setErroCreds(false);
           setErroServidor(false);
-          navigate("/home");
+          navigate("/");
         } 
 
         res.status === 401

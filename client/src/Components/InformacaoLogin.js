@@ -23,6 +23,7 @@ function InformacaoLogin() {
     
     if (logado) {
         dados = JSON.parse(localStorage.getItem("dados"));
+        console.log(dados);
     }
 
     return (
@@ -41,7 +42,13 @@ function InformacaoLogin() {
         <>
             <NavDropdown title="Menu" id="basic-nav-dropdown">
                 <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
-                <NavDropdown.Item href="/editUser">Registar um objeto novo</NavDropdown.Item>
+                <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
+                <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
+                <NavDropdown.Item href="">Registar um Objeto Achado</NavDropdown.Item>
+                { dados.tipo === "a" 
+                    ? (<NavDropdown.Item href="/admin">Página de administração</NavDropdown.Item>) 
+                    : null
+                }
             </NavDropdown>
                 &ensp;
                 &ensp;

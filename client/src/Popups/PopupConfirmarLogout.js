@@ -10,7 +10,7 @@ function PopupApagarConta() {
 
     function terminarSessao() {
         localStorage.clear();
-        navigate("/home");
+        navigate("/");
     }
 
     return (

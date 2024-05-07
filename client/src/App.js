@@ -10,11 +10,12 @@ import LoginUtilizador from './Pages/LoginUtilizador';
 import PaginaPasswordAlterada from './Pages/PaginaPasswordAlterada';
 import GestaoDeConta from './Pages/GestaoDeConta';
 import PaginaAdmin from './Pages/PaginaAdmin';
-import FormObjetoPerdido from './Components/FormObjetoPerdido';
 import PaginaObjetoPerdido from './Pages/PaginaNovoObjetoPerdido';
 import PaginaObjetoPerdidoSucesso from './Pages/PaginaObjetoPerdidoSucesso';
 import PaginaVerObjetosRegistados from './Pages/PaginaVerObjetosRegistados';
 import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
+import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
+import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
 
 function App() {
   return (
@@ -30,12 +31,14 @@ function App() {
           <Route path="accountDeleted" element={<ContaApagada/>}/>
           <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>} />
           <Route path="admin" element={<PaginaAdmin/>} />
-          <Route path="register/lostObject" element={<FormObjetoPerdido/>} />
           <Route path="lostObject/register" element={<PaginaObjetoPerdido/>}/>
           <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
           <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
-          <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
           <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
+          <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
+          <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
+          <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+          <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
         </Routes>
     </BrowserRouter>
     </>

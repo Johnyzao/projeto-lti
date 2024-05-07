@@ -87,10 +87,17 @@ CREATE TABLE perdido (
 );
 
 CREATE TABLE Achado (
-    id INT PRIMARY KEY,
-    data_inicio DATE NOT NULL,
-    data_fim DATE NOT NULL,
+    id INT,
+    idAchado INT,
+    data_leilao TEXT NOT NULL,
     achado_em INT NOT NULL,
+    policia INT,
+    foundDate DATE,
+    foundTime TEXT,
+    foundDateInfLim DATE,
+    foundDateSupLim DATE,
+    PRIMARY KEY (id, idAchado),
+    FOREIGN KEY (policia) REFERENCES Policia(id),
     FOREIGN KEY (achado_em) REFERENCES Localidade(id),
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );

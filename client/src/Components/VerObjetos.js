@@ -1,6 +1,7 @@
 import React from 'react';
 
 import VerObjetosPerdidos from './VerObjetosPerdidos';
+import VerObjetosAchados from './VerObjetosAchados';
 
 import Accordion from 'react-bootstrap/Accordion';
 import Container from 'react-bootstrap/Container';
@@ -21,7 +22,7 @@ function VerObjetos() {
                 <Accordion.Item eventKey="1">
                     <Accordion.Header>Objetos Achados registados</Accordion.Header>
                         <Accordion.Body>
-                        
+                            <VerObjetosAchados nif={JSON.parse( localStorage.getItem("dados") ).nif}/>
                         </Accordion.Body>
                 </Accordion.Item>
             </Accordion>

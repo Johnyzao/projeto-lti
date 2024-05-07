@@ -10,22 +10,22 @@ import axios from 'axios';
 
 import Button from 'react-bootstrap/Button';
 
-function VerObjetosPerdidos(props) {
+function VerObjetosAchados(props) {
     const navigate = useNavigate();
 
-    const [objetos, setObjetos] = useState([]);
-    const [objetoPerdidoApagado, setObjetoPerdidoApagado] = useState(false);
+    const [objetosAchados, setObjetosAchados] = useState([]);
+    const [objetoAchadoApagado, setObjetoAchadoApagado] = useState(false);
 
-    function removerObjetoPerdido(id) {
+    function removerObjetoAchado(id) {
         axios.delete(
-            config.LINK_API + "/lostObject/" + id, 
+            config.LINK_API + "/foundObject/" + id, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
             if ( res.status === 200 ) {
-                setObjetoPerdidoApagado(true);
+                setObjetoAchadoApagado(true);
 
                 setTimeout(() => {
-                    setObjetoPerdidoApagado(false);
+                    setObjetoAchadoApagado(false);
                 }, 1000);
             }
         }).catch(function (error) {
@@ -35,9 +35,9 @@ function VerObjetosPerdidos(props) {
         });
     }
 
-    function obterObjetoPerdido(idObjetoPerido) {
+    function obterObjetoAchado(idObjetoPerido) {
         axios.get(
-            config.LINK_API + "/lostObject/" + idObjetoPerido, 
+            config.LINK_API + "/foundObject/" + idObjetoPerido, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
         }).catch(function (error) {
@@ -49,10 +49,10 @@ function VerObjetosPerdidos(props) {
 
     function obterTodosOsObjetos(nifUser) {
         axios.get(
-            config.LINK_API + "/lostObject/user/" + nifUser, 
+            config.LINK_API + "/foundObject/user/" + nifUser, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
-            setObjetos(res.data.objPerdidos);
+            setObjetosAchados(res.data.objAchados);
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -60,15 +60,15 @@ function VerObjetosPerdidos(props) {
         });
     }
     //useEffect( () => { obterTodosOsObjetos(props.nif) }, [] );
-    useEffect( () => { obterTodosOsObjetos(props.nif) }, [objetoPerdidoApagado] );
+    useEffect( () => { obterTodosOsObjetos(props.nif) }, [objetoAchadoApagado] );
 
-    const desenharObjetosPerdidos = objetos.map( objeto => {
+    const desenharObjetosAchados = objetosAchados.map( objeto => {
 
         axios.get(
-            config.LINK_API + "/lostObject/" + objeto.id, 
+            config.LINK_API + "/foundObject/" + objeto.id, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
-            objeto['idObjPerdido'] = res.data.objPerdido.idperdido;
+            objeto['idObjAchado'] = res.data.objAchado.idachado;
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -79,7 +79,7 @@ function VerObjetosPerdidos(props) {
             <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
                 <div className="d-flex w-100 justify-content-between">
                     <h5 className="mb-1">{objeto.titulo}</h5>
-                    <small className="text-muted"> <Button onClick={() => { navigate("/lostObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoPerdido(objeto.idObjPerdido)}} variant='danger'>Remover</Button> </small>
+                    <small className="text-muted"> <Button onClick={() => { navigate("/foundObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoAchado(objeto.idObjAchado)}} variant='danger'>Remover</Button> </small>
                 </div>
             <p className="mb-1">{objeto.descricao}</p>
             <small className="text-muted"> Registado em {objeto.dataregisto} </small>
@@ -92,10 +92,10 @@ function VerObjetosPerdidos(props) {
     return (
         <>
             <div>
-                { desenharObjetosPerdidos }
+                { desenharObjetosAchados }
             </div>
         </>
     );
 }
 
-export default VerObjetosPerdidos;
+export default VerObjetosAchados;

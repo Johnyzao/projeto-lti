@@ -610,11 +610,6 @@ app.get("/policeStation/:id", async (req, res) => {
     res.status(200).send(posto);
 });
 
-// TODO: Implementar.
-app.get("/object/compare/:id_foundObject/:id_lostObject", async (req, res) => {
-
-});
-
 app.post("/object", async (req, res) => {
     try {
         let { titulo, nifUser, desc, imagens, dataRegisto } = req.body;
@@ -998,31 +993,141 @@ app.delete("/lostObject/:lostObject_id", async (req, res) => {
     }
 });
 
-/** TODO: lostObject **/
-// Falta a correspondence, getAllFoundObjects
-/** TODO: lostObject **/
-
-/** TODO: foundObject **/
 app.post("/foundObject", async (req, res) => {
+    try {
+        let {idObj,idLoc,policia,foundDate,foundTime,foundDateInfLim,foundDateSupLim } = req.body;
+        console.log(req.body);
+        if (foundTime === "" && foundDate === "") {
+            foundTime = null;
+            foundDate = null;
+        }
 
+        if (foundDateInfLim === "" && foundDateSupLim === "") {
+            foundDateInfLim = null;
+            foundDateSupLim = null;
+        }
+
+        if ( policia === "" ) {
+            policia = null;
+        }
+
+        let queryObterIdNovoObjetoAchado = {
+            text: "SELECT * FROM achado",
+        }
+        let idAchado = (await dbClient.query(queryObterIdNovoObjetoAchado)).rowCount + 1;
+
+        let dataLeilao = new Date();
+        dataLeilao.setDate((dataLeilao.getDate() + 7));
+
+        let dataCompleta =  dataLeilao.getDate() + "/" + (dataLeilao.getMonth() + 1) + "/" + dataLeilao.getFullYear();
+
+        console.log(policia);
+        let queryCriarObjetoAchado = {
+            text: "INSERT INTO achado(id,idachado,data_leilao,achado_em,policia,founddate,foundtime,foundDateInfLim,foundDateSupLim ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+            values: [idObj, idAchado, dataCompleta, idLoc, policia, foundDate, foundTime, foundDateInfLim, foundDateSupLim ]
+        }
+        let result = await dbClient.query(queryCriarObjetoAchado);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send({id: idAchado});
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
 });
 
-app.get("/foundObject", async (req, res) => {
+app.get("/foundObject/:object_id", async (req, res) => {
+    try {
+        let queryObterObjetoAchado = {
+            text: "SELECT * FROM achado WHERE id=$1",
+            values: [req.params.object_id]
+        }
+        let result = await dbClient.query(queryObterObjetoAchado);
+        let objeto = result.rows[0];
 
+        console.log(objeto);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({objAchado: objeto});
+        }
+    } catch (error) {
+        console.log(error);
+
+    }
+});
+
+app.get("/foundObject/user/:userNif", async (req, res) => {
+    try {
+        let queryObterObjetoAchadoPorId = {
+            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM achado)",
+            values: [req.params.userNif]
+        }
+        let result = await dbClient.query(queryObterObjetoAchadoPorId);
+        let objetos = result.rows;
+        console.log(objetos);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({objAchados: objetos});
+        }
+    } catch (error) {
+        console.log(error);
+
+    }
 });
 
 app.put("/foundObject", async (req, res) => {
+    try {
+        let { idObj, foundDate, foundTime, foundDateInfLim, foundDateSupLim } = req.body;
 
+        let queryAtualizarObjetoAchado = {
+            text: "UPDATE achado SET founddate=$2, foundtime=$3, founddateinflim=$4, founddatesuplim=$5 WHERE idachado=$1",
+            values: [idObj, foundDate, foundTime, foundDateInfLim, foundDateSupLim]
+        }
+        let result = await dbClient.query(queryAtualizarObjetoAchado);
+        if ( result.rowCount === 1 ) {
+            res.status(200).send();
+        } else {
+            res.status(401).send();
+        }
+    } catch (error) {
+        console.log(error);
+    }
 });
 
-app.delete("/foundObject", async (req, res) => {
+app.delete("/foundObject/:foundObject_id", async (req, res) => {
+    try {
+        let queryApagarObjetoAchado  = {
+            text: "DELETE FROM achado WHERE idachado=$1",
+            values: [req.params.foundObject_id]
+        }
 
+        let results = await dbClient.query(queryApagarObjetoAchado);
+        if (results.rowCount === 1) {
+            res.status(200).send();
+        } else {
+            res.status(401).send();
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
 });
 
 app.put("/foundObject/:id_foundObject/owner/:nif", async (req, res) => {
 
 });
-/** TODO: foundObject **/
+
+// TODO: Implementar.
+app.get("/object/compare/:id_foundObject/:id_lostObject", async (req, res) => {
+
+});
 
 /** TODO: auction **/
 app.post("/auction", async (req, res) => {

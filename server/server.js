@@ -649,9 +649,14 @@ app.put("/object", async (req, res) => {
     try {
         let { idObj, titulo, desc, imagens } = req.body;
 
+        imagens == [] ? imagens = null : imagens;
+
+        let imagensEmString = "";
+        imagens.forEach( (imagem) => { imagensEmString += imagem.data_url + "?" } );
+
         let queryAtualizarObjeto = {
             text: "UPDATE objeto SET descricao=$3, titulo=$2, imagens=$4 WHERE id=$1",
-            values: [idObj, titulo, desc, imagens]
+            values: [idObj, titulo, desc, imagensEmString]
         }
         let result = await dbClient.query(queryAtualizarObjeto);
         if ( result.rowCount === 1 ) {
@@ -664,22 +669,7 @@ app.put("/object", async (req, res) => {
     }
 });
 
-// TODO: Implementar.
-app.put("/object/:object_id", async (req, res) => {
-    try {
-        let queryAtualizarObjeto = {
-            text: "",
-            values: []
-        }
-
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-
-    }
-});
-
-app.get("/object/:userNif", async (req, res) => {
+app.get("/object/user/:userNif", async (req, res) => {
     try {
         let queryObterObjetosUser = {
             text: "SELECT * FROM objeto WHERE nifUser=$1",
@@ -700,6 +690,7 @@ app.get("/object/:userNif", async (req, res) => {
 
 app.get("/object/:object_id", async (req, res) => {
     try {
+        console.log(req.params.object_id);
         let queryObterObjeto = {
             text: "SELECT * FROM objeto WHERE id=$1",
             values: [req.params.object_id]
@@ -800,6 +791,7 @@ app.delete("/category", async (req, res) => {
 
 app.get("/location/:location_id", async (req, res) => {
     try {
+        
         let queryObterLocalidade = {
             text: "SELECT * FROM localidade WHERE id=$1",
             values: [req.params.location_id]
@@ -830,10 +822,11 @@ app.post("/location", async (req, res) => {
         codp === "" ? codp = null : codp;
 
         let queryObterIdLocalizacao = {
-            text: "SELECT * FROM objeto",
+            text: "SELECT * FROM localidade",
         }
         let id = (await dbClient.query(queryObterIdLocalizacao)).rowCount + 1;
 
+        console.log(id);
         let queryCriarLocalizacao = {
             text: "INSERT INTO localidade(id,pais,dist,munc,freg,rua,morada,codp,coords) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
             values: [id, pais, dist, munc, freg, rua, morada, codp, null]
@@ -897,12 +890,13 @@ app.get("/lostObject/user/:userNif", async (req, res) => {
             values: [req.params.userNif]
         }
         let result = await dbClient.query(queryObterObjetoPerdidoPorId);
-        let objeto = result.rows[0];
+        let objetos = result.rows;
+        console.log(objetos);
 
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({objPerdido: objeto});
+            res.status(200).send({objPerdidos: objetos});
         }
     } catch (error) {
         console.log(error);
@@ -910,11 +904,11 @@ app.get("/lostObject/user/:userNif", async (req, res) => {
     }
 });
 
-app.get("/lostObject/:lostObject_id", async (req, res) => {
+app.get("/lostObject/:object_id", async (req, res) => {
     try {
         let queryObterObjetoPerdido = {
             text: "SELECT * FROM perdido WHERE id=$1",
-            values: [req.params.lostObject_id]
+            values: [req.params.object_id]
         }
         let result = await dbClient.query(queryObterObjetoPerdido);
         let objeto = result.rows[0];
@@ -985,9 +979,20 @@ app.put("/lostObject", async (req, res) => {
     }
 });
 
-app.delete("/lostObject", async (req, res) => {
+app.delete("/lostObject/:lostObject_id", async (req, res) => {
     try {
-        res.status(200).send();
+        let queryApagarObjetoPerdido  = {
+            text: "DELETE FROM perdido WHERE idperdido=$1",
+            values: [req.params.lostObject_id]
+        }
+
+        let results = await dbClient.query(queryApagarObjetoPerdido);
+        if (results.rowCount === 1) {
+            res.status(200).send();
+        } else {
+            res.status(401).send();
+        }
+
     } catch (error) {
         console.log(error);
     }

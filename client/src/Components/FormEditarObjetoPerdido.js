@@ -20,9 +20,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 
-function FormEditarObjetoPerdido() {
-    const navigate = useNavigate();
-    let fakeprops = 1;
+function FormEditarObjetoPerdido(props) {
 
     // {data_url: ..., file: null}
     // Pro implementar aqui...
@@ -33,10 +31,10 @@ function FormEditarObjetoPerdido() {
     //const [categoriasCriadas, setCategoriasCriadas] = useState(false);
     const maxNumber = 3;
 
-    const [objeto, setObjeto] = useState({});
+    const [objeto, setObjeto] = useState(new Object());
     const [objetoObtido, setObjetoObtido] = useState(false);
-    const [objetoPerdido, setObjetoPerdido] = useState({});
-    const [localizacao, setLocalizacao] = useState({});
+    const [objetoPerdido, setObjetoPerdido] = useState(new Object());
+    const [localizacao, setLocalizacao] = useState(new Object());
 
     const [ sucessoObjetoPerdidoAtualizado, setSucessoObjetoPerdidoAtualizado ] = useState(false);
 
@@ -45,7 +43,27 @@ function FormEditarObjetoPerdido() {
             config.LINK_API + "/object/" + idObjeto, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
-            setObjeto(res.data.obj);
+            let { id, nifuser, descricao, titulo, dataregisto, imagens } = res.data.obj;
+
+            let imagensDoObjeto = imagens.split("?");
+            let imagensProcessadas = [];
+
+            imagensDoObjeto.map( imagem => {
+                if ( imagem !== "" ) {
+                    imagensProcessadas.push( { data_url: imagem, file: null } );
+                }
+            })
+
+            let objetoObtido = {
+                id: id,
+                nifuser: nifuser,
+                descricao: descricao,
+                titulo: titulo,
+                dataregisto: dataregisto
+            }
+            setImages( imagensProcessadas );
+
+            setObjeto(objetoObtido);
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -58,7 +76,11 @@ function FormEditarObjetoPerdido() {
             config.LINK_API + "/lostObject/" + idObjetoPerido, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
+
             setObjetoPerdido(res.data.objPerdido);
+            obterLocalizacao( res.data.objPerdido.perdido_em );
+            obterObjeto( res.data.objPerdido.id );
+
             setObjetoObtido(true);
         }).catch(function (error) {
             if ( error.response ) {
@@ -68,6 +90,7 @@ function FormEditarObjetoPerdido() {
     }
 
     function obterLocalizacao(idLoc) {
+        console.log(idLoc);
         axios.get(
             config.LINK_API + "/location/" + idLoc, 
             { headers: {'Content-Type': 'application/json'}},
@@ -172,9 +195,7 @@ function FormEditarObjetoPerdido() {
         return errors;
     }
 
-    useEffect( () => { obterObjetoPerdido(fakeprops) }, [] );
-    useEffect( () => { obterObjeto( objetoPerdido.id ) }, [objetoObtido === true] );
-    useEffect( () => { obterLocalizacao( objetoPerdido.perdido_em ) }, [objetoObtido === true] );
+    useEffect( () => { obterObjetoPerdido(props.id) }, [] );
 
     const formik = useFormik({
         enableReinitialize: true,
@@ -194,7 +215,7 @@ function FormEditarObjetoPerdido() {
         onSubmit: values => {
 
             let infoObjetoAEnviar = { 
-                idObj : fakeprops,
+                idObj : props.id,
                 titulo: values.titulo, 
                 desc: values.desc,
                 imagens: images,
@@ -280,13 +301,15 @@ function FormEditarObjetoPerdido() {
                             <br/>
                             { imageList.length === 0 ? (<p>Não adicionou nenhuma foto ainda.</p>) : (<p>Imagens que adicionou:</p>) }
                             <Container>
-                            {imageList.map((image, index) => (
+                            {imageList.map((image, index) => 
+                            (
                                 <Container key={index} fluid="sm" className="image-item">
                                     <Image src={image['data_url']} fluid thumbnail width="100" />
                                     <Container fluid className="image-item__btn-wrapper">
                                         <Button onClick={() => onImageUpdate(index)}>Trocar</Button>
                                         <Button variant='danger' onClick={() => onImageRemove(index)}>Remover</Button>
                                     </Container>
+                                    <br/>
                                 </Container>
                             ))}
                             </Container>

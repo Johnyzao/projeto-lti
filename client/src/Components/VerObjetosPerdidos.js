@@ -1,6 +1,5 @@
 import React, { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ImageUploading from 'react-images-uploading';
 
 // Informacoes da API.
 import config from '../config';
@@ -9,69 +8,82 @@ import config from '../config';
 // https://axios-http.com/docs/res_schema 
 import axios from 'axios';
 
-import validator from 'validator';
-
-// https://formik.org/docs/tutorial
-import { useFormik } from 'formik';
-
-// Imports do bootstrap.
-import Container from 'react-bootstrap/Container';
-import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import Image from 'react-bootstrap/Image';
 
 function VerObjetosPerdidos(props) {
+    const navigate = useNavigate();
 
     const [objetos, setObjetos] = useState([]);
+    const [objetoPerdidoApagado, setObjetoPerdidoApagado] = useState(false);
 
-    function obterEstadoObjetoPerdido(id) {
-        let estado = false;
-        axios.get(
+    function removerObjetoPerdido(id) {
+        axios.delete(
             config.LINK_API + "/lostObject/" + id, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
-            let dadosObj = res.data.objPerdido;
-            if ( dadosObj.objetoachado !== null ) {
-                estado = true
+            if ( res.status === 200 ) {
+                setObjetoPerdidoApagado(true);
+
+                setTimeout(() => {
+                    setObjetoPerdidoApagado(false);
+                }, 1000);
             }
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
             }
         });
-
-        return estado;
     }
 
+    function obterObjetoPerdido(idObjetoPerido) {
+        axios.get(
+            config.LINK_API + "/lostObject/" + idObjetoPerido, 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
 
     function obterTodosOsObjetos(nifUser) {
         axios.get(
             config.LINK_API + "/lostObject/user/" + nifUser, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
-            setObjetos(new Array(res.data.objPerdido));
+            setObjetos(res.data.objPerdidos);
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
             }
         });
     }
-    useEffect( () => { obterTodosOsObjetos(props.nif) }, [] );
+    //useEffect( () => { obterTodosOsObjetos(props.nif) }, [] );
+    useEffect( () => { obterTodosOsObjetos(props.nif) }, [objetoPerdidoApagado] );
 
     const desenharObjetosPerdidos = objetos.map( objeto => {
-        console.log( obterEstadoObjetoPerdido(objeto.id) );
+
+        axios.get(
+            config.LINK_API + "/lostObject/" + objeto.id, 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            objeto['idObjPerdido'] = res.data.objPerdido.idperdido;
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+
+        console.log(objeto);
         return (<div key={objeto.id} className="list-group">
             <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
                 <div className="d-flex w-100 justify-content-between">
                     <h5 className="mb-1">{objeto.titulo}</h5>
-                    <small className="text-muted">Registado em {objeto.dataregisto}</small>
+                    <small className="text-muted"> <Button onClick={() => { navigate("/lostObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoPerdido(objeto.idObjPerdido)}} variant='danger'>Remover</Button> </small>
                 </div>
             <p className="mb-1">{objeto.descricao}</p>
-
-            { obterEstadoObjetoPerdido(objeto.id)
-                ? (<small className="text-muted"> O seu objeto foi achado </small>)
-                : (<small className="text-muted"> Este objeto ainda não foi achado. </small>)
-            }
+            <small className="text-muted"> Registado em {objeto.dataregisto} </small>
             </a>
             <br/>
             </div>

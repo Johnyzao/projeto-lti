@@ -38,24 +38,7 @@ function FormRegistoObjetoPerdido() {
 
     const maxNumber = 3;
 
-    function processoCriarObjeto(infoObjeto, infoLoc, values) {
-        let idObj = criarObjeto(infoObjeto);
-        console.log(idObj);
-        //let idLoc = criarLocalizacao(infoLoc);
-
-        let infoObjetoPerdido = {
-            idObj: idObj,
-            idLoc: 0,
-            lostDate: values.lostDate,
-            lostTime: values.lostTime,
-            lostDateInfLim: values.lostDateInfLim,
-            lostDateSupLim: values.lostDateSupLim
-        }
-        //criarObjetoPerdido(infoObjetoPerdido);
-    }
-
-    // Por fazer
-    function criarObjeto(infoObjeto) {
+    function processarObjeto(infoObjeto, infoLocalizacao, values) {
         axios.post(
             config.LINK_API + "/object", 
             infoObjeto, 
@@ -63,51 +46,54 @@ function FormRegistoObjetoPerdido() {
 
         ).then ( (res) => {
             if (res.status === 201) {
-                console.log("RES: "+res.data.id);
-                return res.data.id;
-                setErroInternoRegistoPerdido(false);
+
+                let idObj = res.data.id;
+
+                axios.post(
+                    config.LINK_API + "/location", 
+                    infoLocalizacao, 
+                    { headers: {'Content-Type': 'application/json'}},
+                ).then ( (res) => {
+                    if (res.status === 201) {
+                        let idLoc = res.data.id;
+
+                        let infoObjetoPerdido = {
+                            idObj: idObj,
+                            idLoc: idLoc,
+                            lostDate: values.lostDate,
+                            lostTime: values.lostTime,
+                            lostDateInfLim: values.lostDateInfLim,
+                            lostDateSupLim: values.lostDateSupLim
+                        }
+                        console.log(infoObjetoPerdido);
+
+                        axios.post(
+                            config.LINK_API + "/lostObject", 
+                            infoObjetoPerdido, 
+                            { headers: {'Content-Type': 'application/json'}},
+                        ).then ( (res) => {
+                            if (res.status === 201) {
+                                setErroInternoRegistoPerdido(false);
+                            } 
+                        }).catch(function (error) {
+                            if ( error.response ) {
+                                setErroInternoRegistoPerdido(true);
+                            }
+                        });
+
+                    } 
+                }).catch(function (error) {
+                    if ( error.response ) {
+                        setErroInternoRegistoPerdido(true);
+                    }
+                });
+
             } 
         }).catch(function (error) {
             if ( error.response ) {
                 setErroInternoRegistoPerdido(true);
             }
         })
-        return 0;
-    }
-  
-    function criarObjetoPerdido(infoObjetoPerdido) {
-        axios.post(
-            config.LINK_API + "/lostObject", 
-            infoObjetoPerdido, 
-            { headers: {'Content-Type': 'application/json'}},
-        ).then ( (res) => {
-            if (res.status === 201) {
-                setErroInternoRegistoPerdido(false);
-            } 
-        }).catch(function (error) {
-            if ( error.response ) {
-                setErroInternoRegistoPerdido(true);
-            }
-        });
-    }
-
-    function criarLocalizacao(infoLocalizacao) {
-        let idLoc = 0;
-        axios.post(
-            config.LINK_API + "/location", 
-            infoLocalizacao, 
-            { headers: {'Content-Type': 'application/json'}},
-        ).then ( (res) => {
-            if (res.status === 201) {
-                idLoc = res.data.id;
-                setErroInternoRegistoPerdido(false);
-            } 
-        }).catch(function (error) {
-            if ( error.response ) {
-                setErroInternoRegistoPerdido(true);
-            }
-        });
-        return idLoc;
     }
 
     // TODO: Falar com o stor...
@@ -248,10 +234,10 @@ function FormRegistoObjetoPerdido() {
                 morada: values.morada,
                 codp: values.codp
             }
-            processoCriarObjeto(infoObjeto, infoLocalizacao, values);
+            processarObjeto(infoObjeto, infoLocalizacao, values);
 
             if ( !erroInternoRegistoPerdido ) {
-                //navigate("/lostObject/register/success");
+                navigate("/lostObject/register/success");
             }
         },
     });

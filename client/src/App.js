@@ -7,16 +7,14 @@ import ContaApagada from './Pages/ContaApagada';
 import RegistoComSucesso from './Pages/RegistoComSucesso';
 import RegistoNovoUtilizador from './Pages/RegistoNovoUtilizador';
 import LoginUtilizador from './Pages/LoginUtilizador';
-import PaginaEditarUser from './Pages/PaginaEditarUser';
 import PaginaPasswordAlterada from './Pages/PaginaPasswordAlterada';
 import GestaoDeConta from './Pages/GestaoDeConta';
 import PaginaAdmin from './Pages/PaginaAdmin';
 import FormObjetoPerdido from './Components/FormObjetoPerdido';
 import PaginaObjetoPerdido from './Pages/PaginaNovoObjetoPerdido';
 import PaginaObjetoPerdidoSucesso from './Pages/PaginaObjetoPerdidoSucesso';
-import VerObjetos from './Components/VerObjetos';
-import FormEditarObjetoPerdido from './Components/FormEditarObjetoPerdido';
 import PaginaVerObjetosRegistados from './Pages/PaginaVerObjetosRegistados';
+import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 
 function App() {
   return (
@@ -37,7 +35,7 @@ function App() {
           <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
           <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
           <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
-          <Route path="teste" element={<FormEditarObjetoPerdido/>} />
+          <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
         </Routes>
     </BrowserRouter>
     </>

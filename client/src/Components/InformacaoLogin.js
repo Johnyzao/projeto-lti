@@ -23,7 +23,6 @@ function InformacaoLogin() {
     
     if (logado) {
         dados = JSON.parse(localStorage.getItem("dados"));
-        console.log(dados);
     }
 
     return (

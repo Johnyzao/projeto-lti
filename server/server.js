@@ -1470,7 +1470,7 @@ app.get("/user/:nif/subscribedAuctions", async (req, res) => {
     }
 });
 
-// Pagar objeto no fim do leilão.
+// Pagar objeto no fim do leilão
 app.post("/user/:nif/payAuction/:auction_id", async (req, res) => {
     try{
 

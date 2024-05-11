@@ -5,9 +5,9 @@ let queryRegister = (args) => {
 
     const queryRegisto = {
         name: 'register-user',
-        text: 'INSERT INTO utilizador(nif, nic, nome, genero, dnasc, telemovel, email, password) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        values: [nif,nic,nome,gen,dnasc,telemovel,mail,pass]
+        text: 'INSERT INTO utilizador(nif, nic, nome, genero, dnasc, telemovel, email, password, removido) \
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        values: [nif,nic,nome,gen,dnasc,telemovel,mail,pass, 0]
         };
     
     return queryRegisto;
@@ -58,7 +58,7 @@ let queryDeleteUser = (nif) => {
 
     const queryApagarUser = {
         name: "delete-user",
-        text: "DELETE FROM utilizador WHERE nif=$1",
+        text: "UPDATE utilizador SET removido=1 WHERE nif=$1",
         values: [nif]
     }
 

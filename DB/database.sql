@@ -29,7 +29,8 @@ CREATE TABLE Utilizador (
     password VARCHAR(255) NOT NULL,
     morada VARCHAR(255),
     tipo_conta TEXT NOT NULL,
-    estado TEXT NOT NULL
+    estado TEXT NOT NULL,
+    removido INT
 )
 
 CREATE TABLE Dono (
@@ -42,7 +43,7 @@ CREATE TABLE Licitante (
     FOREIGN KEY (nif) REFERENCES Utilizador(nif)
 );
 
-CREATE TABLE localidade (
+CREATE TABLE localizacao (
     id INT PRIMARY KEY,
     pais TEXT NOT NULL,
     dist TEXT NOT NULL,
@@ -54,11 +55,17 @@ CREATE TABLE localidade (
     coords TEXT
 )
 
-CREATE TABLE Categoria ( 
+CREATE TABLE categoria ( 
     nome VARCHAR(255) PRIMARY KEY,
-    valor INT NOT NULL,
-    atributo VARCHAR(100) NOT NULL
 );
+
+CREATE TABLE campo(
+    nome TEXT PRIMARY KEY,
+    associado_a TEXT,
+    tipo_valor TEXT,
+    valor TEXT,
+    FOREIGN KEY (associado_a) REFERENCES categoria(nome)
+)
 
 -- Categorias por acrescentar
 CREATE TABLE objeto (
@@ -80,13 +87,14 @@ CREATE TABLE perdido (
     lostTime TEXT,
     lostDateInfLim DATE,
     lostDateSupLim DATE,
+    removido INT,
     PRIMARY KEY(id, idPerdido),
     FOREIGN KEY (objetoAchado) REFERENCES Achado(id),
     FOREIGN KEY (perdido_em) REFERENCES Localidade(id),
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );
 
-CREATE TABLE Achado (
+CREATE TABLE achado (
     id INT,
     idAchado INT,
     data_leilao TEXT NOT NULL,
@@ -96,6 +104,7 @@ CREATE TABLE Achado (
     foundTime TEXT,
     foundDateInfLim DATE,
     foundDateSupLim DATE,
+    removido INT,
     PRIMARY KEY (id, idAchado),
     FOREIGN KEY (policia) REFERENCES Policia(id),
     FOREIGN KEY (achado_em) REFERENCES Localidade(id),
@@ -136,13 +145,15 @@ CREATE TABLE Posto (
     morada VARCHAR(255) NOT NULL,
     localidade VARCHAR(255) NOT NULL,
     telefone VARCHAR(10) NOT NULL,
+    removido INT
 );
 
 CREATE TABLE Policia (
     id INT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
-    posto INT REFERENCES posto(id)
+    posto INT REFERENCES posto(id),
+    removido INT
 );
 
 CREATE TABLE Entrega (
@@ -162,6 +173,8 @@ CREATE TABLE Leilao (
     data_fim DATE NOT NULL,
     valor INT NOT NULL,
     id_achado INT NOT NULL,
+    removido INT,
+    aberto INT,
     FOREIGN KEY (id_achado) REFERENCES Achado(id)
 );
 
@@ -179,16 +192,15 @@ CREATE TABLE Licita (
 CREATE TABLE Ganha (
     nif INT,
     id_leilao INT,
-    id_achado INT,
-    PRIMARY KEY (nif, id_leilao, id_achado),
+    PRIMARY KEY (nif, id_leilao),
     FOREIGN KEY (nif) REFERENCES Licitante(nif),
-    FOREIGN KEY (id_leilao) REFERENCES Leilao(id),
-    FOREIGN KEY (id_achado) REFERENCES Achado(id)
+    FOREIGN KEY (id_leilao) REFERENCES Leilao(id)
 );
 
 CREATE TABLE Subscrever (
     nif INT,
     id_leilao INT,
+    removido INT,
     PRIMARY KEY (nif, id_leilao),
     FOREIGN KEY (nif) REFERENCES Licitante(nif),
     FOREIGN KEY (id_leilao) REFERENCES Leilao(id)

@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Col from 'react-bootstrap/Col';
+import Row from 'react-bootstrap/Row';
+
 // https://www.npmjs.com/package/axios
 // https://axios-http.com/docs/res_schema 
 import axios from 'axios';
@@ -9,119 +15,148 @@ import { useFormik } from 'formik';
 
 import validator from 'validator';
 
+import { useNavigate } from 'react-router-dom';
+
+//import useSignIn from 'react-auth-kit/hooks/useSignIn';
+
+import config from '../config';
+
 function Login() {
-  let [erroCreds, setErroCreds] = useState("");
-  let [erroServidor, setErroServidor] = useState("");
+  const navigate = useNavigate();
+  //const signIn = useSignIn();
+
+  let [erroCreds, setErroCreds] = useState(false);
+  let [erroServidor, setErroServidor] = useState(false);
 
   const validate = values => {
     const errors = {};
 
-    if ( !validator.isEmail( values.mail ) ) {
-      errors.mail = "Insira um mail válido.";
-    } else if ( !values.mail ) {
-      errors.mail = "Mail requerido para efetuar login."
-    }
+    validator.isEmail( values.mail ) && values.mail !== ""
+      ? delete errors.mail
+      : errors.mail = "Email inválido.";
 
-    if ( values.pass.length < 8) {
-      errors.pass = "Insira uma pass válida.";
-    } else if ( !values.pass) {
-      errors.mail = "Pass requerida para efetuar login."
-    }
+    /** Verificacoes da Pass **/
+    values.pass !== ""
+      ? delete errors.pass
+      : errors.pass = "Por favor insira uma password.";
 
+    console.table(errors);
     return errors;
   }
 
-  // Função a ser usada no handleSubmit do form.
-  async function autenticarUtilizador(mailUser, passUser) {
+  function autenticarUtilizador(mailUser, passUser) {
     let creds = {
       mail: validator.escape(validator.trim( mailUser )) , 
       pass: validator.escape(validator.trim( passUser ))
     };
 
-    await axios.post(
-       "http://localhost:3000/login" , 
+    axios.post(
+      config.LINK_API + "/login" , 
         creds ,
         { validateStatus: function (status) {
           return true;
         }},
         { headers: {'Content-Type': 'application/json'}}
     ).then( (res) => {
-        // Strings de debug
         console.log("Dados recebidos do pedido GET /login:" + res.data );
         console.log(res.statusText);
 
-        if ( res.status === 500 ) {
-          setErroCreds("");
-          setErroServidor("Por favor tente de novo, ocorreu um erro.");
-        } 
-
-        if ( res.status === 401 ) {
-          setErroServidor("");
-          setErroCreds("Email ou password errados, por favor insira as suas credenciais de novo.");
-        }
-
         if ( res.status === 200 ) {
-          setErroCreds("");
-          setErroServidor("");
-          // @TODO: Redirecionar para o home idk.
+
+          //signIn({
+          //  auth: {
+          //    token: '<jwt token>',
+          //    type: 'Bearer'
+          //  },
+          //  userState: { nif: res.data.token.nif, nome: res.data.token.nome },
+          //})
+          const {nome, mail, nif, estado, tipo} = res.data;
+          let dadosUser = { nome: nome, mail: mail, nif: nif, estado: estado, tipo: tipo};
+          localStorage.setItem("dados", JSON.stringify( dadosUser ));
+
+          setErroCreds(false);
+          setErroServidor(false);
+          navigate("/");
         } 
 
-    });
+        res.status === 401
+          ? setErroCreds(true)
+          : setErroCreds(false); 
+
+    }).catch(function (error) {
+      if ( error.response ) {
+        let codigo = error.response.status;
+        codigo === 500 
+          ? setErroServidor(true)
+          : setErroServidor(false);
+    }});
   };
 
   const formik = useFormik({
+    enableReinitialize: true,
     initialValues: {
       mail: '',
       pass: '',
     },
+    validateOnChange:false,
+    validateOnBlur:false,
     validate,
     onSubmit: values => {
-      autenticarUtilizador(values.mail, values.pass)
+      autenticarUtilizador(values.mail, values.pass);
     },
   });
 
   return (
-    <div>
-    <form onSubmit={formik.handleSubmit}>
-      <label htmlFor="mail">Mail</label>
-      <input
-        id="mail"
-        name="mail"
-        type="text"
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        value={formik.values.mail}
+    <Container fluid="sm">
+    <Row>
+    </Row>
+    <Row sm={2} >
+    <Form onSubmit={formik.handleSubmit} className="text-center">
+      <Form.Group className="mb-3">
+      <Form.Label htmlFor="mail">Mail</Form.Label>
+      <Form.Control
+          id="mail"
+          name="mail"
+          type="mail"
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          value={formik.values.mail}
       />
       {formik.touched.mail && formik.errors.mail ? (
-        <div>{formik.errors.mail}</div>
+        <div className='text-danger'>{formik.errors.mail}</div>
       ) : null}
 
       <br></br>
 
-      <label htmlFor="pass">Pass</label>
-      <input
+      <Form.Label htmlFor="pass">Pass</Form.Label>
+      <Form.Control
         id="pass"
         name="pass"
-        type="text"
+        type="password"
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
         value={formik.values.pass}
       />
       {formik.touched.pass && formik.errors.pass ? (
-        <div>{formik.errors.pass}</div>
+        <div className='text-danger'>{formik.errors.pass}</div>
       ) : null}
 
-      {erroServidor !== "" ? (
-        <div>{erroServidor}</div>
-      ) : null}
+      <br/>
+    </Form.Group>
 
-      {erroCreds !== "" ? (
-        <div>{erroCreds}</div>
-      ) : null}
+    { erroServidor 
+        ? (<p className='text-danger'>Por favor tente de novo, ocorreu um erro.</p>) 
+        : null }
 
-      <button type="submit">Submit</button>
-    </form>
-    </div>
+      { erroCreds 
+        ? (<p className='text-danger'>Email ou password errados, por favor insira as suas credenciais de novo.</p>) 
+        : null 
+      }
+
+    <Button type="submit">Submit</Button>
+    </Form>
+    </Row>
+    </Container>
   );
 }
 

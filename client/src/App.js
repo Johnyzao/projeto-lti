@@ -1,22 +1,47 @@
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route
-} from "react-router-dom";
-import Home from './Components/Home';
-import Login from './Components/Login';
-import Registo from './Components/Registo';
+import { Route, BrowserRouter, Routes } from "react-router-dom";
+import Home from "./Components/Home";
+
+import ContaDesativada from './Pages/ContaDesativada';
+import ContaApagada from './Pages/ContaApagada';
+import RegistoComSucesso from './Pages/RegistoComSucesso';
+import RegistoNovoUtilizador from './Pages/RegistoNovoUtilizador';
+import LoginUtilizador from './Pages/LoginUtilizador';
+import PaginaPasswordAlterada from './Pages/PaginaPasswordAlterada';
+import GestaoDeConta from './Pages/GestaoDeConta';
+import PaginaAdmin from './Pages/PaginaAdmin';
+import PaginaObjetoPerdido from './Pages/PaginaNovoObjetoPerdido';
+import PaginaObjetoPerdidoSucesso from './Pages/PaginaObjetoPerdidoSucesso';
+import PaginaVerObjetosRegistados from './Pages/PaginaVerObjetosRegistados';
+import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
+import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
+import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/registo" element={<Registo />} />
-      </Routes>
-    </Router>
+    <>
+    <BrowserRouter>
+        <Routes>
+          <Route index path="/" element={<Home/>} />
+          <Route path="register/success" element={<RegistoComSucesso/>}/>
+          <Route path="register" element={<RegistoNovoUtilizador/>}/>
+          <Route path="login" element={<LoginUtilizador/>}/>
+          <Route path="editUser" element={<GestaoDeConta/>}/>
+          <Route path="accountDeactivated" element={<ContaDesativada/>}/>
+          <Route path="accountDeleted" element={<ContaApagada/>}/>
+          <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>} />
+          <Route path="admin" element={<PaginaAdmin/>} />
+          <Route path="lostObject/register" element={<PaginaObjetoPerdido/>}/>
+          <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
+          <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+          <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
+          <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
+          <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
+          <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+          <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
+        </Routes>
+    </BrowserRouter>
+    </>
   );
 }
 

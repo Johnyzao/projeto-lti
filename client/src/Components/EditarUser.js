@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Link from 'react';
+
+// Informacoes da API.
+import config from '../config';
 
 // https://www.npmjs.com/package/axios
 // https://axios-http.com/docs/res_schema 
@@ -10,97 +12,167 @@ import { useFormik } from 'formik';
 
 import validator from 'validator';
 
+import PopupAlterarPass from '../Popups/PopupAlterarPass';
+import PopupApagarConta from '../Popups/PopupApagarConta';
+import PopupDesativarConta from '../Popups/PopupDesativarConta';
+
+// Imports do bootstrap.
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Col from 'react-bootstrap/Col';
+import Row from 'react-bootstrap/Row';
+import PasswordStrengthBar from 'react-password-strength-bar';
+
+
 function EditarUser() {
+    let nif = JSON.parse( localStorage.getItem( "dados" ) ).nif;
+    let mailAtual = JSON.parse( localStorage.getItem( "dados" ) ).mail;
+
+    let templateDados = {
+        nome: "",
+        mail: "",
+        telemovel: "",
+        genero: "",
+        morada: "",
+        nif: 0,
+        nic: 0,
+        dnasc: "01/01/2000"
+    };
+    
     const [modoEdicao, setModoEdicao] = useState(false);
-    const [dadosAtuais, setDadosAtuais] = useState({});
+    const [dadosAtuais, setDadosAtuais] = useState(templateDados);
     const [mailDuplicado, setMailDuplicado] = useState(false);
+    const [erroInternoEdicao, setErroInternoEdicao] = useState(false);
+    const [dadosAlterados, setDadosAlterados] = useState(false);
 
     function verificarMailDuplicado(novoMail) {
         axios.get(
-            "http://localhost:3000/checkMailDuplicate",
-            {mail: novoMail},
-            { headers: {'Content-Type': 'application/json'}}
+            config.LINK_API + "/checkMailDuplicate/" + novoMail,
+            { headers: {'Content-Type': 'application/json'}},
+            { validateStatus: function (status) {
+              return true;
+            }}
         ).then( (res) => {
             res.status === 200 
                 ? setMailDuplicado(false)
                 : setMailDuplicado(true);
-        });
-    }
+
+      }).catch(function (error) {
+        if ( error.response ) {
+            let codigo = error.response.status;
+    
+            codigo === 401
+              ? setMailDuplicado(true) 
+              : setMailDuplicado(false); 
+    
+            codigo === 500 
+              ? setErroInternoEdicao(true) 
+              : setErroInternoEdicao(false); 
+
+            
+            setTimeout(() => {
+                setErroInternoEdicao( false );
+            }, 5000);
+        }
+        })
+      }
 
     const validate = values => {
         const errors = {};
 
         /** Verificacoes do Nome **/
-        validator.isAlpha( values.nome ) && values.nome !== "" 
-            ? errors.nome = ""  
+        values.nome !== "" 
+            ? delete errors.nome  
             :  errors.nome = "Nome inválido.";
         
         /** Verificacoes do Mail **/
         validator.isEmail( values.mail ) && values.mail !== ""  
-            ? errors.mail = ""
+            ? delete errors.mail
             : errors.mail = "Email inválido.";
         
         verificarMailDuplicado(values.mail);
         mailDuplicado
             ? errors.mail = "Email já existe, por favor insira outro."
-            : errors.mail = "";
+            : delete errors.mail;
 
+        if (values.mail === mailAtual) {
+            delete errors.mail;
+        }
+            
         /** Verificacoes do NIC **/
         ( (validator.isNumeric(values.nic) && (values.nic.length === 8) ) || values.nic === "") 
-            ? errors.nic = ""
+            ? delete errors.nic 
             : errors.nic = "NIC inválido.";
 
         /** Verificacoes do Telemovel **/
         validator.isMobilePhone( values.telemovel ) || values.telemovel === "" 
-            ? errors.telemovel = ""
+            ? delete errors.telemovel
             : errors.telemovel = "Número de telemóvel inválido.";
 
+        !erroInternoEdicao 
+            ? delete errors.erroInterno
+            : errors.erroInterno = "Erro interno, por favor tente de novo.";
+
+        console.table(errors);
         return errors;
     }
 
-    function obterInfoUtilizador() {
-        axios.get(
-            "http://localhost:3000/getSession",
+    async function obterInfoUtilizador(nif) {
+        await axios.get(
+            config.LINK_API + "/user/" + nif,
             { headers: {'Content-Type': 'application/json'}},
-            { validateStatus: function (status) {
-                return true;
-            }}
         ).then( ( res ) => {
             setDadosAtuais( res.data );
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                codigo === 500 
+                  ? setErroInternoEdicao(true) 
+                  : setErroInternoEdicao(false); 
+
+                setTimeout(() => {
+                    setErroInternoEdicao( false );
+                }, 5000);
+            }
         });
     }
 
-    // TODO
     async function atualizarUtilizador(novaInfoUser) {
     
         await axios.put(
-           "http://localhost:3000/user" , 
+           config.LINK_API + "/user" , 
             novaInfoUser ,
-            { validateStatus: function (status) {
-              return true;
-            }},
             { headers: {'Content-Type': 'application/json'}}
         ).then( (res) => {
-            // Strings de debug
-            console.log("Dados recebidos do pedido PUT /edit:" + res.data );
-            console.log(res.statusText);
-    
-            if ( res.status === 500 ) {
-                // TODO
-            } 
-    
-            if ( res.status === 401 ) {
-                // TODO
-            }
     
             if ( res.status === 200 ) {
-                // TODO
+                setModoEdicao(false);
+                setDadosAlterados(true);
+
+                setTimeout(() => {
+                    setDadosAlterados( false );
+                }, 5000);
+
+                obterInfoUtilizador(nif);
             } 
     
-        });
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                
+                codigo === 500 
+                  ? setErroInternoEdicao(true) 
+                  : setErroInternoEdicao(false); 
+
+                setTimeout(() => {
+                    setErroInternoEdicao( false );
+                }, 5000);
+            }
+        })
     };
 
-    useEffect( () => { obterInfoUtilizador() }, [] );
+    useEffect( () => { obterInfoUtilizador(nif) }, [] );
     const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -108,23 +180,25 @@ function EditarUser() {
         mail: dadosAtuais.mail,
         nic: dadosAtuais.nic, 
         telemovel: dadosAtuais.telemovel, 
-        gen: dadosAtuais.gen, 
         morada: dadosAtuais.morada
     },
     validate,
     onSubmit: values => {
-        atualizarUtilizador( values );
+        let dadosNovos = {nome: values.nome, mail: values.mail, nic:values.nic, telemovel:values.telemovel, morada: values.morada, nif: nif};
+        atualizarUtilizador( dadosNovos );
     },
     });
 
     return (
-        <>
+        <div className='container-sm bg-light'>
             <h1> Informações pessoais </h1>
                 <h4> Editar informações pessoais </h4>
-            <form onSubmit={formik.handleSubmit}>
+            <Form onSubmit={formik.handleSubmit}>
+                <Row>
+                <Col>
                 { /** Nome **/ }
-                <label htmlFor="nome">Nome: </label>
-                <input
+                <Form.Label htmlFor="nome">Nome: </Form.Label>
+                <Form.Control
                     id="nome"
                     name="nome"
                     type="text"
@@ -135,16 +209,14 @@ function EditarUser() {
                 />
 
                 {formik.touched.nome && formik.errors.nome ? (
-                    <div>{formik.errors.nome}</div>
+                    <div className='text-danger'>{formik.errors.nome}</div>
                 ) : null}
+                </Col>
 
-                { /** NIF **/ }
-                { /** Faria sentido deixar alterar o NIF?? */}
-                <p>O seu NIF: {dadosAtuais.nif} </p>
-
+                <Col>
                 { /** Mail **/ }
-                <label htmlFor="mail">Mail:</label>
-                <input
+                <Form.Label htmlFor="mail">Mail:</Form.Label>
+                <Form.Control
                     id="mail"
                     name="mail"
                     type="mail"
@@ -155,26 +227,17 @@ function EditarUser() {
                 />
 
                 {formik.touched.mail && formik.errors.mail ? (
-                    <div>{formik.errors.mail}</div>
+                    <div className='text-danger'>{formik.errors.mail}</div>
                 ) : null}
                 <br/>
-
-                { /** Mail **/ }
-                <label htmlFor="dnasc">Data de Nascimento:</label>
-                <input
-                    id="dnasc"
-                    name="dnasc"
-                    type="date"
-                    disabled={!modoEdicao}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.dnasc}
-                />
-                <br/>
+                </Col>
+                </Row>
 
                 { /** NIC **/ }
-                <label htmlFor="nic">NIC:</label>
-                <input
+                <Row>
+                <Col>
+                <Form.Label htmlFor="nic">NIC:</Form.Label>
+                <Form.Control
                     id="nic"
                     name="nic"
                     type="text"
@@ -185,13 +248,15 @@ function EditarUser() {
                 />
 
                 {formik.touched.nic && formik.errors.nic ? (
-                    <div>{formik.errors.nic}</div>
+                    <div className='text-danger'>{formik.errors.nic}</div>
                 ) : null}
                 <br/>
+                </Col>
 
                 { /** Número de telemóvel **/ }
-                <label htmlFor="nic">Número de telemóvel:</label>
-                <input
+                <Col>
+                <Form.Label htmlFor="nic">Número de telemóvel:</Form.Label>
+                <Form.Control
                     id="telemovel"
                     name="telemovel"
                     type="text"
@@ -202,15 +267,15 @@ function EditarUser() {
                 />
 
                 {formik.touched.telemovel && formik.errors.telemovel ? (
-                    <div>{formik.errors.telemovel}</div>
+                    <div className='text-danger'>{formik.errors.telemovel}</div>
                 ) : null}
                 <br/>
-
-                { /** TODO: Género **/ }
+                </Col>
 
                 { /** Morada **/ }
-                <label htmlFor="nic">Morada:</label>
-                <input
+                <Col>
+                <Form.Label htmlFor="nic">Morada:</Form.Label>
+                <Form.Control
                     id="morada"
                     name="morada"
                     type="text"
@@ -221,20 +286,31 @@ function EditarUser() {
                 />
 
                 {formik.touched.morada && formik.errors.morada ? (
-                    <div>{formik.errors.morada}</div>
+                    <div className='text-danger'>{formik.errors.morada}</div>
                 ) : null}
                 <br/>
+                </Col>
+                </Row>
 
-            { modoEdicao ? (
-                <button type="submit"> Submeter Alterações </button>
-            ) : null }
-            </form>
-
+                { erroInternoEdicao ? (<p className='text-danger text-center'> Erro interno, por favor tente outra vez. </p>) : null }
+                { dadosAlterados ? (<p className='text-success text-center'> Dados alterados com sucesso. </p>) : null }
+                <br/>
+                <br/>
+                { modoEdicao ? (
+                    <Container className='text-center'>
+                    <Button className='text-center' type="submit" onClick={formik.handleSubmit}> Submeter Alterações </Button>
+                    <br/>
+                    <br/>
+                    </Container>
+                ) : null }
+            </Form>
+        
+        <Container className='text-center'>
         { !modoEdicao ? (
-            <button onClick={ () => {setModoEdicao(true)} }> Editar Informações </button>
+            <Button className='btn btn-primary' onClick={ () => {setModoEdicao(true)} }> Editar Informações </Button>
         ) : (
             <div>
-                <button onClick={ () => {
+                <Button onClick={ () => {
                     formik.resetForm({
                         values: {
                             nome: dadosAtuais.nome,
@@ -245,30 +321,44 @@ function EditarUser() {
                             morada: dadosAtuais.morada 
                         }
                     })
-                }}> Reset </button>
-                <button onClick={ () => {setModoEdicao(false)} }> Cancelar </button>
+                }}> Reset </Button>
+                <span> &ensp; </span>
+                <Button onClick={ () => {
+                    setModoEdicao(false);
+                    formik.resetForm({
+                        values: {
+                            nome: dadosAtuais.nome,
+                            mail: dadosAtuais.mail,
+                            nic: dadosAtuais.nic, 
+                            telemovel: dadosAtuais.telemovel, 
+                            gen: dadosAtuais.gen, 
+                            morada: dadosAtuais.morada 
+                        }
+                    })
+                }}> Cancelar </Button>
             </div>
         )}
+        </Container>
 
-        <br/>
         <br/>
         <br/>
         <br/>
 
         <div>
             <h4> Alterar a sua password </h4>
-            {/** TODO! */}
+            <PopupAlterarPass nif={dadosAtuais.nif}/>
         </div>
+
+        <br/>
+        <br/>
+        <br/>
 
         <div>
-            <h4> Remoção de conta </h4>
-            <p> Desativar a sua conta significa que pode voltar a ativá-la a qualquer momento. </p>
-
-            { /** TODO: Adicionar espaço entre os dois botões! */ }
-            <button onClick={ () => {} }> Desativar conta </button>
-            <button onClick={ () => {} }> Apagar conta </button>
+            <h4> Apagar conta </h4>
+            {' '}
+            <PopupApagarConta nif={dadosAtuais.nif}/>
         </div>
-        </>
+        </div>
     )
 }
 

@@ -1,17 +1,18 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import Header from './Header';
+import Popup from 'reactjs-popup';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
 
-class Home extends Component {
-  render() {
-    return (
-      <div>
-        <p>Esta é a página principal.</p>
-        <Link to="./Login"><button>Login</button></Link>
-        <Link to="./Registo"><button>Register</button></Link>
-       
-      </div>
-    );
-  }
+function Home() {
+  return (
+    <>
+    <Header/>
+    <div>
+      <p>Esta é a página principal.</p>
+    </div>
+  </>
+  )
 }
 
 export default Home;

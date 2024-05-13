@@ -768,65 +768,49 @@ app.delete("/object/:object_id", async (req, res) => {
 /** TODO: Categorias erradas... **/
 app.post("/category", async (req, res) => {
     try {
-        const params = { ...req.body }
-        const result = await categoryDB.insert(params);
+        let { nomeCat } = req.body;
 
-        if (result.rowCount === 0) {
-            throw new HttpException(404, "");
+        let queryCriarCategoria = {
+            text: "INSERT INTO nomecategoria(nome) VALUES($1)",
+            values: [nomeCat]
         }
 
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-        if (error instanceof HttpException) {
-            res.status(error.status_code).send();
+        let criarNomeCat = await dbClient.query(queryCriarCategoria);
+        if (criarNomeCat.rowCount === 0) {
+            res.status(404).send();
         } else {
-            res.status(500).send();
+
         }
+
+
+    } catch (error) {
+        console.log("Erro no POST /category: " + error);
     }
 });
 
-app.put("/category", async (req, res) => {
+app.post("/field", async (req, res) => {
     try {
-        const params = { ...req.body }
+        let { nomeCampo, tipoValor, valores } = req.body;
 
-        const result = await categoryDB.update(params);
+        valores === "" ? valores = null : valores;
 
-        if (result.rowCount === 0) {
-            throw new HttpException(404, "");
+        let queryCriarCampo = {
+            text: "INSERT INTO campo(nome, tipo_valor, valores) VALUES($1, $2, $3)",
+            values: [nomeCampo, tipoValor, valores]
         }
 
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-        if (error instanceof HttpException) {
-            res.status(error.status_code).send();
+        let criarNomeCat = await dbClient.query(queryCriarCampo);
+        if (criarNomeCat.rowCount === 0) {
+            res.status(404).send();
         } else {
-            res.status(500).send();
+            res.status(201).send();
         }
+
+    } catch (error) {
+        console.log("Erro no POST /field: " + error);
     }
 });
 
-app.delete("/category", async (req, res) => {
-    try {
-        const params = { ...req.body }
-
-        const result = await categoryDB.delete_category(params.nome);
-
-        if (result.rowCount === 0) {
-            throw new HttpException(404, "");
-        }
-
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-        if (error instanceof HttpException) {
-            res.status(error.status_code).send();
-        } else {
-            res.status(500).send();
-        }
-    }
-});
 /** TODO: Categorias erradas... **/
 
 app.get("/location/:location_id", async (req, res) => {
@@ -1245,7 +1229,6 @@ app.delete("/auction/:auction_id", async (req, res) => {
         res.status(500).send();
     }
 });
-
 
 app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
     try{

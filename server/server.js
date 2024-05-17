@@ -766,24 +766,48 @@ app.delete("/object/:object_id", async (req, res) => {
 });
 
 /** TODO: Categorias erradas... **/
-app.post("/category", async (req, res) => {
+app.post("/categoryName", async (req, res) => {
     try {
         let { nomeCat } = req.body;
 
-        let queryCriarCategoria = {
+        let queryCriarNomeCategoria = {
             text: "INSERT INTO nomecategoria(nome) VALUES($1)",
             values: [nomeCat]
         }
 
-        let criarNomeCat = await dbClient.query(queryCriarCategoria);
+        let criarNomeCat = await dbClient.query(queryCriarNomeCategoria);
         if (criarNomeCat.rowCount === 0) {
             res.status(404).send();
         } else {
-
+            res.status(201).send();
         }
 
 
     } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
+    }
+});
+
+app.post("/category", async (req, res) => {
+    try {
+        let { cat, campo } = req.body;
+
+        let queryAssociarCampoACategoria = {
+            text: "INSERT INTO categoria(cat, campo) VALUES($1, $2)",
+            values: [cat, campo]
+        }
+
+        let criarNomeCat = await dbClient.query(queryAssociarCampoACategoria);
+        if (criarNomeCat.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send();
+        }
+
+
+    } catch (error) {
+        res.status(500).send();
         console.log("Erro no POST /category: " + error);
     }
 });
@@ -792,7 +816,7 @@ app.post("/field", async (req, res) => {
     try {
         let { nomeCampo, tipoValor, valores } = req.body;
 
-        valores === "" ? valores = null : valores;
+        valores = null;
 
         let queryCriarCampo = {
             text: "INSERT INTO campo(nome, tipo_valor, valores) VALUES($1, $2, $3)",
@@ -807,6 +831,7 @@ app.post("/field", async (req, res) => {
         }
 
     } catch (error) {
+        res.status(500).send();
         console.log("Erro no POST /field: " + error);
     }
 });

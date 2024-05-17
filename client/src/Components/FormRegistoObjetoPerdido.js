@@ -488,7 +488,7 @@ function FormRegistoObjetoPerdido() {
                 <br/>
                 <h4>Categorização do objeto</h4>
                 <Form.Group className='border'>
-                <p>Crie categorias que ache úteis para descrever o objeto e associe-as ao objeto em questão.</p>
+                <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
 
                 </Form.Group>
 

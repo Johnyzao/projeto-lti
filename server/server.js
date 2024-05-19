@@ -655,7 +655,7 @@ app.get("/policeStation/:id", async (req, res) => {
 
 app.post("/object", async (req, res) => {
     try {
-        let { titulo, nifUser, desc, imagens, dataRegisto } = req.body;
+        let { titulo, nifUser, desc, imagens, dataRegisto, categoria } = req.body;
 
         imagens == [] ? imagens = null : imagens;
 
@@ -668,8 +668,8 @@ app.post("/object", async (req, res) => {
         let id = (await dbClient.query(queryObterIdNovoObjeto)).rowCount + 1;
 
         let queryCriarObjeto = {
-            text: "INSERT INTO objeto(id,nifUser,descricao,titulo,imagens, dataRegisto) VALUES($1,$2,$3,$4,$5,$6)",
-            values: [id,nifUser,desc,titulo,imagensEmString, dataRegisto]
+            text: "INSERT INTO objeto(id,nifUser,descricao,titulo,imagens, dataRegisto, categoria) VALUES($1,$2,$3,$4,$5,$6,$7)",
+            values: [id,nifUser,desc,titulo,imagensEmString, dataRegisto, categoria]
         }
         let result = await dbClient.query(queryCriarObjeto);
 
@@ -681,6 +681,26 @@ app.post("/object", async (req, res) => {
     } catch (error) {
         console.log(error);
     }
+});
+
+app.post("/object/setField", async (req, res) => {
+    try {
+        let { idObj, campo, valor } = req.body;
+
+        let queryInserirValorCampo = {
+            text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
+            values: [idObj, campo, valor]
+        }
+        let result = await dbClient.query(queryInserirValorCampo);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send();
+        }
+    } catch (error) {
+        console.log(error);
+    } 
 });
 
 app.put("/object", async (req, res) => {
@@ -765,7 +785,6 @@ app.delete("/object/:object_id", async (req, res) => {
     }
 });
 
-/** TODO: Categorias erradas... **/
 app.post("/categoryName", async (req, res) => {
     try {
         let { nomeCat } = req.body;
@@ -812,6 +831,49 @@ app.post("/category", async (req, res) => {
     }
 });
 
+app.get("/category", async (req, res) => {
+    try {
+
+        let queryObterCategorias = {
+            text: "SELECT * FROM categoria"
+        }
+
+        let results = await dbClient.query(queryObterCategorias);
+        if (results.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({ categorias: results.rows });
+        }
+
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
+    }
+});
+
+app.get("/categoryFields/:categoryName", async (req, res) => {
+    try {
+
+        let queryObterCategorias = {
+            text: "SELECT campo FROM categoria WHERE cat=$1",
+            values: [req.params.categoryName]
+        }
+
+        let results = await dbClient.query(queryObterCategorias);
+        if (results.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send(results.rows);
+        }
+
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
+    }
+});
+
 app.post("/field", async (req, res) => {
     try {
         let { nomeCampo, tipoValor, valores } = req.body;
@@ -836,7 +898,25 @@ app.post("/field", async (req, res) => {
     }
 });
 
-/** TODO: Categorias erradas... **/
+app.get("/field/:fieldName", async (req, res) => {
+    try {
+        let queryObterInfoCampo = {
+            text: "SELECT * FROM campo WHERE nome=$1",
+            values: [req.params.fieldName]
+        }
+
+        let results = await dbClient.query(queryObterInfoCampo);
+        if (results.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send( results.rows );
+        }
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /field: " + error);
+    }
+});
 
 app.get("/location/:location_id", async (req, res) => {
     try {

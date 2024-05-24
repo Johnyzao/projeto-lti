@@ -27,10 +27,10 @@ function FormRegistoObjetoPerdido() {
     const [sabeData, setSabeData] = useState(false);
     const [naoSabeData, setNaoSabeData] = useState(false);
     const [distrito, setDistrito] = useState("Aveiro");
-    const [categoria, setCategoria] = useState("");
-
-    const [categorias, setCategorias] = useState(new Object());
     const [erroInternoRegistoPerdido, setErroInternoRegistoPerdido] = useState(false);
+
+    const [categoria, setCategoria] = useState("");
+    const [categorias, setCategorias] = useState(new Object());
     const [camposDaCategoria, setCamposDaCategoria] = useState([]);
     const [tiposDosCampos, setTiposDosCampos] = useState(new Object());
 
@@ -85,7 +85,6 @@ function FormRegistoObjetoPerdido() {
                             lostDateInfLim: values.lostDateInfLim,
                             lostDateSupLim: values.lostDateSupLim
                         }
-                        console.log(infoObjetoPerdido);
 
                         axios.post(
                             config.LINK_API + "/lostObject", 

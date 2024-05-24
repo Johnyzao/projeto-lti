@@ -703,9 +703,36 @@ app.post("/object/setField", async (req, res) => {
     } 
 });
 
+app.put("/object/setField", async (req, res) => {
+    try {
+        let { idObj, campo, valor } = req.body;
+
+        let queryLimparAtributos = {
+            text: "DELETE FROM atributoobjeto WHERE idobj=$1",
+            values: [idObj]
+        }
+        await dbClient.query(queryLimparAtributos);
+
+        let queryInserirValorCampo = {
+            text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
+            values: [idObj, campo, valor]
+        }
+        let result = await dbClient.query(queryInserirValorCampo);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send();
+        }
+    } catch (error) {
+        res.status(500).send();
+        console.log(error);
+    } 
+});
+
 app.put("/object", async (req, res) => {
     try {
-        let { idObj, titulo, desc, imagens } = req.body;
+        let { idObj, titulo, desc, imagens, categoria } = req.body;
 
         imagens == [] ? imagens = null : imagens;
 
@@ -713,8 +740,8 @@ app.put("/object", async (req, res) => {
         imagens.forEach( (imagem) => { imagensEmString += imagem.data_url + "?" } );
 
         let queryAtualizarObjeto = {
-            text: "UPDATE objeto SET descricao=$3, titulo=$2, imagens=$4 WHERE id=$1",
-            values: [idObj, titulo, desc, imagensEmString]
+            text: "UPDATE objeto SET descricao=$3, titulo=$2, imagens=$4, categoria=$5 WHERE id=$1",
+            values: [idObj, titulo, desc, imagensEmString, categoria]
         }
         let result = await dbClient.query(queryAtualizarObjeto);
         if ( result.rowCount === 1 ) {
@@ -759,6 +786,28 @@ app.get("/object/:object_id", async (req, res) => {
             res.status(404).send();
         } else {
             res.status(200).send({obj: objeto});
+        }
+    } catch (error) {
+        console.log(error);
+
+    }
+});
+
+app.get( "/object/atributes/:object_id", async (req, res) => {
+    try {
+
+        let queryObterAtributos = {
+            text: "SELECT * FROM atributoobjeto WHERE idobj=$1",
+            values: [req.params.object_id]
+        }
+        let result = await dbClient.query(queryObterAtributos);
+        let atributos = result.rows;
+        console.log(atributos);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send(atributos);
         }
     } catch (error) {
         console.log(error);

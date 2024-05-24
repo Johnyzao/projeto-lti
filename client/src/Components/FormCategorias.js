@@ -1,132 +1,209 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
+import { Formik, Field, FieldArray } from 'formik';
 
+import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
 
-import { useFormik } from 'formik';
+// Informacoes da API.
+import config from '../config';
+
+// https://axios-http.com/docs/res_schema 
+import axios from 'axios';
 
 function FormCategorias() {
 
-    const [numeroAtr, setNumeroAtr] = useState(1);
+    const [erroRegistarCategoria, setErroRegistarCategoria] = useState(false);
+    const [erroInternoCategoria, setErroInternoCategoria] = useState(false);
+
+    const [categoriaCriadaComSucesso, setCategoriaCriadaComSucesso] = useState(false);
 
     const validate = values => {
         const errors = {};
 
-        for( let i=1; i < Object.keys(values).length / 3; i++ ) {
+        values.categoria !== "" 
+            ? delete errors.categoria
+            : errors.categoria = "Por favor, escreva um nome para a categoria.";
+        
+        let camposValidos = true;
+        values.campos.map( campo => {
+            campo === ""
+                ? camposValidos = false
+                : camposValidos = true;
+        });
 
-            if ( values["atr"+i] !== "" ) {
-                setNumeroAtr( numeroAtr+1 );
-            }
+        camposValidos === false 
+            ? errors.campos = "Por favor preencha todos os campos ou apague os campos sem nome." 
+            : delete errors.campos;
 
-            i+=1;
-        }
-
+        console.table(errors);
         return errors;
     }
 
-    const formik = useFormik({
-        initialValues: {
-            nomeCat: "",
-            atr1: "",
-            type1: ""
-        },
-        validate,
-        onSubmit: values => {
-            
-        },
-    });
 
-    function desenharFormAtributos() {
-        let atr = "atr"+numeroAtr;
-        let type = "type"+numeroAtr;
-
-        formik.initialValues[atr] = "";
-        formik.initialValues[type]= "";
-
-        return ( <>
-            <Form.Label htmlFor={atr}>Nome do atributo #{numeroAtr}:<span className='text-danger'>*</span>  </Form.Label>
-            <Form.Control
-                        id={atr}
-                        name={atr}
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values[atr]}
-                    />
-            <br/>
-
-            <Form.Label htmlFor={type}>Tipo de dados do atributo #{numeroAtr}:<span className='text-danger'>*</span>  </Form.Label>
-            <Form.Control
-                        as="select"
-                        id={type}
-                        name={type}
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values[type]}
-            >
-                <option value="number"> Numérico </option>
-                <option value="text"> Texto </option>
-                <option value="alphanumeric"> Alfanumérico </option>
-            </Form.Control>
-            <br/>
-        </>
-        )
+    function removerCampo(arrayHelpers, index, values) {
+        arrayHelpers.remove(index)
     }
 
-    return (
-        <>
-            <Form onSubmit={formik.handleSubmit}>
-            <h3 className='text-center'> Criar uma categoria nova </h3>
-            <Form.Label htmlFor="nomeCat">Nome da categoria:<span className='text-danger'>*</span>  </Form.Label>
+    async function registarCampoDaCategoria( campo ){
+        await axios.post(
+            config.LINK_API + "/field",
+            campo,
+            { headers: {'Content-Type': 'application/json'}},
+        ).then( ( res ) => {
+
+            if ( res.status === 201 ) {
+
+            } 
+
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                if ( codigo === 500 ) {
+                    setErroInternoCategoria(true);
+                    setTimeout(() => {
+                        setErroInternoCategoria(true);
+                    }, 5000);
+                }
+            }
+        });
+    }
+
+    async function registarCategoriaNova( infoCategoria ){
+        await axios.post(
+            config.LINK_API + "/categoryName",
+            infoCategoria,
+            { headers: {'Content-Type': 'application/json'}},
+        ).then( ( res ) => {
+
+            if ( res.status === 201 ) {
+                setCategoriaCriadaComSucesso(true);
+                setTimeout(() => {
+                    setCategoriaCriadaComSucesso(false);
+                }, 5000);
+            }
+
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+
+                if ( codigo === 500 ) {
+                    setErroRegistarCategoria(true);
+                    setTimeout(() => {
+                        setErroRegistarCategoria(false);
+                    }, 5000);
+                }
+            }
+        });
+    }
+
+    async function registarAssociacao( info ){
+        await axios.post(
+            config.LINK_API + "/category",
+            info,
+            { headers: {'Content-Type': 'application/json'}},
+        ).then( ( res ) => {
+
+        }).catch( function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+
+            }
+        });
+    }
+
+    return(
+        <div>
+        <h1>Registo de uma categoria nova</h1>
+        <br/>
+        <Formik
+            initialValues={
+                { campos: ['Cor', 'Marca' ], camposTipo: ['text', 'text'] ,categoria: '' }
+            }
+            validate={validate}
+            onSubmit={values => {
+                registarCategoriaNova( { nomeCat: values.categoria } );
+                values.campos.map( (campo, index) => {
+                    let campoNovo = { nomeCampo: campo, tipoValor: values.camposTipo[index], valores: null }
+                    registarCampoDaCategoria(campoNovo);
+
+                    let associarCampoACategoria = { cat: values.categoria, campo: campo };
+                    registarAssociacao(associarCampoACategoria);
+                })
+            }
+          }
+        >
+        {({ values, handleBlur, handleChange, handleSubmit, errors }) => (
+        <Form onSubmit={handleSubmit}>
+            <FieldArray
+                name="campos"
+                render={arrayHelpers => (
+                    <div>
+                    <Form.Label htmlFor="categoria">Nome da nova categoria:<span className='text-danger'>*</span>  </Form.Label>
                     <Form.Control
-                        id="nomeCat"
-                        name="nomeCat"
+                        id="categoria"
+                        name="categoria"
                         type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.nomeCat}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        value={values.categoria}
+
                     />
-            <br/>
+                    { erroRegistarCategoria ? (<p className='text-danger'> Erro, esta categoria já existe </p>) : null }
+                    { errors.categoria ? (<p className='text-danger'> {errors.categoria} </p>) : null }
+                    <br/>
+                    <Form.Label htmlFor="categoria">Campos da nova categoria:<span className='text-danger'>*</span>  </Form.Label>
+                        { values.campos.map((campo, index) => {
+                            return (
+                            <div key={index}>
+                                <Container className='text-center'>
+                                    <Form.Label htmlFor={`campos.${index}`}>Nome do campo #{index+1}: </Form.Label>
+                                    &nbsp;
+                                    &nbsp;
+                                    <Field name={`campos.${index}`}/>
 
-            <Form.Label htmlFor="atr1">Nome do atributo #1:<span className='text-danger'>*</span>  </Form.Label>
-            <Form.Control
-                        id="atr1"
-                        name="atr1"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.atr1}
-                    />
-            <br/>
+                                    &nbsp; &nbsp;
 
-            <Form.Label htmlFor="type1">Tipo de dados do atributo #1:<span className='text-danger'>*</span>  </Form.Label>
-            <Form.Control
-                        as="select"
-                        id="type1"
-                        name="type1"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.type1}
-            >
-                <option value="number"> Numérico </option>
-                <option value="text"> Texto </option>
-                <option value="alphanumeric"> Alfanumérico </option>
-            </Form.Control>
-            <br/>
+                                    {/** TODO: Select para os tipos de dados, validação e submit */}
+                                    {/** TODO 2: Verificar se o remover retira dos dados do form. */}
+                                    <Form.Label htmlFor={`camposTipo.${index}`}>Tipo de valor do campo #{index+1}: </Form.Label>
+                                    &nbsp;
+                                    &nbsp;
+                                    <Field as={"select"} name={`camposTipo.${index}`}>
+                                        <option value="text">Texto</option>
+                                        <option value="number">Numérico</option>
+                                    </Field>
 
-            { useEffect( () => { desenharFormAtributos() }, [] )}
+                                    &nbsp; &nbsp;
 
-            </Form>
-
+                                    <Button type="button" variant='danger' disabled={true ? values.campos.length === 1 : false} onClick={() => {removerCampo(arrayHelpers, index)}} >
+                                        Remover
+                                    </Button>
+                                </Container>
+                                <br/>
+                            </div>
+                        )})}
+                        <br/>
+                        <Container className='text-center'>
+                            { errors.campos ? (<p className='text-danger'> {errors.campos} </p>) : null }
+                            { categoriaCriadaComSucesso ? (<p className='text-success'> Categoria "{values.categoria}" criada com sucesso. </p>) : null }
+                            <Button type="button" onClick={() => arrayHelpers.insert(values.campos.length, '')} >
+                                Adicionar campo novo
+                            </Button>
+                        </Container>
+                    </div>
+                )}
+            />
             <br/>
             <Container className='text-center'>
-                <Button type="submit"> Criar categoria </Button>
+                <Button type="submit">Criar</Button>
             </Container>
-        </>
+            </Form>
+        )}
+        </Formik>
+      </div>
     )
 }
 
 export default FormCategorias;
+ 

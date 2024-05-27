@@ -1,22 +1,24 @@
-DROP TABLE IF EXISTS Licita;
-DROP TABLE IF EXISTS Ganha;
-DROP TABLE IF EXISTS Subscrever;
-DROP TABLE IF EXISTS Leilao;
-DROP TABLE IF EXISTS Regista;
-DROP TABLE IF EXISTS Entrega;
-DROP TABLE IF EXISTS Reclamado;
-DROP TABLE IF EXISTS Dono;
-DROP TABLE IF EXISTS Licitante;
-DROP TABLE IF EXISTS Utilizador;
-DROP TABLE IF EXISTS Encontrado;
-DROP TABLE IF EXISTS Achado;
-DROP TABLE IF EXISTS NaoAchado;
-DROP TABLE IF EXISTS Localidade;
-DROP TABLE IF EXISTS Objeto;
-DROP TABLE IF EXISTS Categoria;
-DROP TABLE IF EXISTS Policia;
-DROP TABLE IF EXISTS Posto;
-
+DROP TABLE Subscrever;
+DROP TABLE Ganha;
+DROP TABLE Licita;
+DROP TABLE Leilao;
+DROP TABLE Entrega;
+DROP TABLE Reclamado;
+DROP TABLE Regista;
+DROP TABLE Encontrado;
+DROP TABLE Perdido;
+DROP TABLE NaoAchado;
+DROP TABLE Achado;
+DROP TABLE Policia;
+DROP TABLE Posto;
+DROP TABLE AtributoObjeto;
+DROP TABLE Objeto;
+DROP TABLE Campo;
+DROP TABLE Categoria;
+DROP TABLE Localizacao;
+DROP TABLE Licitante;
+DROP TABLE Dono;
+DROP TABLE Utilizador;
 
 CREATE TABLE Utilizador (
     nif INT PRIMARY KEY,
@@ -31,7 +33,7 @@ CREATE TABLE Utilizador (
     tipo_conta TEXT NOT NULL,
     estado TEXT NOT NULL,
     removido INT
-)
+);
 
 CREATE TABLE Dono (
     nif INT PRIMARY KEY,
@@ -43,7 +45,7 @@ CREATE TABLE Licitante (
     FOREIGN KEY (nif) REFERENCES Utilizador(nif)
 );
 
-CREATE TABLE localizacao (
+CREATE TABLE Localizacao (
     id INT PRIMARY KEY,
     pais TEXT NOT NULL,
     dist TEXT NOT NULL,
@@ -53,34 +55,83 @@ CREATE TABLE localizacao (
     morada TEXT,
     codp TEXT,
     coords TEXT
-)
-
-CREATE TABLE categoria ( 
-    nome VARCHAR(255) PRIMARY KEY,
 );
 
-CREATE TABLE campo(
+CREATE TABLE Categoria ( 
+    nome VARCHAR(255) PRIMARY KEY
+);
+
+CREATE TABLE Campo(
     nome TEXT PRIMARY KEY,
     associado_a TEXT,
     tipo_valor TEXT,
     valor TEXT,
-    FOREIGN KEY (associado_a) REFERENCES categoria(nome)
-)
+    FOREIGN KEY (associado_a) REFERENCES Categoria(nome)
+);
 
--- Categorias por acrescentar
-CREATE TABLE objeto (
+CREATE TABLE Objeto (
     id INT PRIMARY KEY,
     nifUser INT,
     descricao TEXT NOT NULL,
     titulo TEXT NOT NULL,
     imagens TEXT,
     dataRegisto TEXT,
-    FOREIGN KEY (nifUser) REFERENCES utilizador(nif)
-)
+    FOREIGN KEY (nifUser) REFERENCES Utilizador(nif)
+);
 
-CREATE TABLE perdido (
+CREATE TABLE AtributoObjeto (
+    idObj INT,
+    campo TEXT,
+    valor TEXT,
+    FOREIGN KEY (idObj) REFERENCES objeto(id),
+    FOREIGN KEY (campo) REFERENCES campo(nome),
+    PRIMARY KEY ( idObj, campo, valor )
+);
+
+CREATE TABLE Posto (
+    id INT PRIMARY KEY,
+    codPostal VARCHAR(8) NOT NULL,
+    morada VARCHAR(255) NOT NULL,
+    localidade VARCHAR(255) NOT NULL,
+    telefone VARCHAR(10) NOT NULL,
+    removido INT
+);
+
+CREATE TABLE Policia (
+    id INT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    posto INT REFERENCES Posto(id),
+    removido INT
+);
+
+CREATE TABLE Achado (
     id INT,
-    idPerdido INT,
+    --idAchado INT,
+    data_leilao TEXT NOT NULL,
+    achado_em INT NOT NULL,
+    policia INT,
+    foundDate DATE,
+    foundTime TEXT,
+    foundDateInfLim DATE,
+    foundDateSupLim DATE,
+    removido INT,
+    PRIMARY KEY (id),
+    FOREIGN KEY (policia) REFERENCES Policia(id),
+    FOREIGN KEY (achado_em) REFERENCES Localizacao(id),
+    FOREIGN KEY (id) REFERENCES Objeto(id)
+);
+
+CREATE TABLE NaoAchado (
+    id INT PRIMARY KEY,
+    perdido_em INT NOT NULL,
+    FOREIGN KEY (perdido_em) REFERENCES Localizacao(id),
+    FOREIGN KEY (id) REFERENCES Objeto(id)
+);
+
+CREATE TABLE Perdido (
+    id INT UNIQUE,
+    idPerdido INT UNIQUE,
     objetoAchado INT,
     perdido_em INT NOT NULL,
     lostDate DATE,
@@ -90,24 +141,7 @@ CREATE TABLE perdido (
     removido INT,
     PRIMARY KEY(id, idPerdido),
     FOREIGN KEY (objetoAchado) REFERENCES Achado(id),
-    FOREIGN KEY (perdido_em) REFERENCES Localidade(id),
-    FOREIGN KEY (id) REFERENCES Objeto(id)
-);
-
-CREATE TABLE achado (
-    id INT,
-    idAchado INT,
-    data_leilao TEXT NOT NULL,
-    achado_em INT NOT NULL,
-    policia INT,
-    foundDate DATE,
-    foundTime TEXT,
-    foundDateInfLim DATE,
-    foundDateSupLim DATE,
-    removido INT,
-    PRIMARY KEY (id, idAchado),
-    FOREIGN KEY (policia) REFERENCES Policia(id),
-    FOREIGN KEY (achado_em) REFERENCES Localidade(id),
+    FOREIGN KEY (perdido_em) REFERENCES localizacao(id),
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );
 
@@ -117,7 +151,6 @@ CREATE TABLE Encontrado (
     PRIMARY KEY (id_achado, id_nao_achado),
     FOREIGN KEY (id_achado) REFERENCES Achado(id),
     FOREIGN KEY (id_nao_achado) REFERENCES NaoAchado(id)
-
 );
 
 CREATE TABLE Regista (
@@ -137,23 +170,6 @@ CREATE TABLE Reclamado (
     PRIMARY KEY (nif, id),
     FOREIGN KEY (nif) REFERENCES Dono(nif),
     FOREIGN KEY (id) REFERENCES Achado(id)
-);
-
-CREATE TABLE Posto (
-    id INT PRIMARY KEY,
-    codPostal VARCHAR(8) NOT NULL,
-    morada VARCHAR(255) NOT NULL,
-    localidade VARCHAR(255) NOT NULL,
-    telefone VARCHAR(10) NOT NULL,
-    removido INT
-);
-
-CREATE TABLE Policia (
-    id INT PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    posto INT REFERENCES posto(id),
-    removido INT
 );
 
 CREATE TABLE Entrega (
@@ -196,7 +212,6 @@ CREATE TABLE Ganha (
     FOREIGN KEY (nif) REFERENCES Licitante(nif),
     FOREIGN KEY (id_leilao) REFERENCES Leilao(id)
 );
-
 CREATE TABLE Subscrever (
     nif INT,
     id_leilao INT,

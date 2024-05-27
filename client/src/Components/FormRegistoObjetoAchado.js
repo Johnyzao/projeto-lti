@@ -547,7 +547,7 @@ function FormRegistoObjetoAchado() {
                         <option values="Viseu">Viseu</option>
                     </Form.Select>
                 <br/>
-                  <MapComponent />
+                  <MapComponent /> 
                 <br>
                 </br>
                 <br/>

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageUploading from 'react-images-uploading';
+import MapComponent from './Map'; 
+//mapbox
+// import mapboxgl from 'mapbox-gl';
+
 
 // Informacoes da API.
 import config from '../config';
@@ -224,6 +228,59 @@ function FormRegistoObjetoAchado() {
 
         return errors;
     }
+
+// useEffect(() => {
+
+//     const bounds = [
+//         [-31.5, 32.0], 
+//         [-6.0, 42.0] 
+//     ];
+
+//     // Inicialize o mapa
+//     mapboxgl.accessToken = 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHdjYWthd28wcWo0MnFwcGM4cnJzdTlnIn0.bkRMTa52BMm2Tv2EahXx0w';
+//     const map = new mapboxgl.Map({
+//       container: 'map',
+//       style: 'mapbox://styles/mapbox/streets-v11',
+//       center: [-8.0, 39.5], // Portugal
+//       zoom: 6,
+//       maxBounds: bounds
+//     });
+
+//     // Adicione uma camada de mapa com os limites do distrito selecionado
+//     map.on('load', () => {
+//       map.addLayer({
+//         'id': 'distrito-layer',
+//         'type': 'fill',
+//         'source': {
+//           'type': 'geojson',
+//           'data': {
+//             'type': 'Feature',
+//             'properties': {},
+//             'geometry': {
+//               'type': 'Polygon',
+//               'coordinates': [
+//                 // coordenadas do distrito selecionado (exemplo para Lisboa)
+//                 [
+//                   [-9.3044, 38.7223],
+//                   [-9.1784, 38.7020],
+//                   [-9.1353, 38.7684],
+//                   [-9.1970, 38.7970],
+//                   [-9.2266, 38.7839],
+//                   [-9.3044, 38.7223]
+//                 ]
+//               ]
+//             }
+//           }
+//         },
+//         'layout': {},
+//         'paint': {
+//           'fill-color': '#088',
+//           'fill-opacity': 0.4
+//         }
+//       });
+//     });
+//   });
+
 
     useEffect( () => { obterPolicias() }, [] );
     const formik = useFormik({
@@ -490,6 +547,9 @@ function FormRegistoObjetoAchado() {
                         <option values="Viseu">Viseu</option>
                     </Form.Select>
                 <br/>
+                  <MapComponent />
+                <br>
+                </br>
                 <br/>
 
                 <p> Se introduzir algum dos campos abaixo, garanta que existe. </p>

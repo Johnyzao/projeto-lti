@@ -7,7 +7,6 @@ DROP TABLE Reclamado;
 DROP TABLE Regista;
 DROP TABLE Encontrado;
 DROP TABLE Perdido;
-DROP TABLE NaoAchado;
 DROP TABLE Achado;
 DROP TABLE Policia;
 DROP TABLE Posto;
@@ -19,6 +18,7 @@ DROP TABLE Localizacao;
 DROP TABLE Licitante;
 DROP TABLE Dono;
 DROP TABLE Utilizador;
+
 
 CREATE TABLE Utilizador (
     nif INT PRIMARY KEY,
@@ -107,7 +107,7 @@ CREATE TABLE Policia (
 
 CREATE TABLE Achado (
     id INT,
-    --idAchado INT,
+    idAchado INT,
     data_leilao TEXT NOT NULL,
     achado_em INT NOT NULL,
     policia INT,
@@ -122,12 +122,6 @@ CREATE TABLE Achado (
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );
 
-CREATE TABLE NaoAchado (
-    id INT PRIMARY KEY,
-    perdido_em INT NOT NULL,
-    FOREIGN KEY (perdido_em) REFERENCES Localizacao(id),
-    FOREIGN KEY (id) REFERENCES Objeto(id)
-);
 
 CREATE TABLE Perdido (
     id INT UNIQUE,
@@ -150,7 +144,7 @@ CREATE TABLE Encontrado (
     id_nao_achado INT,
     PRIMARY KEY (id_achado, id_nao_achado),
     FOREIGN KEY (id_achado) REFERENCES Achado(id),
-    FOREIGN KEY (id_nao_achado) REFERENCES NaoAchado(id)
+    FOREIGN KEY (id_nao_achado) REFERENCES Perdido(id)
 );
 
 CREATE TABLE Regista (
@@ -160,7 +154,7 @@ CREATE TABLE Regista (
     data_fim DATE NOT NULL,
     PRIMARY KEY (nif, id),
     FOREIGN KEY (nif) REFERENCES Dono(nif),
-    FOREIGN KEY (id) REFERENCES NaoAchado(id)
+    FOREIGN KEY (id) REFERENCES Perdido(id)
 );
 
 CREATE TABLE Reclamado (

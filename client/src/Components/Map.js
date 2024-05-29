@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -5,10 +6,9 @@ import "mapbox-gl/dist/mapbox-gl.css";
 const MapComponent = ({ handleLocationSelection }) => {
     const mapContainerRef = useRef(null);
     const [selectedLocation, setSelectedLocation] = useState(null);
-
-
     const [userLocationMarker, setUserLocationMarker] = useState(null);
     const [selectedLocationMarker, setSelectedLocationMarker] = useState(null);
+    const [selectedLocationCoordinates, setSelectedLocationCoordinates] = useState(null);
 
     useEffect(() => {
         if (!mapContainerRef.current) return;
@@ -36,14 +36,15 @@ const MapComponent = ({ handleLocationSelection }) => {
             markerStateSetter.current = newMarker;
 
             setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
         };
 
         map.on('click', (e) => {
-          const { lng, lat } = e.lngLat;
-          setSelectedLocation({ lng, lat });
-          addMarker(lng, lat, '#ff0000', setSelectedLocationMarker);
-      });
-      
+            const { lng, lat } = e.lngLat;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+            addMarker(lng, lat, '#ff0000', setSelectedLocationMarker);
+        });
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -64,8 +65,23 @@ const MapComponent = ({ handleLocationSelection }) => {
 
         return () => map.remove();
     }, []);
-
-    return  <div ref={mapContainerRef} style={{ width: '100%', height: '400px' }} />;
+                  //https://www.openstreetmap.org/search?query=38.7564904%2C%20-9.1569918#map=16/38.7563/-9.1570
+                  //usar este site
+    return (
+      <>
+          <div ref={mapContainerRef} style={{ width: '100%', height: '400px' }} />
+          {selectedLocationCoordinates ? (
+              <div>
+                  <h2>Coordenadas:</h2> 
+                  <p>{selectedLocationCoordinates.lat} , {selectedLocationCoordinates.lng}</p>
+                  
+                  
+              </div>
+          ) : (
+              <p>Selecione um local no mapa para ver as coordenadas.</p>
+          )}
+      </>
+  );
 };
 
 export default MapComponent;

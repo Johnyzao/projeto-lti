@@ -545,6 +545,7 @@ app.get("/user/:userNif", async (req, res) => {
                 morada: user.morada,
                 nif: user.nif,
                 nic: user.nic,
+                tipo_conta: user.tipo_conta
             }
 
             res.status(200).send(dados);

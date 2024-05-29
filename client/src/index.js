@@ -9,10 +9,9 @@ import { Auth0Provider } from '@auth0/auth0-react';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 // TODO:
-//  - Link do texto sign Up no login está incorreto;
 //  - Proteger routes para apenas users autenticados;
 //  - Refresh dos tokens;
-//  - Criar users na BD do Auth0;
+//  - Parar de pedir consentimento ao users quando se registam;
 
 root.render(
     <Auth0Provider

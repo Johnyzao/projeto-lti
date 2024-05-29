@@ -24,10 +24,18 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import PasswordStrengthBar from 'react-password-strength-bar';
 
+import { useAuth0 } from "@auth0/auth0-react";
 
 function EditarUser() {
-    let nif = JSON.parse( localStorage.getItem( "dados" ) ).nif;
-    let mailAtual = JSON.parse( localStorage.getItem( "dados" ) ).mail;
+    const { user, isLoading } = useAuth0();
+    const [nif, setNif] = useState("");
+    const [mailAtual, setMailAtual] = useState("");
+
+    //let nif = user.sub.split("|")[1];
+    //let mailAtual = user.email;
+
+    //let nif = JSON.parse( localStorage.getItem( "dados" ) ).nif;
+    //let mailAtual = JSON.parse( localStorage.getItem( "dados" ) ).mail;
 
     let templateDados = {
         nome: "",
@@ -47,36 +55,38 @@ function EditarUser() {
     const [dadosAlterados, setDadosAlterados] = useState(false);
 
     function verificarMailDuplicado(novoMail) {
-        axios.get(
-            config.LINK_API + "/checkMailDuplicate/" + novoMail,
-            { headers: {'Content-Type': 'application/json'}},
-            { validateStatus: function (status) {
-              return true;
-            }}
-        ).then( (res) => {
-            res.status === 200 
-                ? setMailDuplicado(false)
-                : setMailDuplicado(true);
-
-      }).catch(function (error) {
-        if ( error.response ) {
-            let codigo = error.response.status;
+        if ( !isLoading ) {
+            axios.get(
+                config.LINK_API + "/checkMailDuplicate/" + novoMail,
+                { headers: {'Content-Type': 'application/json'}},
+                { validateStatus: function (status) {
+                  return true;
+                }}
+            ).then( (res) => {
+                res.status === 200 
+                    ? setMailDuplicado(false)
+                    : setMailDuplicado(true);
     
-            codigo === 401
-              ? setMailDuplicado(true) 
-              : setMailDuplicado(false); 
+          }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+        
+                codigo === 401
+                  ? setMailDuplicado(true) 
+                  : setMailDuplicado(false); 
+        
+                codigo === 500 
+                  ? setErroInternoEdicao(true) 
+                  : setErroInternoEdicao(false); 
     
-            codigo === 500 
-              ? setErroInternoEdicao(true) 
-              : setErroInternoEdicao(false); 
-
-            
-            setTimeout(() => {
-                setErroInternoEdicao( false );
-            }, 5000);
+                
+                setTimeout(() => {
+                    setErroInternoEdicao( false );
+                }, 5000);
+            }
+            })
         }
-        })
-      }
+    }
 
     const validate = values => {
         const errors = {};
@@ -118,24 +128,32 @@ function EditarUser() {
         return errors;
     }
 
-    async function obterInfoUtilizador(nif) {
-        await axios.get(
-            config.LINK_API + "/user/" + nif,
-            { headers: {'Content-Type': 'application/json'}},
-        ).then( ( res ) => {
-            setDadosAtuais( res.data );
-        }).catch( function (error) {
-            if ( error.response ) {
-                let codigo = error.response.status;
-                codigo === 500 
-                  ? setErroInternoEdicao(true) 
-                  : setErroInternoEdicao(false); 
-
-                setTimeout(() => {
-                    setErroInternoEdicao( false );
-                }, 5000);
-            }
-        });
+    // TODO: Resolver erro do .split na submissão do form;
+    // TODO: Alterar o resto do código para incluir o Auth0;
+    async function obterInfoUtilizador(user) {
+        if ( user !== undefined ) {
+            console.log( user );
+            await axios.get(
+                config.LINK_API + "/user/" + user.sub.split("|")[1],
+                { headers: {'Content-Type': 'application/json'}},
+            ).then( ( res ) => {
+                setDadosAtuais( res.data );
+                setNif(res.data.nif);
+                setMailAtual(res.data.mail);
+    
+            }).catch( function (error) {
+                if ( error.response ) {
+                    let codigo = error.response.status;
+                    codigo === 500 
+                      ? setErroInternoEdicao(true) 
+                      : setErroInternoEdicao(false); 
+    
+                    setTimeout(() => {
+                        setErroInternoEdicao( false );
+                    }, 5000);
+                }
+            });
+        }
     }
 
     async function atualizarUtilizador(novaInfoUser) {
@@ -172,7 +190,8 @@ function EditarUser() {
         })
     };
 
-    useEffect( () => { obterInfoUtilizador(nif) }, [] );
+    useEffect( () => { obterInfoUtilizador(user) }, [isLoading] );
+
     const formik = useFormik({
     enableReinitialize: true,
     initialValues: {

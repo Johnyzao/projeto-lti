@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Informacoes da API.
 import config from '../config';
@@ -28,6 +28,7 @@ function FormRegisto() {
   const [erroInterno, setErroInterno] = useState(false);
   const [erroUserDuplicado, setErroUserDuplciado] = useState(false);
   const [genero, setGenero] = useState("Masculino");
+  const [tokenAuth, setTokenAuth] = useState("");
 
   const [, updateState] = React.useState();
   const forceUpdate = React.useCallback(() => updateState({}), []);
@@ -57,6 +58,11 @@ function FormRegisto() {
       }});
     }
 
+
+    // MUITO IMPORTANTE: COLOCAR O URL DESTA PÁGINA NO LINK: 
+    //  - https://manage.auth0.com/dashboard/eu/dev-bsdo6ujjdkx3ra55/applications/265wBrgSH3GDA6dHNZPYlpEiJM7Gl5S2/settings
+    //  - Ir a CORS e Allowed Web Origins e colocar o url de origem.
+
     function obterTokenAuth0(){
       let jsonCreds = {
         "grant_type": "client_credentials",
@@ -65,12 +71,41 @@ function FormRegisto() {
         "audience": "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/"
       }
       axios.post(
-
-      )
+          "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/oauth/token",
+          jsonCreds, 
+          { headers: {'Content-Type': 'application/json'}},
+          ).then ( (res) => {
+            if (res.status === 200) {
+                setTokenAuth( res.data.access_token );
+            } 
+        })
     }
 
-    function registarNoAuth0(nome, nif) {
-        
+    async function registarNoAuth0(nome, nif, mail, pass) {
+
+      let jsonComInfo = {
+        "email": mail,
+        "user_metadata": { "admin": "false" },
+        "blocked": false,
+        "email_verified": false,
+        "app_metadata": {},
+        "nickname": nome,
+        "user_id": nif,
+        "connection": "Username-Password-Authentication",
+        "password": pass,
+        "verify_email": false
+        };
+
+        await axios.post(
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/users",
+            jsonComInfo,
+            { headers: {Authorization: `Bearer ${tokenAuth}`}},
+        ).then( (res) => {
+          if ( res.status === 201 ) {
+              console.log( "Criado" );
+              navigate("/register/success")
+          }
+        })
     }
 
     function registarUser(novoUtilizador) {
@@ -86,7 +121,8 @@ function FormRegisto() {
             console.log("Conta criada");
             setErroInterno(false);
             setErroUserDuplciado(false);
-            navigate("/register/success");
+
+            registarNoAuth0( novoUtilizador.nome, novoUtilizador.nif, novoUtilizador.mail, novoUtilizador.pass );
           } 
       }).catch(function (error) {
         if ( error.response ) {
@@ -148,6 +184,8 @@ function FormRegisto() {
       console.table(errors);
       return errors;
     };
+
+    useEffect( () => { obterTokenAuth0() }, [] );
 
     const formik = useFormik({
       enableReinitialize: true,

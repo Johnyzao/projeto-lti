@@ -17,32 +17,34 @@ import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
 
+import { useAuth0 } from "@auth0/auth0-react";
+
 function App() {
-  return (
-    <>
-    <BrowserRouter>
-        <Routes>
-          <Route index path="/" element={<Home/>} />
-          <Route path="register/success" element={<RegistoComSucesso/>}/>
-          <Route path="register" element={<RegistoNovoUtilizador/>}/>
-          <Route path="login" element={<LoginUtilizador/>}/>
-          <Route path="editUser" element={<GestaoDeConta/>}/>
-          <Route path="accountDeactivated" element={<ContaDesativada/>}/>
-          <Route path="accountDeleted" element={<ContaApagada/>}/>
-          <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>} />
-          <Route path="admin" element={<PaginaAdmin/>} />
-          <Route path="lostObject/register" element={<PaginaObjetoPerdido/>}/>
-          <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
-          <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
-          <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
-          <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
-          <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
-          <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
-          <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
-        </Routes>
-    </BrowserRouter>
-    </>
-  );
+    return (
+      <>
+      <BrowserRouter>
+          <Routes>
+            <Route index path="/" element={<Home/>} />
+            <Route path="register/success" element={<RegistoComSucesso/>}/>
+            <Route path="register" element={<RegistoNovoUtilizador/>}/>
+            <Route path="login" element={<LoginUtilizador/>}/>
+            <Route path="editUser" element={<GestaoDeConta/>}/>
+            <Route path="accountDeactivated" element={<ContaDesativada/>}/>
+            <Route path="accountDeleted" element={<ContaApagada/>}/>
+            <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>}/>
+            <Route path="admin" element={<PaginaAdmin/>}/>
+            <Route path="lostObject/register" element={<PaginaObjetoPerdido/>}/>
+            <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
+            <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+            <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
+            <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
+            <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
+            <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+            <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
+          </Routes>
+      </BrowserRouter>
+      </>
+    );
 }
 
 export default App;

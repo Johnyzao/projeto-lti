@@ -1,14 +1,17 @@
 import {React} from 'react';
+
+// Bootstrap
 import Popup from 'reactjs-popup';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 
+// React router
+import { Link } from 'react-router-dom';
+
+// Auth0
 import { useAuth0 } from "@auth0/auth0-react";
 
 function PopupApagarConta() {
-    //const navigate = useNavigate();
     const { logout } = useAuth0();
 
     return (

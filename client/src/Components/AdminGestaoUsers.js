@@ -21,7 +21,6 @@ import PopupDesativarConta from '../Popups/PopupDesativarConta';
 import PopupReativarConta from '../Popups/PopupReativarConta';
 
 function AdminGestaoUsers() {
-
     const [generoProcura, setGeneroProcura] = useState("");
     const [usersAchados, setUsersAchados] = useState([]);
 
@@ -45,14 +44,6 @@ function AdminGestaoUsers() {
                 }, 5000);
             }
         });
-    }
-
-    function desativarConta(userNif){
-
-    }
-
-    function reativarConta(userNif){
-
     }
 
     const validate = values => {
@@ -109,18 +100,25 @@ function AdminGestaoUsers() {
         if (user.estado === "d") {
             estado = "Conta desativada";
         }
+        if (user.removido) {
+            estado = "Conta apagada";
+        }
         return ( <tr key={user.nif}>
             <td> {user.nif} </td>
             <td> {user.nome} </td>
             <td> {user.telemovel === "" ? "Não associou" : user.telemovel} </td>
             <td> {user.email} </td>
-            <td> {user.tipo_conta === "u" ? "Utilizador padrão" : "Administrador"} </td>
+            <td> {user.tipo_conta === "u" ? "Utilizador padrão" : "Administrador" } </td>
             <td> {estado} </td>
-            <td> <PopupApagarContaAdmin user={user.tipo_conta} nif={user.nif}/> 
+            <td> 
+                {
+                    <PopupApagarContaAdmin user={user.tipo_conta} nif={user.nif} desativado={ user.removido }/>
+                }
                 &nbsp; &nbsp; 
-                { user.estado === "a" 
-                    ? (<PopupDesativarConta nif={user.nif} /> ) 
-                    : (<PopupReativarConta nif={user.nif} /> ) 
+                { 
+                    user.estado === "a" 
+                        ? (<PopupDesativarConta user={user.tipo_conta} nif={user.nif} desativado={ user.removido }/> ) 
+                        : (<PopupReativarConta  user={user.tipo_conta} nif={user.nif} desativado={ user.removido }/> ) 
                 } 
             </td> 
         </tr> )

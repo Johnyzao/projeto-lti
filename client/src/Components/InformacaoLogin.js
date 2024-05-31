@@ -25,7 +25,6 @@ function InformacaoLogin() {
         navigate(pathRegisto);
     }
 
-    // TODO
     async function obterPaginaAdmin(user){
         if (user !== undefined) {
             await axios.get(

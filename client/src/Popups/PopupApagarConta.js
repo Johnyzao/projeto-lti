@@ -16,26 +16,42 @@ function PopupApagarConta(props) {
 
     useEffect( () => { setInsucessoApagar(false) }, [] );
 
+    const [tokenAuth, setTokenAuth] = useState("");
+
     const navigate = useNavigate();
     const [insucessoApagar, setInsucessoApagar] = useState(false);
     const [erroValidarPass, setErroValidarPass] = useState(false);
 
-    async function apagarConta(nif){
-        await axios.delete(
-            config.LINK_API+"/user/" + nif,
-            { headers: {'Content-Type': 'application/json'}},
-            { validateStatus: function (status) {
-                return true;
-            }}
-        ).then( ( res ) => {
+    function obterTokenAuth0() {
+        let jsonCreds = {
+            "grant_type": "client_credentials",
+            "client_id": "265wBrgSH3GDA6dHNZPYlpEiJM7Gl5S2",
+            "client_secret": "srJBHxmqhcQGZroywI0aacKwxgSjApdC6K2nXVFxmTnASUN6G-95Jb_Y1jvLYRQi",
+            "audience": "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/"
+        }
+        axios.post(
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/oauth/token",
+            jsonCreds,
+            { headers: { 'Content-Type': 'application/json' } },
+        ).then((res) => {
             if (res.status === 200) {
-                localStorage.clear();
+                setTokenAuth(res.data.access_token);
+            }
+        })
+    }
+
+    async function apagarContaAuth0(nif){
+        await axios.delete(
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/users/auth0|" + nif,
+            { headers: { Authorization: `Bearer ${tokenAuth}` } },
+        ).then( ( res ) => {
+            if (res.status === 204) {
                 navigate("/accountDeleted");
             }
         }).catch(function(error) {
             if ( error.response ) {
                 let codigo = error.response.status;
-                if (codigo === 500 || codigo === 404) {
+                if (codigo !== 204) {
                     setInsucessoApagar(true);
                     setTimeout(() => {
                         setInsucessoApagar( false );
@@ -75,6 +91,8 @@ function PopupApagarConta(props) {
         });
     }
 
+    // TODO: "Remover um user" deixar para a admin page...
+
     const validate = values => {
         const errors = {};
 
@@ -97,10 +115,12 @@ function PopupApagarConta(props) {
         },
         validate,
         onSubmit: values => {
-            apagarConta(props.nif);
+            //apagarConta(props.nif);
+            apagarContaAuth0( props.nif );
         },
     });
 
+    useEffect( () => { obterTokenAuth0() }, [] );
     return (
     <Popup trigger={<Button variant="danger"> Apagar conta </Button>} modal>
     {close => (

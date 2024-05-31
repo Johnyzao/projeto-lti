@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
@@ -9,7 +9,43 @@ import config from '../config';
 
 function PopupApagarContaAdmin(props) {
 
+    const [tokenAuth, setTokenAuth] = useState("");
     const [sucessoApagar, setSucessoApagar] = useState(false);
+
+    function obterTokenAuth0() {
+        let jsonCreds = {
+            "grant_type": "client_credentials",
+            "client_id": "265wBrgSH3GDA6dHNZPYlpEiJM7Gl5S2",
+            "client_secret": "srJBHxmqhcQGZroywI0aacKwxgSjApdC6K2nXVFxmTnASUN6G-95Jb_Y1jvLYRQi",
+            "audience": "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/"
+        }
+        axios.post(
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/oauth/token",
+            jsonCreds,
+            { headers: { 'Content-Type': 'application/json' } },
+        ).then((res) => {
+            if (res.status === 200) {
+                setTokenAuth(res.data.access_token);
+            }
+        })
+    }
+
+    async function adminApagarContaAuth0(nif){
+        await axios.delete(
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/users/auth0|" + nif,
+            { headers: { Authorization: `Bearer ${tokenAuth}` } },
+        ).then( ( res ) => {
+            if (res.status === 204) {
+
+            }
+        }).catch(function(error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+                if (codigo !== 204) {
+                }
+            }
+        });
+    }
 
     function apagarConta(userNif){
         axios.delete(
@@ -18,6 +54,7 @@ function PopupApagarContaAdmin(props) {
         ).then( ( res ) => {
             if (res.status === 200) {
                 setSucessoApagar(true);
+                adminApagarContaAuth0(userNif);
             }
         }).catch(function(error) {
             if ( error.response ) {
@@ -26,13 +63,18 @@ function PopupApagarContaAdmin(props) {
         });
     }
 
-    function close(close) {
-        return close;
+    const desenharBotao = () => {
+        if ( props.desativado === 1 || props.user === "a" ) {
+            return ( <Button variant="danger" disabled> Apagar conta </Button> )
+        } else {
+            return ( <Button variant="danger"> Apagar conta </Button>  )
+        }
     }
 
+    useEffect( () => { obterTokenAuth0() }, [] );
     return (
         <>
-            <Popup trigger={<Button variant="danger"> Apagar conta </Button>} modal>
+            <Popup trigger={desenharBotao} modal>
             {close => (
                 <div
                 className="modal show"

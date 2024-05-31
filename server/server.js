@@ -171,7 +171,6 @@ app.post("/register", async (req, res) => {
 });
 
 // TODO: Funcionar com contas de policia...
-// TODO: Fazer jwt...
 app.post("/login", async (req, res) => {
     try {
         const { mail, pass } = req.body;
@@ -280,6 +279,7 @@ app.delete("/user/:userNif", async (req, res) => {
 app.put("/user/:userNif/deactivate", async (req, res) => {
     try {
         const nif = req.params.userNif;
+        console.log(nif);
 
         const queryDesativarUser = queries.queryDeactivateUser(nif);
         const row = await dbClient.query(queryDesativarUser);
@@ -486,17 +486,21 @@ app.put("/user/:userNif/changePassword", async (req, res) => {
         let novaPass = req.body.novaPass;
         let passAtual = req.body.passAtual;
 
-        let queryUser = queries.queryGetUserByNif(nif);
+        const queryVerificarPass = {
+            text: "SELECT * FROM utilizador WHERE nif = $1",
+            values: [nif]
+        };
 
         // Verificar se as passes são iguais aqui.
         // Se sim -> atualizar.
-        const row = await dbClient.query(queryUser);
+        const row = await dbClient.query(queryVerificarPass);
         if (row.rowCount === 0) {
             res.status(404).send();
             return;
         }
 
         const user = row.rows[0];
+        console.log(user);
         let comparacao = await bcrypt.compare(passAtual, user.password);
         if (!comparacao) {
             res.status(400).send();
@@ -1080,7 +1084,6 @@ app.get("/lostObject/:object_id", async (req, res) => {
     }
 });
 
-// TODO: Por testar
 app.post("/lostObject", async (req, res) => {
     try {
         let {idObj,idLoc,lostDate,lostTime,lostDateInfLim,lostDateSupLim } = req.body;

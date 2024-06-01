@@ -40,7 +40,7 @@ function Home() {
           </ol>
         </div>
         <div style={{ flex: 1 }}>
-          {/* Aqui você pode adicionar o código para incorporar o vídeo */}
+          {/* Adicionar o código para incorporar o vídeo */}
           {/* Por exemplo: */}
         </div>
       </div>

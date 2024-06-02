@@ -170,7 +170,6 @@ app.post("/register", async (req, res) => {
 
 });
 
-// TODO: Funcionar com contas de policia...
 app.post("/login", async (req, res) => {
     try {
         const { mail, pass } = req.body;
@@ -205,6 +204,7 @@ app.post("/login", async (req, res) => {
     }
 });
 
+// TODO: Tem um erro algures aqui, possivelmente...
 app.post("/user/:nif/verifyPassword", async (req, res) => {
     try {
         let { pass } = req.body;
@@ -344,7 +344,7 @@ app.post("/searchUsers", async (req, res) => {
 });
 
 app.post("/police", async (req, res) => {
-    let { id, nome, pass, posto } = req.body;
+    let { id, nome, pass, posto, mail } = req.body;
 
     let querySelectPolicia = {
         text: "SELECT * FROM policia WHERE id=$1",
@@ -356,10 +356,9 @@ app.post("/police", async (req, res) => {
         res.status(401).send();
     } else {
         let queryInsertPolicia = {
-            text: "INSERT INTO policia(id, nome, password, posto, removido) VALUES($1, $2, $3, $4, $5)",
-            values: [id, nome, pass, posto, 0]
+            text: "INSERT INTO policia(id, mail, nome, password, posto, removido) VALUES($1, $2, $3, $4, $5, $6)",
+            values: [id, mail ,nome, pass, posto, 0]
         }
-
         let results = await dbClient.query(queryInsertPolicia);
 
         if (results.rowCount === 1) {
@@ -368,13 +367,12 @@ app.post("/police", async (req, res) => {
     }
 });
 
-// TODO: Testar
 app.put("/police", async (req, res) => {
-    let { id, nome, password, posto } = req.body;
+    let { id, nome, password, posto, mail } = req.body;
 
     let queryInsertPolicia = {
-        text: "UPDATE utilizador SET nome=$2, password=$3, posto=$4 WHERE id=$1",
-        values: [id, nome, password, posto]
+        text: "UPDATE policia SET nome=$2, password=$3, posto=$4, mail=$5 WHERE id=$1",
+        values: [id, nome, password, posto, mail]
     }
 
     let results = await dbClient.query(queryInsertPolicia);
@@ -396,7 +394,6 @@ app.get("/police", async (req, res) => {
     res.status(200).send(results.rows);
 });
 
-// Por testar...
 app.delete("/police/:id", async (req, res) => {
     let queryInsertPolicia = {
         text: "UPDATE policia SET removido=1 WHERE id=$1",
@@ -480,6 +477,7 @@ app.get("/checkMailDuplicate/:userMail", async (req, res) => {
 
 });
 
+// TODO: Tem um erro algures aqui...
 app.put("/user/:userNif/changePassword", async (req, res) => {
     try {
         let nif = req.params.userNif;
@@ -586,32 +584,23 @@ app.post("/policeStation", async (req, res) => {
     }
 });
 
-// TODO: por fazer...
 app.put("/policeStation", async (req, res) => {
-    const { codp, morada, localidade, telefone } = req.body;
+    const { id, codp, morada, localidade, telefone } = req.body;
 
     const querySelectPostos = {
         name: "update-station",
-        text: ""
+        text: "UPDATE posto SET codpostal=$1, morada=$2, localidade=$3, telefone=$4 WHERE id=$5",
+        values: [ codp, morada, localidade, telefone, id ]
     };
 
-    let resultsNumeroPostos = await dbClient.query(querySelectPostos);
-    let id = resultsNumeroPostos.rowCount + 1;
-
-    const queryCriarPosto = {
-        text: "INSERT INTO posto(id, codpostal, morada, localidade, telefone, removido) VALUES ($1, $2, $3, $4, $5, $6)",
-        values: [id, codp, morada, localidade, telefone, 0]
-    };
-
-    let results = await dbClient.query(queryCriarPosto);
+    let results = await dbClient.query(querySelectPostos);
     if (results.rowCount === 1) {
-        res.send(201);
+        res.send(200);
     } else {
         res.send(409);
     }
 });
 
-// TODO: Por testar
 app.delete("/policeStation/:id", async (req, res) => {
     try {
         const queryApagarPostos = {
@@ -820,7 +809,7 @@ app.get( "/object/atributes/:object_id", async (req, res) => {
     }
 });
 
-// Não usar...
+// TODO: Testar...
 app.delete("/object/:object_id", async (req, res) => {
     try {
         let queryApagarObjeto = {

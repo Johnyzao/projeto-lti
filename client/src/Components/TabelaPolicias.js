@@ -8,6 +8,8 @@ import axios from 'axios';
 
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
+import PopupEditarPolicia from '../Popups/PopupEditarPolicia';
+import PopupApagarPoliciaAdmin from '../Popups/PopupApagarPoliciaAdmin';
 
 function TabelaPolicias() {
     const [policias, setPolicias] = useState([]);
@@ -71,8 +73,17 @@ function TabelaPolicias() {
         ( <tr key={policia.id}>
             <td> {policia.id} </td>
             <td> {policia.nome} </td>
+            <td> {policia.mail} </td>
             <td> {policia.posto} </td>
-            <td> <Button className='text-center' variant="danger" onClick={ () => {removerPolicia(policia.id)}}> Apagar conta </Button> </td> 
+            <td> { policia.removido === 1 ? "Removido" : "Ativo" } </td>
+            <td> 
+                { policia.removido === 1 ? "Conta removida" : (
+                    <>  
+                        <PopupApagarPoliciaAdmin id={policia.id} removido={policia.removido} /> &nbsp; &nbsp; 
+                        <PopupEditarPolicia policia={policia} />
+                    </>
+                ) }
+            </td> 
         </tr> )
     );
 
@@ -87,7 +98,9 @@ function TabelaPolicias() {
                     <tr>
                         <th>ID do Agente</th>
                         <th>Nome do Agente</th>
+                        <th>Mail</th>
                         <th>Posto</th>
+                        <th>Estado</th>
                         <th> </th>
                     </tr>
                 </thead>

@@ -58,7 +58,6 @@ function FormRegisto() {
       }});
     }
 
-
     // MUITO IMPORTANTE: COLOCAR O URL DESTA PÁGINA NO LINK: 
     //  - https://manage.auth0.com/dashboard/eu/dev-bsdo6ujjdkx3ra55/applications/265wBrgSH3GDA6dHNZPYlpEiJM7Gl5S2/settings
     //  - Ir a CORS e Allowed Web Origins e colocar o url de origem.
@@ -185,8 +184,6 @@ function FormRegisto() {
       return errors;
     };
 
-    useEffect( () => { obterTokenAuth0() }, [] );
-
     const formik = useFormik({
       enableReinitialize: true,
       initialValues: {
@@ -219,6 +216,7 @@ function FormRegisto() {
       },
       });
 
+    useEffect( () => { obterTokenAuth0() }, [] );
     return (
       <div>
           <Container content='justify-center' fluid="sm" sm="3">

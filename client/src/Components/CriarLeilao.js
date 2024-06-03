@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // Importando Link
+import { Link, json } from 'react-router-dom'; // Importando Link
 import Header from './Header';
 import Accordion from 'react-bootstrap/Accordion';
 import Container from 'react-bootstrap/Container';
-import VerObjetosAchadosParaLeilao from './VerObjetosAchadosParaLeilao';
+import Button from 'react-bootstrap/Button'; // Importando Button do Bootstrap
+import config from '../config';
 
 function CriarLeilao() {
     const [state, setState] = useState({
@@ -12,6 +13,19 @@ function CriarLeilao() {
         selectedObjectId: '', // Campo para armazenar o ID do objeto selecionado
         success: false
     });
+
+    const [objetosAchados, setObjetosAchados] = useState([]);
+    const [selectedObjectId, setSelectedObjectId] = useState(null);
+
+    useEffect(() => {
+        axios.get(`${config.LINK_API}/foundObject/user/${JSON.parse(localStorage.getItem("dados")).nif}`)
+            .then(response => {
+                setObjetosAchados(response.data.objAchados);
+            })
+            .catch(error => {
+                console.error('Erro ao carregar objetos achados:', error);
+            });
+    }, []);
 
     const handleInputChange = (e) => {
         setState({
@@ -25,16 +39,17 @@ function CriarLeilao() {
             ...state,
             selectedObjectId: id
         });
+        setSelectedObjectId(id);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         const auctionData = {
-            startingPrice: state.startingPrice,
+            startingPrice: parseFloat(state.startingPrice),
             selectedObjectId: state.selectedObjectId // Passar o ID do objeto selecionado para o backend
         };
 
-        axios.post('/api/auction', auctionData)
+        axios.post(config.LINK_API + '/auction', auctionData)
             .then(response => {
                 console.log('Novo leilão criado:', response.data);
                 setState({
@@ -59,7 +74,26 @@ function CriarLeilao() {
                             <Accordion.Item eventKey="0">
                                 <Accordion.Header>Objetos Achados registados</Accordion.Header>
                                 <Accordion.Body>
-                                    <VerObjetosAchadosParaLeilao nif={JSON.parse(localStorage.getItem("dados")).nif} onSelect={handleObjectSelect} />
+                                    {objetosAchados.map(objeto => (
+                                        <div key={objeto.id} className="list-group-item d-flex align-items-center">
+                                            <div>
+                                                <h5>{objeto.titulo}</h5>
+                                                <p>{objeto.descricao}</p>
+                                            </div>
+                                            <div className="ml-auto">
+                                                <Button 
+                                                    onClick={() => handleObjectSelect(objeto.id)} 
+                                                    style={{
+                                                        width: '100%', // Garante que os botões tenham o mesmo tamanho
+                                                        background: selectedObjectId === objeto.id ? 'green' : 'blue', 
+                                                        borderColor: selectedObjectId === objeto.id ? 'green' : 'blue'
+                                                    }}
+                                                >
+                                                    {selectedObjectId === objeto.id ? 'Selecionado' : 'Leiloar'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </Accordion.Body>
                             </Accordion.Item>
                         </Accordion>

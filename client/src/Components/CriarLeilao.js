@@ -1,6 +1,6 @@
-import React, { useState} from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Importando Link
 import Header from './Header';
 import Accordion from 'react-bootstrap/Accordion';
 import Container from 'react-bootstrap/Container';
@@ -31,16 +31,14 @@ function CriarLeilao() {
         e.preventDefault();
         const auctionData = {
             startingPrice: state.startingPrice,
-            endDate: state.endDate,
             selectedObjectId: state.selectedObjectId // Passar o ID do objeto selecionado para o backend
         };
 
-        axios.post('/api/criar-leilao', auctionData)
+        axios.post('/api/auction', auctionData)
             .then(response => {
                 console.log('Novo leilão criado:', response.data);
                 setState({
-                    startingPrice: 0,
-                    selectedObjectId: '',
+                    ...state,
                     success: true // Define sucesso como verdadeiro após a criação do leilão
                 });
             })
@@ -92,7 +90,7 @@ function CriarLeilao() {
                             cursor: 'pointer'
                         }}
                     >
-                        Criar
+                        <Link to="/auction/LeiloesAtivos" style={{ color: 'white', textDecoration: 'none' }}>Criar</Link>
                     </button>
                 </form>
                 {state.success && (

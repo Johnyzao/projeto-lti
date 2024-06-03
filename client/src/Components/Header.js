@@ -7,14 +7,24 @@ function Header() {
   return (
     <Navbar className="bg-body-tertiary">
       <Container>
-        <Navbar.Brand href="/">Perdidos e Achados</Navbar.Brand>
+        <Navbar.Brand href="/">
+          <img
+            src="/logo.png" // 
+            width="30"
+            height="30"
+            className="d-inline-block align-top"
+            alt="Logo"
+          />
+          {' '}
+          Perdidos e Achados
+        </Navbar.Brand>
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-end">
-            <InformacaoLogin/>
+          <InformacaoLogin/>
         </Navbar.Collapse>
       </Container>
     </Navbar>
-  )
+  );
 }
 
 export default Header;

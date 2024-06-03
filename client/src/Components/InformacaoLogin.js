@@ -45,6 +45,7 @@ function InformacaoLogin() {
                 <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
                 <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
                 <NavDropdown.Item href="/auction/register"> Criar Leilão </NavDropdown.Item>
+                <NavDropdown.Item href="/auction/LeiloesAtivos">Leilões Ativos</NavDropdown.Item>
                 { dados.tipo === "a" 
                     ? (<NavDropdown.Item href="/admin">Página de administração</NavDropdown.Item>) 
                     : null

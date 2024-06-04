@@ -46,6 +46,40 @@ const MapComponent = ({ handleLocationSelection }) => {
             addMarker(lng, lat, '#ff0000', setSelectedLocationMarker);
         });
 
+        map.on('load', () => {
+                  map.addLayer({
+                    'id': 'distrito-layer',
+                    'type': 'fill',
+                    'source': {
+                      'type': 'geojson',
+                      'data': {
+                        'type': 'Feature',
+                        'properties': {},
+                        'geometry': {
+                          'type': 'Polygon',
+                          'coordinates': [
+                            // coordenadas do distrito selecionado (exemplo para Lisboa)
+                            [
+                              [-9.3044, 38.7223],
+                              [-9.1784, 38.7020],
+                              [-9.1353, 38.7684],
+                              [-9.1970, 38.7970],
+                              [-9.2266, 38.7839],
+                              [-9.3044, 38.7223]
+                            ]
+                          ]
+                        }
+                      }
+                    },
+                    'layout': {},
+                    'paint': {
+                      'fill-color': '#088',
+                      'fill-opacity': 0.4
+                    }
+                  });
+                });
+      
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageUploading from 'react-images-uploading';
-import MapComponent from './Map'; 
-//mapbox
-// import mapboxgl from 'mapbox-gl';
+
+// mapbox
+import mapboxgl from 'mapbox-gl';
+import "mapbox-gl/dist/mapbox-gl.css";
+import mbxGeocoding from '@mapbox/mapbox-sdk/services/geocoding';
 
 
 // Informacoes da API.
@@ -229,57 +231,66 @@ function FormRegistoObjetoAchado() {
         return errors;
     }
 
-// useEffect(() => {
+    const mapContainerRef = useRef(null);
+    const userLocationMarker = useRef(null);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const selectedLocationMarker = useRef(null);
+    const [selectedLocationCoordinates, setSelectedLocationCoordinates] = useState(null);
 
-//     const bounds = [
-//         [-31.5, 32.0], 
-//         [-6.0, 42.0] 
-//     ];
+    useEffect(() => {
+        if (!mapContainerRef.current) return;
 
-//     // Inicialize o mapa
-//     mapboxgl.accessToken = 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHdjYWthd28wcWo0MnFwcGM4cnJzdTlnIn0.bkRMTa52BMm2Tv2EahXx0w';
-//     const map = new mapboxgl.Map({
-//       container: 'map',
-//       style: 'mapbox://styles/mapbox/streets-v11',
-//       center: [-8.0, 39.5], // Portugal
-//       zoom: 6,
-//       maxBounds: bounds
-//     });
+        mapboxgl.accessToken = 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHdjYWthd28wcWo0MnFwcGM4cnJzdTlnIn0.bkRMTa52BMm2Tv2EahXx0w';
 
-//     // Adicione uma camada de mapa com os limites do distrito selecionado
-//     map.on('load', () => {
-//       map.addLayer({
-//         'id': 'distrito-layer',
-//         'type': 'fill',
-//         'source': {
-//           'type': 'geojson',
-//           'data': {
-//             'type': 'Feature',
-//             'properties': {},
-//             'geometry': {
-//               'type': 'Polygon',
-//               'coordinates': [
-//                 // coordenadas do distrito selecionado (exemplo para Lisboa)
-//                 [
-//                   [-9.3044, 38.7223],
-//                   [-9.1784, 38.7020],
-//                   [-9.1353, 38.7684],
-//                   [-9.1970, 38.7970],
-//                   [-9.2266, 38.7839],
-//                   [-9.3044, 38.7223]
-//                 ]
-//               ]
-//             }
-//           }
-//         },
-//         'layout': {},
-//         'paint': {
-//           'fill-color': '#088',
-//           'fill-opacity': 0.4
-//         }
-//       });
-//     });
-//   });
+        const map = new mapboxgl.Map({
+            container: mapContainerRef.current,
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-8.0, 39.5],
+            zoom: 6
+        });
+        
+        const addMarker = (lng, lat, color, markerRef) => {
+            if (markerRef.current) {
+                markerRef.current.remove();
+            }
+
+            const newMarker = new mapboxgl.Marker({
+                color,
+                draggable: false
+            })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+            markerRef.current = newMarker;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+        };
+
+        map.on('click', (e) => {
+            const { lng, lat } = e.lngLat;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+            addMarker(lng, lat, '#ff0000', selectedLocationMarker);
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setCenter([longitude, latitude]);
+                    map.setZoom(12);
+                    addMarker(longitude, latitude, '#0000ff', userLocationMarker);
+                },
+                (error) => {
+                    console.error('Error retrieving location:', error);
+                }
+            );
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+
+        return () => map.remove();
+    }, []);
 
 
     useEffect( () => { obterPolicias() }, [] );
@@ -334,6 +345,55 @@ function FormRegistoObjetoAchado() {
         },
     });
 
+    const geocodingClient = mbxGeocoding({ accessToken: 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHd6aW1oY2IwNzQ3MmpxdWY1dXJkaTh3In0.ynaz2urwBsr7vgv0Pn9ppg' });
+
+    const useStreetName = (selectedLocationCoordinates) => {
+        const [streetName, setStreetName] = useState('');
+    
+        useEffect(() => {
+            const fetchStreetName = async () => {
+                if (selectedLocationCoordinates) {
+                    try {
+                        const response = await geocodingClient.reverseGeocode({
+                            query: [selectedLocationCoordinates.lng, selectedLocationCoordinates.lat],
+                            types: ['address'],
+                        }).send();
+    
+                        const match = response.body.features[0];
+                        if (match) {
+                            setStreetName(match.place_name);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching street name:', error);
+                    }
+                }
+            };
+    
+            fetchStreetName();
+        }, [selectedLocationCoordinates]);
+    
+        return streetName;
+    };
+
+    //const streetName = useStreetName(selectedLocationCoordinates);
+
+    const streetName = useStreetName(selectedLocationCoordinates);
+
+    const getAddress = () => {
+        if (streetName === '') return '';
+        return streetName.split(",")[0];
+    };
+
+    const getPostalCode = () => {
+        if (streetName === '') return '';
+        return streetName.split(",")[1].substring(1, 9);
+    };
+
+    const getMunicipality = () => {
+        if (streetName === '') return '';
+        return streetName.split(",")[2].substring(1);
+    };
+        
     return (
         <>
             <Container className='bg-light' fluid="sm">
@@ -547,7 +607,12 @@ function FormRegistoObjetoAchado() {
                         <option values="Viseu">Viseu</option>
                     </Form.Select>
                 <br/>
-                  <MapComponent /> 
+                <div ref={mapContainerRef} style={{ width: '100%', height: '400px' }} />
+              <div>
+                  <h2>Coordenadas:</h2> 
+                  <p>{selectedLocationCoordinates ? `${selectedLocationCoordinates.lat}, ${selectedLocationCoordinates.lng}` : 'Coordinates not defined yet'}</p>
+                  
+              </div>
                 <br>
                 </br>
                 <br/>
@@ -560,7 +625,7 @@ function FormRegistoObjetoAchado() {
                         type="text"
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        value={formik.values.munc}/>
+                        value={getMunicipality()}/>
                 { formik.errors.munc ? (<p className='text-danger'> {formik.errors.munc} </p>) : null } 
 
                 <br/>
@@ -593,7 +658,7 @@ function FormRegistoObjetoAchado() {
                         type="text"
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        value={formik.values.morada}/>
+                        value={getAddress()}/>
                 { formik.errors.morada ? (<p className='text-danger'> {formik.errors.morada} </p>) : null } 
 
                 <br/>
@@ -604,7 +669,7 @@ function FormRegistoObjetoAchado() {
                         type="text"
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        value={formik.values.codp}/>
+                        value={getPostalCode()}/>
                 <Form.Text className="text-muted">Um código postal tem o formato: XXXX-XXX.</Form.Text> 
                 { formik.errors.codp ? (<p className='text-danger'> {formik.errors.codp} </p>) : null } 
 

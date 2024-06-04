@@ -109,7 +109,7 @@ function FormRegistoObjetoAchado() {
                             { headers: {'Content-Type': 'application/json'}},
                         ).then ( (res) => {
                             if (res.status === 201) {
-                                setErroInternoRegistoAchado(true);
+                                setErroInternoRegistoAchado(false);
                             } 
                         }).catch(function (error) {
                             if ( error.response ) {
@@ -409,9 +409,9 @@ function FormRegistoObjetoAchado() {
                 codp: values.codp
             }
             processarObjeto(infoObjeto, infoLocalizacao, values);
-
+            console.log(erroInternoRegistoAchado)
             if ( !erroInternoRegistoAchado ) {
-                //navigate("/lostObject/register/success");
+                navigate("/lostObject/register/success");
             }
         },
     });
@@ -464,6 +464,15 @@ function FormRegistoObjetoAchado() {
         if (streetName === '') return '';
         return streetName.split(",")[2].substring(1);
     };
+
+    const getCoords = () => {
+        if (selectedLocationCoordinates === null) return '';
+        return selectedLocationCoordinates.lat + ", " + selectedLocationCoordinates.lng;
+    };
+
+    useEffect(() => { formik.setFieldValue('morada', getAddress()); }, [streetName]);
+    useEffect(() => { formik.setFieldValue('codp', getPostalCode()); }, [streetName]);
+    useEffect(() => { formik.setFieldValue('munc', getMunicipality()); }, [streetName]);
         
     useEffect( () => { obterCategorias() }, [] );
     useEffect( () => { setCategoria( Object.keys(categorias)[0] ) }, [categorias] );

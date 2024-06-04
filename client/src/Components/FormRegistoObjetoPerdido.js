@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageUploading from 'react-images-uploading';
 
@@ -27,16 +27,32 @@ function FormRegistoObjetoPerdido() {
     const [sabeData, setSabeData] = useState(false);
     const [naoSabeData, setNaoSabeData] = useState(false);
     const [distrito, setDistrito] = useState("Aveiro");
-
-    const [objetoCriado, setObjetoCriado] = useState(0);
-    const [objetoPerdidoCriado, setObjetoPerdidoCriado] = useState(0);
-    const [localizacaoCriada, setLocalizacaoCriada] = useState(0);
-
     const [erroInternoRegistoPerdido, setErroInternoRegistoPerdido] = useState(false);
-    // TODO:
-    //const [categoriasCriadas, setCategoriasCriadas] = useState(false);
+
+    const [categoria, setCategoria] = useState("");
+    const [categorias, setCategorias] = useState(new Object());
+    const [camposDaCategoria, setCamposDaCategoria] = useState([]);
+    const [tiposDosCampos, setTiposDosCampos] = useState(new Object());
 
     const maxNumber = 3;
+
+    function obterValorDoCampo(nomeCampo) {
+        let valor = document.forms['form'][''+nomeCampo].value;
+        return valor;
+    }
+
+    function registarValorDoCampo(idObj, campo, valor) {
+        axios.post(
+            config.LINK_API + "/object/setField",
+            { idObj: idObj, campo: campo, valor: valor },
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
 
     function processarObjeto(infoObjeto, infoLocalizacao, values) {
         axios.post(
@@ -46,8 +62,12 @@ function FormRegistoObjetoPerdido() {
 
         ).then ( (res) => {
             if (res.status === 201) {
-
                 let idObj = res.data.id;
+
+                camposDaCategoria.map( campo => {
+                    let valor = obterValorDoCampo(campo);
+                    registarValorDoCampo( idObj, campo, valor );
+                });
 
                 axios.post(
                     config.LINK_API + "/location", 
@@ -65,7 +85,6 @@ function FormRegistoObjetoPerdido() {
                             lostDateInfLim: values.lostDateInfLim,
                             lostDateSupLim: values.lostDateSupLim
                         }
-                        console.log(infoObjetoPerdido);
 
                         axios.post(
                             config.LINK_API + "/lostObject", 
@@ -96,11 +115,62 @@ function FormRegistoObjetoPerdido() {
         })
     }
 
-    // TODO: Falar com o stor...
-    async function criarCategorias(){
-        await axios.post(
+    async function obterCategorias() {
+        await axios.get(
+            config.LINK_API + "/category", 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let categoriasECampos = {};
+            res.data.categorias.map( campo => {
+                if ( categoriasECampos[campo.cat] === undefined ) {
+                    categoriasECampos[campo.cat] = new Array();
+                }
+                categoriasECampos[campo.cat].push( campo.campo );
 
-            );
+            })
+            setCategorias(categoriasECampos);
+
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterInfoCampo(nomeCampo){
+        axios.get(
+            config.LINK_API + "/field/" + nomeCampo ,
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let tiposAtuais = tiposDosCampos;
+            if ( tiposAtuais[nomeCampo] === undefined ) {
+                tiposAtuais[nomeCampo] = res.data[0].tipo_valor;
+            }
+            setTiposDosCampos( tiposAtuais );
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterCampos(nomeCategoria) {
+        if ( nomeCategoria !== "" ) {
+            axios.get(
+                config.LINK_API + "/categoryFields/" + nomeCategoria ,
+                { headers: {'Content-Type': 'application/json'}},
+            ).then ( (res) => {
+                let campos = [];
+                res.data.map( campo => {
+                    campos.push(campo.campo);
+                })
+                setCamposDaCategoria( campos );
+            }).catch(function (error) {
+                if ( error.response ) {
+                    let codigo = error.response.status;
+                }
+            });
+        }
     }
 
     const onChange = (imageList, addUpdateIndex) => {
@@ -222,7 +292,8 @@ function FormRegistoObjetoPerdido() {
                 nifUser: JSON.parse(localStorage.getItem("dados")).nif, 
                 desc: values.desc,
                 imagens: images,
-                dataRegisto: dataAtual
+                dataRegisto: dataAtual,
+                categoria: categoria,
             }
 
             let infoLocalizacao = {
@@ -242,12 +313,36 @@ function FormRegistoObjetoPerdido() {
         },
     });
 
+    useEffect( () => { obterCategorias() }, [] );
+    useEffect( () => { setCategoria( Object.keys(categorias)[0] ) }, [categorias] );
+    useEffect( () => { obterCampos(categoria) }, [categoria] );
+
+    const desenharCategorias = Object.keys(categorias).map( cat => {
+        return (<option key={cat} value={cat}> {cat} </option>);
+    });
+
+    const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
+        obterInfoCampo( campo );
+        return(
+            <>
+                <Form.Label htmlFor={campo}> {campo}: </Form.Label>
+                <Form.Control                    
+                id={campo}
+                name={campo}
+                type={""+tiposDosCampos[campo]} 
+                />
+                <Form.Text muted>Introduza um valor { tiposDosCampos[campo] === "text" ? "alfanumérico" : "numérico" }. </Form.Text>
+                <br/>
+            </>
+        );
+    });
+
     return (
         <>
             <Container className='bg-light' fluid="sm">
                 <h1 className='text-center'> Registo de um objeto perdido </h1>
 
-                <Form onSubmit={formik.handleSubmit}>
+                <Form name='form' onSubmit={formik.handleSubmit}>
                 
                 <br/>
                 <h4>Informações do anúncio do objeto</h4>
@@ -488,7 +583,17 @@ function FormRegistoObjetoPerdido() {
                 <br/>
                 <h4>Categorização do objeto</h4>
                 <Form.Group className='border'>
-                <p>Crie categorias que ache úteis para descrever o objeto e associe-as ao objeto em questão.</p>
+                <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
+                <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
+                    <Form.Select                    
+                        id="categoria"
+                        name="categoria"
+                        onChange={(e) => {setCategoria(e.target.value);}}
+                    >
+                        {desenharCategorias}
+                    </Form.Select>
+                <br/>
+                { desenharCamposDaCategoria }
 
                 </Form.Group>
 
@@ -503,4 +608,4 @@ function FormRegistoObjetoPerdido() {
     )
 }
 
-export default FormRegistoObjetoPerdido
+export default FormRegistoObjetoPerdido;

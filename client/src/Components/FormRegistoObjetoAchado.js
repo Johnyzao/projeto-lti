@@ -34,16 +34,40 @@ function FormRegistoObjetoAchado() {
     const [naoSabeData, setNaoSabeData] = useState(false);
     const [distrito, setDistrito] = useState("Aveiro");
     const [erroInternoRegistoAchado, setErroInternoRegistoAchado] = useState(false);
-    const [entregue, setEntregue] = useState(false);
-    const [checkedEntregue, setCheckedEntregue] = useState(false);
     const [policiasLista, setPoliciasLista] = useState([]);
     const [idPolicia, setIdPolicia] = useState("");
 
+    const [categoria, setCategoria] = useState("");
+    const [categorias, setCategorias] = useState(new Object());
+    const [camposDaCategoria, setCamposDaCategoria] = useState([]);
+    const [tiposDosCampos, setTiposDosCampos] = useState(new Object());
 
-    // TODO:
-    //const [categoriasCriadas, setCategoriasCriadas] = useState(false);
+
+    // TODO: 
+    //  - Editar categorias nos objetos achados;
+    //  - Objeto não é registado à primeira vez no perdido e no achado;
+    //  - Permitir editar polícias e estações;
+    //  - Auth0
 
     const maxNumber = 3;
+
+    function obterValorDoCampo(nomeCampo) {
+        let valor = document.forms['form'][''+nomeCampo].value;
+        return valor;
+    }
+
+    function registarValorDoCampo(idObj, campo, valor) {
+        axios.post(
+            config.LINK_API + "/object/setField",
+            { idObj: idObj, campo: campo, valor: valor },
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
 
     function processarObjeto(infoObjeto, infoLocalizacao, values) {
         axios.post(
@@ -53,8 +77,12 @@ function FormRegistoObjetoAchado() {
 
         ).then ( (res) => {
             if (res.status === 201) {
-
                 let idObj = res.data.id;
+
+                camposDaCategoria.map( campo => {
+                    let valor = obterValorDoCampo(campo);
+                    registarValorDoCampo( idObj, campo, valor );
+                });
 
                 axios.post(
                     config.LINK_API + "/location", 
@@ -104,6 +132,64 @@ function FormRegistoObjetoAchado() {
         })
     }
 
+    async function obterCategorias() {
+        await axios.get(
+            config.LINK_API + "/category", 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let categoriasECampos = {};
+            res.data.categorias.map( campo => {
+                if ( categoriasECampos[campo.cat] === undefined ) {
+                    categoriasECampos[campo.cat] = new Array();
+                }
+                categoriasECampos[campo.cat].push( campo.campo );
+
+            })
+            setCategorias(categoriasECampos);
+
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterInfoCampo(nomeCampo){
+        axios.get(
+            config.LINK_API + "/field/" + nomeCampo ,
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let tiposAtuais = tiposDosCampos;
+            if ( tiposAtuais[nomeCampo] === undefined ) {
+                tiposAtuais[nomeCampo] = res.data[0].tipo_valor;
+            }
+            setTiposDosCampos( tiposAtuais );
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterCampos(nomeCategoria) {
+        if ( nomeCategoria !== "" ) {
+            axios.get(
+                config.LINK_API + "/categoryFields/" + nomeCategoria ,
+                { headers: {'Content-Type': 'application/json'}},
+            ).then ( (res) => {
+                let campos = [];
+                res.data.map( campo => {
+                    campos.push(campo.campo);
+                })
+                setCamposDaCategoria( campos );
+            }).catch(function (error) {
+                if ( error.response ) {
+                    let codigo = error.response.status;
+                }
+            });
+        }
+    }
+
     async function obterPolicias() {
         await axios.get(
             config.LINK_API + "/police",
@@ -126,13 +212,6 @@ function FormRegistoObjetoAchado() {
         return ( <option key={policia.id} value={policia.id}> {textoPolicia} </option> );
     });
 
-    // TODO: Falar com o stor...
-    async function criarCategorias(){
-        await axios.post(
-
-            );
-    }
-
     const onChange = (imageList, addUpdateIndex) => {
         setImages(imageList);
     }
@@ -145,16 +224,6 @@ function FormRegistoObjetoAchado() {
     const handleChangeNaoSabeData = () => {
         setSabeData( false );
         setNaoSabeData( true );
-    }
-
-    const handleEntregue = () => {
-        setCheckedEntregue(true);
-        setEntregue( true );
-    }
-
-    const handleNaoEntregue = () => {
-        setCheckedEntregue(true);
-        setEntregue( false );
     }
 
     const validate = values => {
@@ -325,8 +394,10 @@ function FormRegistoObjetoAchado() {
                 nifUser: JSON.parse(localStorage.getItem("dados")).nif, 
                 desc: values.desc,
                 imagens: images,
-                dataRegisto: dataAtual
+                dataRegisto: dataAtual,
+                categoria: categoria,
             }
+            console.log(camposDaCategoria);
 
             let infoLocalizacao = {
                 pais: values.pais,
@@ -340,7 +411,7 @@ function FormRegistoObjetoAchado() {
             processarObjeto(infoObjeto, infoLocalizacao, values);
 
             if ( !erroInternoRegistoAchado ) {
-                navigate("/lostObject/register/success");
+                //navigate("/lostObject/register/success");
             }
         },
     });
@@ -394,12 +465,36 @@ function FormRegistoObjetoAchado() {
         return streetName.split(",")[2].substring(1);
     };
         
+    useEffect( () => { obterCategorias() }, [] );
+    useEffect( () => { setCategoria( Object.keys(categorias)[0] ) }, [categorias] );
+    useEffect( () => { obterCampos(categoria) }, [categoria] );
+
+    const desenharCategorias = Object.keys(categorias).map( cat => {
+        return (<option key={cat} value={cat}> {cat} </option>);
+    });
+
+    const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
+        obterInfoCampo( campo );
+        return(
+            <>
+                <Form.Label htmlFor={campo}> {campo}: </Form.Label>
+                <Form.Control                    
+                id={campo}
+                name={campo}
+                type={""+tiposDosCampos[campo]} 
+                />
+                <Form.Text muted>Introduza um valor { tiposDosCampos[campo] === "text" ? "alfanumérico" : "numérico" }. </Form.Text>
+                <br/>
+            </>
+        );
+    });
+
     return (
         <>
             <Container className='bg-light' fluid="sm">
                 <h1 className='text-center'> Registo de um objeto achado </h1>
 
-                <Form onSubmit={formik.handleSubmit}>
+                <Form name="form" onSubmit={formik.handleSubmit}>
                 
                 <br/>
                 <h4>Informações do anúncio do objeto</h4>
@@ -494,38 +589,20 @@ function FormRegistoObjetoAchado() {
                         </>
                     ) : null }
 
-                <br/>
-                <Form.Label htmlFor="data">Informações acerca da entrega do objeto à polícia:<span className='text-danger'>*</span> </Form.Label>
-                <div>
-                    <Form.Check 
-                        type="radio" 
-                        name="grupo2" 
-                        label="Este objeto foi entregue a um polícia." 
-                        onChange={handleEntregue}
+                <Form.Label htmlFor="data">Polícia a que foi entregue:<span className='text-danger'>*</span> </Form.Label>
+                <>  
+                    <label htmlFor="exampleDataList" className="form-label"></label>
+                    <input 
+                        className="form-control" 
+                        list="datalistOptions" 
+                        placeholder="Escreva o nome do agente ou o id..."
+                        onChange={(e) => {setIdPolicia(e.target.value);}}
                     />
-                    <Form.Check 
-                        type="radio" 
-                        name="grupo2" 
-                        label="Este objeto não foi entregue a um polícia." 
-                        onChange={handleNaoEntregue}    
-                    />
-                </div>
-
-                    { entregue ? (
-                        <>  
-                            <label htmlFor="exampleDataList" className="form-label">Polícia a que foi entregue:<span className='text-danger'>*</span> </label>
-                            <input 
-                                className="form-control" 
-                                list="datalistOptions" 
-                                placeholder="Escreva o nome do agente ou o id..."
-                                onChange={(e) => {setIdPolicia(e.target.value);}}
-                            />
-                            <datalist id="datalistOptions">
-                                {escreverPolicias}
-                            </datalist>
-                        </>
-                    ) : null }
-                { checkedEntregue === false ? (<p className='text-danger'> Por favor selecione uma desta opções. </p>) : null }
+                    <datalist id="datalistOptions">
+                        {escreverPolicias}
+                    </datalist>
+                </>
+                { idPolicia === "" ? (<p className='text-danger'> Por favor selecione uma desta opções. </p>) : null }
                 <br/>
    
                 <p>Imagens do objeto: </p>
@@ -680,7 +757,17 @@ function FormRegistoObjetoAchado() {
                 <br/>
                 <h4>Categorização do objeto</h4>
                 <Form.Group className='border'>
-                <p>Crie categorias que ache úteis para descrever o objeto e associe-as ao objeto em questão.</p>
+                <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
+                <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
+                    <Form.Select                    
+                        id="categoria"
+                        name="categoria"
+                        onChange={(e) => {setCategoria(e.target.value);}}
+                    >
+                        {desenharCategorias}
+                    </Form.Select>
+                <br/>
+                { desenharCamposDaCategoria }
 
                 </Form.Group>
 

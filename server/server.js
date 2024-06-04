@@ -655,7 +655,7 @@ app.get("/policeStation/:id", async (req, res) => {
 
 app.post("/object", async (req, res) => {
     try {
-        let { titulo, nifUser, desc, imagens, dataRegisto } = req.body;
+        let { titulo, nifUser, desc, imagens, dataRegisto, categoria } = req.body;
 
         imagens == [] ? imagens = null : imagens;
 
@@ -668,8 +668,8 @@ app.post("/object", async (req, res) => {
         let id = (await dbClient.query(queryObterIdNovoObjeto)).rowCount + 1;
 
         let queryCriarObjeto = {
-            text: "INSERT INTO objeto(id,nifUser,descricao,titulo,imagens, dataRegisto) VALUES($1,$2,$3,$4,$5,$6)",
-            values: [id,nifUser,desc,titulo,imagensEmString, dataRegisto]
+            text: "INSERT INTO objeto(id,nifUser,descricao,titulo,imagens, dataRegisto, categoria) VALUES($1,$2,$3,$4,$5,$6,$7)",
+            values: [id,nifUser,desc,titulo,imagensEmString, dataRegisto, categoria]
         }
         let result = await dbClient.query(queryCriarObjeto);
 
@@ -683,9 +683,56 @@ app.post("/object", async (req, res) => {
     }
 });
 
+app.post("/object/setField", async (req, res) => {
+    try {
+        let { idObj, campo, valor } = req.body;
+
+        let queryInserirValorCampo = {
+            text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
+            values: [idObj, campo, valor]
+        }
+        let result = await dbClient.query(queryInserirValorCampo);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send();
+        }
+    } catch (error) {
+        console.log(error);
+    } 
+});
+
+app.put("/object/setField", async (req, res) => {
+    try {
+        let { idObj, campo, valor } = req.body;
+
+        let queryLimparAtributos = {
+            text: "DELETE FROM atributoobjeto WHERE idobj=$1",
+            values: [idObj]
+        }
+        await dbClient.query(queryLimparAtributos);
+
+        let queryInserirValorCampo = {
+            text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
+            values: [idObj, campo, valor]
+        }
+        let result = await dbClient.query(queryInserirValorCampo);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send();
+        }
+    } catch (error) {
+        res.status(500).send();
+        console.log(error);
+    } 
+});
+
 app.put("/object", async (req, res) => {
     try {
-        let { idObj, titulo, desc, imagens } = req.body;
+        let { idObj, titulo, desc, imagens, categoria } = req.body;
 
         imagens == [] ? imagens = null : imagens;
 
@@ -693,8 +740,8 @@ app.put("/object", async (req, res) => {
         imagens.forEach( (imagem) => { imagensEmString += imagem.data_url + "?" } );
 
         let queryAtualizarObjeto = {
-            text: "UPDATE objeto SET descricao=$3, titulo=$2, imagens=$4 WHERE id=$1",
-            values: [idObj, titulo, desc, imagensEmString]
+            text: "UPDATE objeto SET descricao=$3, titulo=$2, imagens=$4, categoria=$5 WHERE id=$1",
+            values: [idObj, titulo, desc, imagensEmString, categoria]
         }
         let result = await dbClient.query(queryAtualizarObjeto);
         if ( result.rowCount === 1 ) {
@@ -746,6 +793,28 @@ app.get("/object/:object_id", async (req, res) => {
     }
 });
 
+app.get( "/object/atributes/:object_id", async (req, res) => {
+    try {
+
+        let queryObterAtributos = {
+            text: "SELECT * FROM atributoobjeto WHERE idobj=$1",
+            values: [req.params.object_id]
+        }
+        let result = await dbClient.query(queryObterAtributos);
+        let atributos = result.rows;
+        console.log(atributos);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send(atributos);
+        }
+    } catch (error) {
+        console.log(error);
+
+    }
+});
+
 // Não usar...
 app.delete("/object/:object_id", async (req, res) => {
     try {
@@ -765,69 +834,138 @@ app.delete("/object/:object_id", async (req, res) => {
     }
 });
 
-/** TODO: Categorias erradas... **/
+app.post("/categoryName", async (req, res) => {
+    try {
+        let { nomeCat } = req.body;
+
+        let queryCriarNomeCategoria = {
+            text: "INSERT INTO nomecategoria(nome) VALUES($1)",
+            values: [nomeCat]
+        }
+
+        let criarNomeCat = await dbClient.query(queryCriarNomeCategoria);
+        if (criarNomeCat.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send();
+        }
+
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
+    }
+});
+
 app.post("/category", async (req, res) => {
     try {
-        const params = { ...req.body }
-        const result = await categoryDB.insert(params);
+        let { cat, campo } = req.body;
 
-        if (result.rowCount === 0) {
-            throw new HttpException(404, "");
+        let queryAssociarCampoACategoria = {
+            text: "INSERT INTO categoria(cat, campo) VALUES($1, $2)",
+            values: [cat, campo]
         }
 
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-        if (error instanceof HttpException) {
-            res.status(error.status_code).send();
+        let criarNomeCat = await dbClient.query(queryAssociarCampoACategoria);
+        if (criarNomeCat.rowCount === 0) {
+            res.status(404).send();
         } else {
-            res.status(500).send();
+            res.status(200).send();
         }
+
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
     }
 });
 
-app.put("/category", async (req, res) => {
+app.get("/category", async (req, res) => {
     try {
-        const params = { ...req.body }
 
-        const result = await categoryDB.update(params);
-
-        if (result.rowCount === 0) {
-            throw new HttpException(404, "");
+        let queryObterCategorias = {
+            text: "SELECT * FROM categoria"
         }
 
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-        if (error instanceof HttpException) {
-            res.status(error.status_code).send();
+        let results = await dbClient.query(queryObterCategorias);
+        if (results.rowCount === 0) {
+            res.status(404).send();
         } else {
-            res.status(500).send();
+            res.status(200).send({ categorias: results.rows });
         }
+
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
     }
 });
 
-app.delete("/category", async (req, res) => {
+app.get("/categoryFields/:categoryName", async (req, res) => {
     try {
-        const params = { ...req.body }
 
-        const result = await categoryDB.delete_category(params.nome);
-
-        if (result.rowCount === 0) {
-            throw new HttpException(404, "");
+        let queryObterCategorias = {
+            text: "SELECT campo FROM categoria WHERE cat=$1",
+            values: [req.params.categoryName]
         }
 
-        res.status(200).send();
-    } catch (error) {
-        console.log(error);
-        if (error instanceof HttpException) {
-            res.status(error.status_code).send();
+        let results = await dbClient.query(queryObterCategorias);
+        if (results.rowCount === 0) {
+            res.status(404).send();
         } else {
-            res.status(500).send();
+            res.status(200).send(results.rows);
         }
+
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /category: " + error);
     }
 });
-/** TODO: Categorias erradas... **/
+
+app.post("/field", async (req, res) => {
+    try {
+        let { nomeCampo, tipoValor, valores } = req.body;
+
+        valores = null;
+
+        let queryCriarCampo = {
+            text: "INSERT INTO campo(nome, tipo_valor, valores) VALUES($1, $2, $3)",
+            values: [nomeCampo, tipoValor, valores]
+        }
+
+        let criarNomeCat = await dbClient.query(queryCriarCampo);
+        if (criarNomeCat.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send();
+        }
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /field: " + error);
+    }
+});
+
+app.get("/field/:fieldName", async (req, res) => {
+    try {
+        let queryObterInfoCampo = {
+            text: "SELECT * FROM campo WHERE nome=$1",
+            values: [req.params.fieldName]
+        }
+
+        let results = await dbClient.query(queryObterInfoCampo);
+        if (results.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(201).send( results.rows );
+        }
+
+    } catch (error) {
+        res.status(500).send();
+        console.log("Erro no POST /field: " + error);
+    }
+});
 
 app.get("/location/:location_id", async (req, res) => {
     try {
@@ -1245,7 +1383,6 @@ app.delete("/auction/:auction_id", async (req, res) => {
         res.status(500).send();
     }
 });
-
 
 app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
     try{

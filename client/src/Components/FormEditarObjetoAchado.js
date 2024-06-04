@@ -22,19 +22,21 @@ import Image from 'react-bootstrap/Image';
 
 function FormEditarObjetoAchado(props) {
 
-    // {data_url: ..., file: null}
-    // Pro implementar aqui...
     const [images, setImages] = useState([]);
     const [distrito, setDistrito] = useState("Aveiro");
-
-    // TODO:
-    //const [categoriasCriadas, setCategoriasCriadas] = useState(false);
     const maxNumber = 3;
 
     const [objeto, setObjeto] = useState(new Object());
     const [objetoObtido, setObjetoObtido] = useState(false);
     const [objetoAchado, setObjetoAchado] = useState(new Object());
     const [localizacao, setLocalizacao] = useState(new Object());
+
+    const [categoria, setCategoria] = useState("");
+    const [categorias, setCategorias] = useState(new Object());
+    const [camposDaCategoria, setCamposDaCategoria] = useState([]);
+    const [tiposDosCampos, setTiposDosCampos] = useState(new Object());
+
+    const [atributosAtuais, setAtributosAtuais] = useState(new Object());
 
     const [ sucessoObjetoAchadoAtualizado, setSucessoObjetoAchadoAtualizado ] = useState(false);
 
@@ -43,7 +45,7 @@ function FormEditarObjetoAchado(props) {
             config.LINK_API + "/object/" + idObjeto, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
-            let { id, nifuser, descricao, titulo, dataregisto, imagens } = res.data.obj;
+            let { id, nifuser, descricao, titulo, dataregisto, imagens, categoria } = res.data.obj;
 
             let imagensDoObjeto = imagens.split("?");
             let imagensProcessadas = [];
@@ -59,10 +61,14 @@ function FormEditarObjetoAchado(props) {
                 nifuser: nifuser,
                 descricao: descricao,
                 titulo: titulo,
-                dataregisto: dataregisto
+                dataregisto: dataregisto,
+                categoria: categoria
             }
             setImages( imagensProcessadas );
             setObjeto(objetoObtido);
+            setCategoria( categoria );
+            obterCampos( categoria );
+            obterAtributos( idObjeto );
 
         }).catch(function (error) {
             if ( error.response ) {
@@ -148,11 +154,97 @@ function FormEditarObjetoAchado(props) {
         });
     }
 
-    // TODO: Falar com o stor...
-    async function obterCategorias(){
-        await axios.post(
+    function obterValorDoCampo(nomeCampo) {
+        let valor = document.forms['form'][''+nomeCampo].value;
+        return valor;
+    }
 
-            );
+    function atualizarValorDoCampo(idObj, campo, valor) {
+        axios.put(
+            config.LINK_API + "/object/setField",
+            { idObj: idObj, campo: campo, valor: valor },
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterCategorias() {
+        axios.get(
+            config.LINK_API + "/category", 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let categoriasECampos = {};
+            res.data.categorias.map( campo => {
+                if ( categoriasECampos[campo.cat] === undefined ) {
+                    categoriasECampos[campo.cat] = new Array();
+                }
+                categoriasECampos[campo.cat].push( campo.campo );
+
+            })
+            setCategorias(categoriasECampos);
+
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterCampos(nomeCategoria) {
+        if ( nomeCategoria !== "" ) {
+            axios.get(
+                config.LINK_API + "/categoryFields/" + nomeCategoria ,
+                { headers: {'Content-Type': 'application/json'}},
+            ).then ( (res) => {
+                let campos = [];
+                res.data.map( campo => {
+                    campos.push(campo.campo);
+                })
+                setCamposDaCategoria( campos );
+            }).catch(function (error) {
+                if ( error.response ) {
+                    let codigo = error.response.status;
+                }
+            });
+        }
+    }
+
+    function obterInfoCampo(nomeCampo){
+        axios.get(
+            config.LINK_API + "/field/" + nomeCampo ,
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let tiposAtuais = tiposDosCampos;
+            if ( tiposAtuais[nomeCampo] === undefined ) {
+                tiposAtuais[nomeCampo] = res.data[0].tipo_valor;
+            }
+            setTiposDosCampos( tiposAtuais );
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    function obterAtributos(idObj) {
+        axios.get(
+            config.LINK_API + "/object/atributes/" + idObj, 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            let valores = {};
+            res.data.map( campo => {
+                valores[""+campo.campo] = campo.valor;
+            })
+            setAtributosAtuais( valores );
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
     }
 
     const onChange = (imageList, addUpdateIndex) => {
@@ -219,6 +311,8 @@ function FormEditarObjetoAchado(props) {
                 titulo: values.titulo, 
                 desc: values.desc,
                 imagens: images,
+                categoria: categoria
+
             }
             atualizarObjeto(infoObjetoAEnviar);
 
@@ -234,7 +328,36 @@ function FormEditarObjetoAchado(props) {
             }
             atualizarLocalizacao(novaLoc);
 
+            camposDaCategoria.map( campo => {
+                let valor = obterValorDoCampo(campo);
+                atualizarValorDoCampo( props.id, campo, valor);
+            });
         },
+    });
+
+    useEffect( () => { obterCategorias() }, [] );
+    useEffect( () => { obterCampos(categoria) }, [categoria] );
+
+    const desenharCategorias = Object.keys(categorias).map( cat => {
+        console.log(categoria);
+        return (<option selected={cat===categoria ? true : false} key={cat} value={cat}> {cat} </option>);
+    });
+
+    const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
+        obterInfoCampo( campo );
+        return(
+            <>
+                <Form.Label htmlFor={campo}> {campo}: </Form.Label>
+                <Form.Control                    
+                id={campo}
+                name={campo}
+                type={""+tiposDosCampos[campo]}
+                defaultValue={atributosAtuais[campo]}
+                />
+                <Form.Text muted>Introduza um valor { tiposDosCampos[campo] === "text" ? "alfanumérico" : "numérico" }. </Form.Text>
+                <br/>
+            </>
+        );
     });
 
     return (
@@ -242,7 +365,7 @@ function FormEditarObjetoAchado(props) {
             <Container className='bg-light' fluid="sm">
                 <h1 className='text-center'> Edição de objeto achado </h1>
 
-                <Form onSubmit={formik.handleSubmit}>
+                <Form name='form' onSubmit={formik.handleSubmit}>
                 <br/>
                 <h4>Informações do anúncio do objeto</h4>
                 <Form.Group className='border'>
@@ -416,7 +539,16 @@ function FormEditarObjetoAchado(props) {
                 <h4>Categorização do objeto</h4>
                 <Form.Group className='border'>
                 <p>Crie categorias que ache úteis para descrever o objeto e associe-as ao objeto em questão.</p>
-
+                <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
+                    <Form.Select                    
+                        id="categoria"
+                        name="categoria"
+                        onChange={(e) => {setCategoria(e.target.value);}}
+                    >
+                        {desenharCategorias}
+                    </Form.Select>
+                <br/>
+                { desenharCamposDaCategoria }
                 </Form.Group>
 
                 <br/>

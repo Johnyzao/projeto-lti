@@ -12,13 +12,13 @@ DROP TABLE Policia;
 DROP TABLE Posto;
 DROP TABLE AtributoObjeto;
 DROP TABLE Objeto;
-DROP TABLE Campo;
 DROP TABLE Categoria;
+DROP TABLE Campo;
+DROP TABLE NomeCategoria;
 DROP TABLE Localizacao;
 DROP TABLE Licitante;
 DROP TABLE Dono;
 DROP TABLE Utilizador;
-
 
 CREATE TABLE Utilizador (
     nif INT PRIMARY KEY,
@@ -57,16 +57,21 @@ CREATE TABLE Localizacao (
     coords TEXT
 );
 
-CREATE TABLE Categoria ( 
+CREATE TABLE NomeCategoria ( 
     nome VARCHAR(255) PRIMARY KEY
 );
 
 CREATE TABLE Campo(
     nome TEXT PRIMARY KEY,
-    associado_a TEXT,
-    tipo_valor TEXT,
-    valor TEXT,
-    FOREIGN KEY (associado_a) REFERENCES Categoria(nome)
+    tipo_valor TEXT
+);
+
+CREATE TABLE Categoria ( 
+    cat TEXT,
+    campo TEXT,
+    FOREIGN KEY (cat) REFERENCES NomeCategoria(nome),
+    FOREIGN KEY (campo) REFERENCES Campo(nome),
+    PRIMARY KEY ( cat, campo )
 );
 
 CREATE TABLE Objeto (
@@ -76,6 +81,8 @@ CREATE TABLE Objeto (
     titulo TEXT NOT NULL,
     imagens TEXT,
     dataRegisto TEXT,
+    categoria TEXT,
+    FOREIGN KEY (categoria) REFERENCES NomeCategoria(nome),
     FOREIGN KEY (nifUser) REFERENCES Utilizador(nif)
 );
 
@@ -106,8 +113,8 @@ CREATE TABLE Policia (
 );
 
 CREATE TABLE Achado (
-    id INT,
-    idAchado INT,
+    id INT UNIQUE,
+    idAchado INT UNIQUE,
     data_leilao TEXT NOT NULL,
     achado_em INT NOT NULL,
     policia INT,
@@ -165,6 +172,7 @@ CREATE TABLE Reclamado (
     FOREIGN KEY (nif) REFERENCES Dono(nif),
     FOREIGN KEY (id) REFERENCES Achado(id)
 );
+
 
 CREATE TABLE Entrega (
     nif INT,

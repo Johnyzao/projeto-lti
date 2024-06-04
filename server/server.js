@@ -680,6 +680,8 @@ app.post("/object", async (req, res) => {
 app.post("/object/setField", async (req, res) => {
     try {
         let { idObj, campo, valor } = req.body;
+        console.log("Categorias: ");
+        console.log( req.body );
 
         let queryInserirValorCampo = {
             text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",

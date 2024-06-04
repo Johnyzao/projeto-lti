@@ -11,6 +11,8 @@ import axios from 'axios';
 import Button from 'react-bootstrap/Button';
 
 function VerObjetosPerdidos(props) {
+    console.log("AQUI");
+    console.log(props.nif);
     const navigate = useNavigate();
 
     const [objetos, setObjetos] = useState([]);
@@ -91,9 +93,7 @@ function VerObjetosPerdidos(props) {
 
     return (
         <>
-            <div>
-                { desenharObjetosPerdidos }
-            </div>
+            { desenharObjetosPerdidos }
         </>
     );
 }

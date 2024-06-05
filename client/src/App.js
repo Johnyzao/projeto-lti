@@ -17,7 +17,7 @@ import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
 import CriarLeilao from './Components/CriarLeilao';
-import LeiloesAtivos from './Components/LeiloesAtivos';
+import Leiloes from './Components/Leiloes';
 
 function App() {
   return (
@@ -42,7 +42,7 @@ function App() {
           <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
           <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
           <Route path="/auction/register" element={<CriarLeilao/>} />
-          <Route path="/auction/LeiloesAtivos" element={<LeiloesAtivos/>} />
+          <Route path="/auction/Leiloes" element={<Leiloes/>} />
         </Routes>
     </BrowserRouter>
     </>

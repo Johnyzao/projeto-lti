@@ -14,9 +14,9 @@ const styles = {
     marginBottom: '10px',
   },
   bidButton: {
-    backgroundColor: 'green',
+    backgroundColor: 'blue',
     color: 'white',
-    padding: '5px 10px',
+    padding: '10px 20px',
     borderRadius: '5px',
     border: 'none',
     cursor: 'pointer',
@@ -291,4 +291,3 @@ class Leiloes extends Component {
   }
   
   export default Leiloes;
-

@@ -1677,6 +1677,85 @@ app.get("/user/:nif/auctionsWon", async (req, res) => {
 });
 /** TODO: auction **/
 
+/** TODO: Procura **/
+app.post("/lostObject/searchByDescription", async (req, res) => {
+    try {
+        let { descObj } = req.body;
+
+        let queryProcurarPorDesc = {
+            text: "SELECT * FROM objeto WHERE descricao LIKE $1 AND id IN ( SELECT id FROM perdido )",
+            values: [ descObj + "%" ]
+        }
+
+        let objetosMatched = await dbClient.query( queryProcurarPorDesc );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No matches found for this description.");
+        } else{
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByDescription: " + error);
+        res.status(500).send();
+    }
+});
+
+app.get("/lostObject/searchByCategory/:category", async (req, res) => {
+    try {
+
+        let queryProcurarPorCat = {
+            text: "SELECT * FROM objeto WHERE categoria=$1 AND id IN ( SELECT id FROM perdido )",
+            values: [ req.params.category ]
+        }
+
+        let objetosMatched = await dbClient.query( queryProcurarPorCat );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No matches found for this category.");
+        } else{
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByCategory: " + error);
+        res.status(500).send();
+    }
+});
+
+app.post("/lostObject/searchByField", async (req, res) => {
+    try {
+        let { cat, campos } = req.body;
+
+        let camposRecebidos = Object.keys(campos);
+        let numeroCampos = camposRecebidos.length;
+        let parteDaQuery = "WHERE ";
+        camposRecebidos.forEach( campo => {
+            parteDaQuery += "campo='" + campo + "' AND valor LIKE '" + campos[campo] + "%'";
+            numeroCampos -= 1;
+            if ( numeroCampos !== 0 ) {
+                parteDaQuery += " AND "
+            }
+        });
+
+        let queryProcurarPorCampos = {
+            text: "SELECT * FROM objeto WHERE categoria=$1 AND id IN ( SELECT id FROM perdido ) AND id IN ( SELECT idObj FROM atributoobjeto " + parteDaQuery + ")",
+            values: [ cat ]
+        }
+
+        let objetosMatched= await dbClient.query( queryProcurarPorCampos );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No objects matched these fields.");
+        } else{
+
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByCategory: " + error);
+        res.status(500).send();
+    }
+});
+
+
 app.listen(3001, (err) => {
     if (err) console.log(err);
     console.log("Servidor a correr.");

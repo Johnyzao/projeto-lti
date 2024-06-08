@@ -1,3 +1,4 @@
+const stringSimilarity = require('string-similarity-js');
 const express = require('express');
 const app = express();
 const session = require('express-session');
@@ -170,8 +171,6 @@ app.post("/register", async (req, res) => {
 
 });
 
-// TODO: Funcionar com contas de policia...
-// TODO: Fazer jwt...
 app.post("/login", async (req, res) => {
     try {
         const { mail, pass } = req.body;
@@ -368,7 +367,6 @@ app.post("/police", async (req, res) => {
     }
 });
 
-// TODO: Testar
 app.put("/police", async (req, res) => {
     let { id, nome, password, posto } = req.body;
 
@@ -581,7 +579,6 @@ app.post("/policeStation", async (req, res) => {
     }
 });
 
-// TODO: por fazer...
 app.put("/policeStation", async (req, res) => {
     const { codp, morada, localidade, telefone } = req.body;
 
@@ -606,7 +603,6 @@ app.put("/policeStation", async (req, res) => {
     }
 });
 
-// TODO: Por testar
 app.delete("/policeStation/:id", async (req, res) => {
     try {
         const queryApagarPostos = {
@@ -1277,16 +1273,6 @@ app.delete("/foundObject/:foundObject_id", async (req, res) => {
     }
 });
 
-// TODO: ...
-app.put("/foundObject/:id_foundObject/owner/:nif", async (req, res) => {
-
-});
-
-// TODO: Implementar.
-app.get("/object/compare/:id_foundObject/:id_lostObject", async (req, res) => {
-
-});
-
 /** TODO: auction **/
 // Validações
 app.post("/auction", async (req, res) => {
@@ -1676,6 +1662,419 @@ app.get("/user/:nif/auctionsWon", async (req, res) => {
     }
 });
 /** TODO: auction **/
+
+/** TODO: Procura **/
+app.post("/lostObject/searchByDescription", async (req, res) => {
+    try {
+        let { descObj } = req.body;
+
+        let queryProcurarPorDesc = {
+            text: "SELECT * FROM objeto WHERE descricao LIKE $1 AND id IN ( SELECT id FROM perdido )",
+            values: [ descObj + "%" ]
+        }
+
+        let objetosMatched = await dbClient.query( queryProcurarPorDesc );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No matches found for this description.");
+        } else{
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByDescription: " + error);
+        res.status(500).send();
+    }
+});
+
+app.get("/lostObject/searchByCategory/:category", async (req, res) => {
+    try {
+
+        let queryProcurarPorCat = {
+            text: "SELECT * FROM objeto WHERE categoria=$1 AND id IN ( SELECT id FROM perdido )",
+            values: [ req.params.category ]
+        }
+
+        let objetosMatched = await dbClient.query( queryProcurarPorCat );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No matches found for this category.");
+        } else{
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByCategory: " + error);
+        res.status(500).send();
+    }
+});
+
+app.post("/lostObject/searchByField", async (req, res) => {
+    try {
+        let { cat, campos } = req.body;
+
+        let camposRecebidos = Object.keys(campos);
+        let numeroCampos = camposRecebidos.length;
+        let parteDaQuery = "WHERE ";
+        camposRecebidos.forEach( campo => {
+            parteDaQuery += "campo='" + campo + "' AND valor LIKE '" + campos[campo] + "%'";
+            numeroCampos -= 1;
+            if ( numeroCampos !== 0 ) {
+                parteDaQuery += " AND "
+            }
+        });
+
+        let queryProcurarPorCampos = {
+            text: "SELECT * FROM objeto WHERE categoria=$1 AND id IN ( SELECT id FROM perdido ) AND id IN ( SELECT idObj FROM atributoobjeto " + parteDaQuery + ")",
+            values: [ cat ]
+        }
+
+        let objetosMatched= await dbClient.query( queryProcurarPorCampos );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No objects matched these fields.");
+        } else{
+
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByCategory: " + error);
+        res.status(500).send();
+    }
+});
+
+function compararObjetos( objetoAchado, objetosPerdidos, campos, localizacaoAchado, localizacoesPerdidos ) {
+    let afinidades = {};
+    let camposObjetoAchado = {};
+    let valor = 0;
+    campos.forEach( campo => {
+        if ( campo.idobj === objetoAchado.id ) {
+            camposObjetoAchado[campo.campo+""] = campo.valor.toLowerCase();
+        }
+    });
+    
+    for( let objetoPerdido of objetosPerdidos ) {
+
+        // Comparação do título.
+        valor += stringSimilarity.stringSimilarity( objetoAchado.titulo, objetoPerdido.titulo );
+
+        // Comparação da descrição.
+        valor += stringSimilarity.stringSimilarity( objetoAchado.descricao, objetoPerdido.descricao );
+
+        // Comparações dos atributos genéricos.
+        objetoAchado.categoria === objetoPerdido.categoria ? valor += 1 : valor -= 1;
+
+        // Comparações da localização
+        localizacoesPerdidos.forEach( loc => {
+
+            if ( localizacaoAchado.dist !== null && loc.dist !== null ) {
+                valor += stringSimilarity.stringSimilarity( localizacaoAchado.dist, loc.dist );
+            }
+
+            if ( localizacaoAchado.munc != null && loc.munc !== null ) {
+                valor += stringSimilarity.stringSimilarity( localizacaoAchado.munc, loc.munc );
+            }
+
+            if ( localizacaoAchado.freg !== null && loc.freg !== null ) {
+                valor += stringSimilarity.stringSimilarity( localizacaoAchado.freg, loc.freg );
+            }
+
+            if ( localizacaoAchado.rua !== null && loc.rua !== null ) {
+                valor += stringSimilarity.stringSimilarity( localizacaoAchado.rua, loc.rua );
+            }
+
+            if ( localizacaoAchado.morada !== null && loc.morada !== null ) {
+                valor += stringSimilarity.stringSimilarity( localizacaoAchado.morada, loc.morada );
+            }
+
+            if ( localizacaoAchado.codp !== null && loc.codp !== null ) {
+                valor += stringSimilarity.stringSimilarity( localizacaoAchado.codp, loc.codp );
+            }
+        });
+
+        // Comparação dos campos.
+        campos.forEach( campo => {
+            if ( campo.idobj !== objetoAchado.id && campo.idobj === objetoPerdido.id ) {
+                let campoAComparar = campo.campo;
+                let valorDoCampo = campo.valor.toLowerCase();
+
+                if ( camposObjetoAchado[ campoAComparar ] !== undefined ) {
+                    valor += (stringSimilarity.stringSimilarity( camposObjetoAchado[ campoAComparar ], valorDoCampo ) )*2;
+                }
+            }
+        });
+
+        afinidades[objetoPerdido.id] = Math.round(valor);
+        valor = 0;
+    }
+
+    return afinidades;
+}
+
+app.get("/foundObject/:object_id/getMatches", async (req, res) => {
+    try {
+
+        let queryObterObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado )"
+        }
+        let objetoAchado = await dbClient.query(queryObterObjetoAchado);
+
+        let queryObterObjetosPerdidos = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido )"
+        }
+        let objetosPerdidos = (await dbClient.query(queryObterObjetosPerdidos)).rows;
+
+        let queryObterCampos = {
+            text: "SELECT * FROM atributoobjeto"
+        }
+        let camposObjetos = (await dbClient.query(queryObterCampos)).rows;
+
+        let queryObterLocalizacaoAchado = {
+            text: "SELECT * FROM localizacao WHERE id IN ( SELECT achado_em FROM achado WHERE id=$1 )",
+            values: [req.params.object_id]
+        }
+        let localizacaoAchado = (await dbClient.query(queryObterLocalizacaoAchado)).rows[0];
+
+        let queryObterLocalizacoesPerdidos = {
+            text: "SELECT * FROM localizacao WHERE id IN ( SELECT perdido_em FROM perdido )",
+        }
+        let localizacoesPerdidos = (await dbClient.query(queryObterLocalizacoesPerdidos)).rows;
+
+        let afinidades = compararObjetos( objetoAchado.rows[0], objetosPerdidos, camposObjetos, localizacaoAchado, localizacoesPerdidos );
+
+        if ( objetoAchado.rowCount === 0 ) {
+            res.status(404).send("No objects matched these fields.");
+        } else {
+            res.status(200).send({ af: afinidades });
+        }
+
+    } catch(error) {
+        console.log("Erro no /getMatches: " + error);
+        res.status(500).send();
+    }
+});
+
+async function identificarDiferencas(objetoAchado, objetoPerdido) {
+
+    // false - se iguais; true - se diferentes
+    let diferencas = {
+        titulo: false,
+        descricao: false,
+        dist: false,
+        munc: false,
+        freg: false,
+        rua: false,
+        morada: false,
+        codp: false,
+        coords: false,
+        categoria: false,
+        campos: false
+    };
+
+    // Comparação dos título.
+    objetoAchado.titulo.toLowerCase() !== objetoPerdido.titulo.toLowerCase() 
+        ? diferencas.titulo = true 
+        : diferencas.titulo = false;
+
+    // Comparação das descrições.
+    objetoAchado.descricao.toLowerCase() !== objetoPerdido.descricao.toLowerCase() 
+        ? diferencas.descricao = true 
+        : diferencas.descricao = false;
+    
+    // Comparar categorias.
+    objetoAchado.categoria !== objetoPerdido.categoria
+        ? diferencas.categoria = true 
+        : diferencas.categoria = false;
+
+    // Comparar localizações.
+    let queryObterLocalizacaoPerdido = {
+        text: "SELECT * FROM localizacao WHERE id IN ( SELECT perdido_em FROM perdido WHERE id=$1 )",
+        values: [objetoPerdido.id]
+    }
+    let localizacaoObjetoPerdido = (await dbClient.query(queryObterLocalizacaoPerdido)).rows[0];
+
+    let queryObterLocalizacaoAchado = {
+        text: "SELECT * FROM localizacao WHERE id IN ( SELECT achado_em FROM achado WHERE id=$1 )",
+        values: [objetoAchado.id]
+    }
+    let localizacaoObjetoAchado = (await dbClient.query(queryObterLocalizacaoAchado)).rows[0];
+
+    localizacaoObjetoAchado.dist !== localizacaoObjetoPerdido.dist
+        ? diferencas.dist = true 
+        : diferencas.dist = false;
+
+    localizacaoObjetoAchado.munc !== localizacaoObjetoPerdido.munc
+        ? diferencas.munc = true 
+        : diferencas.munc = false;
+
+    localizacaoObjetoAchado.freg !== localizacaoObjetoPerdido.freg
+        ? diferencas.freg = true 
+        : diferencas.freg = false;
+    
+    localizacaoObjetoAchado.rua !== localizacaoObjetoPerdido.rua
+        ? diferencas.rua = true 
+        : diferencas.rua = false;
+
+    localizacaoObjetoAchado.morada !== localizacaoObjetoPerdido.morada
+        ? diferencas.morada = true 
+        : diferencas.morada = false;
+
+    localizacaoObjetoAchado.codp !== localizacaoObjetoPerdido.codp
+        ? diferencas.codp = true 
+        : diferencas.codp = false;
+
+    localizacaoObjetoAchado.coords !== localizacaoObjetoPerdido.coords
+        ? diferencas.coords = true 
+        : diferencas.coords = false;
+
+    // Comparar campos.
+    let queryCamposObjetoPerdido = {
+        text: "SELECT * FROM atributoobjeto WHERE idobj IN ( SELECT id FROM perdido WHERE id=$1 )",
+        values: [objetoPerdido.id]
+    }
+    let camposObjetoPerdido = (await dbClient.query(queryCamposObjetoPerdido)).rows;
+
+    let queryCamposObjetoAchado = {
+        text: "SELECT * FROM atributoobjeto WHERE idobj IN ( SELECT id FROM achado WHERE id=$1 )",
+        values: [objetoAchado.id]
+    }
+    let camposObjetoAchado = (await dbClient.query(queryCamposObjetoAchado)).rows;
+
+    camposObjetoAchado.forEach( campoAchado => {
+        let existeCampo = false;
+        camposObjetoPerdido.forEach( campoPerdido => {
+            if ( campoAchado.campo === campoPerdido.campo ) {
+                existeCampo = true;
+                if ( campoAchado.valor !== campoPerdido.valor ) {
+                    diferencas.campos = true;
+                }
+            }
+        });
+        if ( !existeCampo ) {
+            diferencas.campos = true;
+        }
+    });
+
+    return diferencas;
+}
+
+app.get("/statistics", async (req, res) => {
+    try {
+        let estatisticas = {
+            totalUsers: 0,
+            totalPolicias: 0,
+            totalPostos: 0,
+            totalObjetos: 0,
+            totalObjetosPerdidos: 0,
+            totalObjetosAchados: 0,
+            totalMunc: 0,
+            totalFreg: 0,
+            totalRua: 0,
+            totalMorada: 0,
+            totalCategoria: 0,
+            distMaisFrequentes: {}
+        };
+
+        let distritosPresentes = {};
+
+        // Estatísticas dos objetos.
+        let queryObterObjetosStats = {
+            text: "SELECT * FROM objeto"
+        }
+        let objetosRegistados = (await dbClient.query(queryObterObjetosStats)).rows;
+        estatisticas.totalObjetos = objetosRegistados.length;
+
+        // Estatísticas dos objetos achados.
+        let queryObterObjetosAchadosStats = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado )"
+        }
+        let objetosAchados = (await dbClient.query(queryObterObjetosAchadosStats)).rows;
+        estatisticas.totalObjetosAchados = objetosAchados.length;
+
+        // Estatísticas dos objetos perdidos.
+        let queryObterObjetosPerdidosStats = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido )"
+        }
+        let objetosPerdidos = (await dbClient.query(queryObterObjetosPerdidosStats)).rows;
+        estatisticas.totalObjetosPerdidos = objetosPerdidos.length;
+
+        // Estatísticas das localizações.
+        let queryObterLocalizacoesStats = {
+            text: "SELECT * FROM localizacao"
+        }
+        let localizacoes = (await dbClient.query(queryObterLocalizacoesStats)).rows;
+        localizacoes.forEach( loc => {
+            if (distritosPresentes[loc.dist] === undefined) {
+                distritosPresentes[loc.dist] = 1
+            } else {
+                distritosPresentes[loc.dist] += 1
+            }
+
+            loc.munc !== null ? estatisticas.totalMunc += 1 : estatisticas.totalMunc += 0;
+            loc.freg !== null ? estatisticas.totalFreg += 1 : estatisticas.totalFreg += 0;
+            loc.rua  !== null ? estatisticas.totalRua += 1  : estatisticas.totalRua += 0;
+            loc.morada !== null ? estatisticas.totalMorada += 1 : estatisticas.totalMorada += 0;
+        });
+        estatisticas.distMaisFrequentes = distritosPresentes;
+
+        // Estatísticas dos polícias.
+        let queryObterPoliciasStats = {
+            text: "SELECT * FROM policia"
+        }
+        let policias = (await dbClient.query(queryObterPoliciasStats)).rows;
+        estatisticas.totalPolicias = policias.length;
+
+        // Estatísticas dos utilizadores.
+        let queryObterUsersStats = {
+            text: "SELECT * FROM utilizador"
+        }
+        let users = (await dbClient.query(queryObterUsersStats)).rows;
+        estatisticas.totalUsers = users.length;
+
+        // Estatísticas dos postos.
+        let queryObterPostosStats = {
+            text: "SELECT * FROM posto"
+        }
+        let postos = (await dbClient.query(queryObterPostosStats)).rows;
+        estatisticas.totalPostos = postos.length;
+
+        res.status(200).send({ estatisticas: estatisticas, localizacoes: localizacoes });
+    } catch(error) {
+        console.log("Erro no /object/statistics: " + error);
+        res.status(500).send();
+    }
+});
+
+app.get("/compare/lostObject/:lost_id/foundObject/:found_id", async (req, res) => {
+    try{
+        let idAchado = req.params.found_id;
+        let idPerdido = req.params.lost_id;
+
+        let queryObterObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE id=$1 )",
+            values: [idAchado]
+        }
+        let objetoAchado = (await dbClient.query(queryObterObjetoAchado)).rows[0];
+
+        let queryObterObjetoPerdido = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido WHERE id=$1 )",
+            values: [idPerdido]
+        }
+        let objetoPerdido = (await dbClient.query(queryObterObjetoPerdido)).rows[0];
+
+        if ( objetoPerdido === null || objetoAchado === null ) {
+            res.status(404).send("One or both of the objects dont exist.")
+        } else {
+            res.status(200).send({dif : await identificarDiferencas(objetoAchado, objetoPerdido)})
+        }
+
+    } catch(error) {
+        console.log("Erro no /compare " + error);
+        res.status(500).send();
+    }
+});
+
+    // TODO: 
+    //  - Registar, editar e remover o dono de um objeto achado.
+    //  - Registar a entrega de um objeto.
 
 app.listen(3001, (err) => {
     if (err) console.log(err);

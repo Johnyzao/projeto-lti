@@ -1663,7 +1663,7 @@ app.get("/user/:nif/auctionsWon", async (req, res) => {
 });
 /** TODO: auction **/
 
-/** TODO: Procura **/
+/** Procura, Estatísticas e Registo de posse/entrega **/
 app.post("/lostObject/searchByDescription", async (req, res) => {
     try {
         let { descObj } = req.body;
@@ -2072,10 +2072,105 @@ app.get("/compare/lostObject/:lost_id/foundObject/:found_id", async (req, res) =
     }
 });
 
-    // TODO: 
-    //  - Registar, editar e remover o dono de um objeto achado.
-    //  - Registar a entrega de um objeto.
+/** Posse de um objeto **/
+// Registo dono
+app.post("/registerOwner/foundObject/", async (req, res) => {
+    try {   
+        let {nifDono, idObj, date} = req.body;
 
+        let queryObterDono = {
+            text: "SELECT * FROM utilizador WHERE nif=$1",
+            values: [nifDono]
+        }
+        let dono = (await dbClient.query(queryObterDono)).rows;
+        if ( dono.length === 0 ) {
+            res.status(404).send("This user does not exist");
+        }
+
+        let queryObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE id=$1 )",
+            values: [idObj]
+        }
+        let objetoAchado = (await dbClient.query(queryObjetoAchado)).rows;
+        if ( objetoAchado.length === 0 ) {
+            res.status(404).send("This object does not exist.");
+        }
+
+        let queryRegistarDono = {
+            text: "INSERT INTO reclamado (nif, id, data, entregue, dataEntrega) VALUES ($1,$2,$3,$4,$5)",
+            values: [nifDono, idObj, date, 0, null]
+        }
+        let registarDono = await dbClient.query( queryRegistarDono );
+
+        let queryAtualizarAchado = {
+            text: "UPDATE achado SET removido=1 WHERE id=$1",
+            values: [ idObj ]
+        }
+        let remover = await dbClient.query( queryAtualizarAchado );
+
+        if ( registarDono.rowCount === 0 || remover.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to register ownership.");
+        } else {
+            res.status(200).send("Ownership registered");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+// Edição dono 
+app.put("/registerOwner/foundObject", async (req, res) => {
+    try {
+        let {nifDono, idObj, date, delivered, deliveredDate} = req.body;
+
+        let queryAtualizarDono = {
+            text: "UPDATE reclamado SET nif=$1, data=$2, entregue=$4, dataEntrega=$5 WHERE id=$3",
+            values: [ nifDono, date, idObj, delivered, deliveredDate ]
+        }
+        let atualizacao = await dbClient.query( queryAtualizarDono );
+
+        if ( atualizacao.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to edit ownership.");
+        } else {
+            res.status(200).send("Ownership removed.");
+        }
+
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/ " + erro);
+        res.status(500).send();
+    }
+});
+
+// Apagar dono
+app.delete("/registerOwner/foundObject/:object_id", async (req, res) => {
+    try {
+        let queryAtualizarAchado = {
+            text: "UPDATE achado SET removido=0 WHERE id=$1",
+            values: [ req.params.object_id ]
+        }
+        let recuperarObjeto = await dbClient.query( queryAtualizarAchado );
+
+        let queryRemoverDono = {
+            text: "DELETE FROM reclamado WHERE id=$1",
+            values: [ req.params.object_id ]
+        }
+        let remover = await dbClient.query( queryRemoverDono );
+
+        if ( remover.rowCount === 0 || recuperarObjeto.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to delete ownership.");
+        } else {
+            res.status(200).send("Ownership removed.");
+        }
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/ " + erro);
+        res.status(500).send();
+    }    
+});
+
+/** **/
 app.listen(3001, (err) => {
     if (err) console.log(err);
     console.log("Servidor a correr.");

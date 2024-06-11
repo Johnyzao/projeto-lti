@@ -16,6 +16,7 @@ import PaginaVerObjetosRegistados from './Pages/PaginaVerObjetosRegistados';
 import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
+import FormProcuraObjetos from './Components/FormProcuraObjetos';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
           <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
           <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
+          <Route path="/search" element={<FormProcuraObjetos/>} />
         </Routes>
     </BrowserRouter>
     </>

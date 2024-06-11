@@ -1,4 +1,5 @@
 const stringSimilarity = require('string-similarity-js');
+const fastSort = require('fast-sort');
 const express = require('express');
 const app = express();
 const session = require('express-session');
@@ -1669,15 +1670,23 @@ app.post("/lostObject/searchByDescription", async (req, res) => {
         let { descObj } = req.body;
 
         let queryProcurarPorDesc = {
-            text: "SELECT * FROM objeto WHERE descricao LIKE $1 AND id IN ( SELECT id FROM perdido )",
-            values: [ descObj + "%" ]
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido )",
         }
-
         let objetosMatched = await dbClient.query( queryProcurarPorDesc );
+
         if ( objetosMatched.rowCount === 0 ) {
             res.status(404).send("No matches found for this description.");
         } else{
-            res.status(200).send({ objs: objetosMatched.rows });
+            let objsParecidos = [];
+            objetosMatched.rows.forEach( obj => {
+                let parecenca = stringSimilarity.stringSimilarity(obj.descricao, descObj);
+                if ( parecenca >= 0.3 ) {
+                    objsParecidos.push( obj );
+                    obj.afinidade = parecenca;
+                }
+            });
+            let objetosDesc = fastSort.sort( objsParecidos ).desc( obj => obj.afinidade );
+            res.status(200).send({ objs: objetosDesc });
         }
 
     } catch(error) {

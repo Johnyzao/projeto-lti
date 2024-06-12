@@ -6,7 +6,6 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const cors = require('cors')
 const validator = require('validator');
-const jwt = require('jsonwebtoken');
 
 const dbClient = require('./connect_db');
 const queries = require('./utils/queries');
@@ -1277,16 +1276,6 @@ app.delete("/foundObject/:foundObject_id", async (req, res) => {
     }
 });
 
-// TODO: ...
-app.put("/foundObject/:id_foundObject/owner/:nif", async (req, res) => {
-
-});
-
-// TODO: Implementar.
-app.get("/object/compare/:id_foundObject/:id_lostObject", async (req, res) => {
-
-});
-
 /** TODO: auction **/
 // Validações
 app.post("/auction", async (req, res) => {
@@ -1295,13 +1284,15 @@ app.post("/auction", async (req, res) => {
 
     try{
 
-        let id = obterId("leilao");
+        let id = await obterId("leilao");
+        console.log(id);
+        console.log(req.body);
+
         let queryCriarLeilao = {
             text: "INSERT INTO leilao(id, data_inicio, data_fim, valor, id_achado, removido, aberto) VALUES ($1,$2,$3,$4,$5,$6,$7)",
             values: [id, data_inicio, data_fim, valor, id_achado, 0, 0]
         }
         let result = await dbClient.query(queryCriarLeilao);
-        // Falta a validação aqui...
 
         if (result.rowCount === 0) {
             res.status(404).send();
@@ -1329,7 +1320,7 @@ app.get("/auction/:auction_id", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({ leilao: result.rows });
+            res.status(200).send({ leilao: result.rows[0] });
         }
 
     } catch (error) {
@@ -1340,15 +1331,13 @@ app.get("/auction/:auction_id", async (req, res) => {
 
 app.put("/auction", async (req, res) => {
     try{
-        let { id, titulo, data_inicio, data_fim, valor } = req.body;
+        let { id, data_inicio, data_fim, valor } = req.body;
 
         let queryAtualizarLeilao={
-            text: "UPDATE leilao SET titulo=$2, data_inicio=$3, data_fim=$4, valor=$5 WHERE id=$1",
-            values: [id, titulo, data_inicio, data_fim, valor]
+            text: "UPDATE leilao SET data_inicio=$2, data_fim=$3, valor=$4 WHERE id=$1",
+            values: [id, data_inicio, data_fim, valor]
         }
         let result = await dbClient.query(queryAtualizarLeilao);
-
-        // Faltam as validações...
 
         if (result.rowCount === 0) {
             res.status(404).send();
@@ -1384,6 +1373,7 @@ app.delete("/auction/:auction_id", async (req, res) => {
     }
 });
 
+// TODO: Verificar
 app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
     try{
 
@@ -1421,7 +1411,7 @@ app.post("/auction/:auction_id/subscribe/:nif", async (req, res) => {
         } else {
             let queryInscreverUserEmLeilao={
                 text: "INSERT INTO subscrever(nif, id_leilao, removido) VALUES ($1, $2, $3)",
-                values: [req.params.auction_id, req.params.nif, 0]
+                values: [req.params.nif, req.params.auction_id, 0]
             }
             let result = await dbClient.query(queryInscreverUserEmLeilao);
 
@@ -1439,12 +1429,12 @@ app.post("/auction/:auction_id/subscribe/:nif", async (req, res) => {
     }
 });
 
-app.put("/auction/:auction_id/unsubscribe/:nic", async (req, res) => {
+app.delete("/auction/:auction_id/unsubscribe/:nif", async (req, res) => {
     try{
 
         let queryDesinscreverUserEmLeilao={
-            text: "UPDATE subscrever SET removido=$2 WHERE nif=$1",
-            values: [req.params.auction_id, req.params.nif]
+            text: "DELETE FROM subscrever WHERE nif=$1 AND id_leilao=$2",
+            values: [req.params.nif, req.params.auction_id]
         }
         let result = await dbClient.query(queryDesinscreverUserEmLeilao);
 
@@ -1461,16 +1451,11 @@ app.put("/auction/:auction_id/unsubscribe/:nic", async (req, res) => {
     }
 });
 
-// TODO...
-app.get("/auction/:auction_id/notify", async (req, res) => {
-
-});
-
 app.put("/auction/:auction_id/begin", async (req, res) => {
     try{
 
         let queryAbrirLeilao={
-            text: "UPDATE subscrever SET aberto=1 WHERE id=$1",
+            text: "UPDATE leilao SET aberto=1 WHERE id=$1",
             values: [req.params.auction_id]
         }
         let result = await dbClient.query(queryAbrirLeilao);
@@ -1492,7 +1477,7 @@ app.put("/auction/:auction_id/end", async (req, res) => {
     try{
 
         let queryFecharLeilao={
-            text: "UPDATE subscrever SET aberto=0 WHERE id=$1",
+            text: "UPDATE leilao SET aberto=0 WHERE id=$1",
             values: [req.params.auction_id]
         }
         let result = await dbClient.query(queryFecharLeilao);
@@ -1523,7 +1508,7 @@ app.get("/auction/:auction_id/history", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send();
+            res.status(200).send({historico: result.rows});
         }
 
     } catch (error) {
@@ -1537,64 +1522,17 @@ app.post("/makeOffer", async (req, res) => {
         let {nif, id_leilao, valor} = req.body;
 
         let queryObterIdLicitacao = {
-            text: "SELECT * FROM licita WHERE nif=$1 AND id_leilao=$2",
-            values:[nif, id_leilao]
+            text: "SELECT * FROM licita",
         }
         let id = (await dbClient.query(queryObterIdLicitacao)).rowCount + 1;
 
-        let queryObterLicitacoesDeUmLeilao={
+        let tempoAtual = new Date().getFullYear() + "-" + (new Date().getMonth() + 1) + "-" + new Date().getDay();
+        let queryObterLicitacoesDeUmLeilao= {
             text: "INSERT INTO licita(nif, id_leilao, valor, data, id) VALUES($1,$2,$3,$4,$5)",
-            values: [nif, id_leilao, valor, new Date().getTime, id]
+            values: [nif, id_leilao, valor, tempoAtual, id]
         }
         let result = await dbClient.query(queryObterLicitacoesDeUmLeilao);
 
-        // Faltam as validações...
-        if (result.rowCount === 0) {
-            res.status(404).send();
-        } else {
-            res.status(200).send();
-        }
-
-    } catch (error) {
-        console.log("Erro no /auction: " + error);
-        res.status(500).send();
-    }
-});
-
-// Devolve todas as licitações em que participou.
-app.get("/user/:nif/subscribedAuctions", async (req, res) => {
-    try{
-
-        let queryObterLeiloesInscritos={
-            text: "SELECT * FROM subscrever WHERE nif=$1",
-            values: [req.params.nif]
-        }
-        let result = await dbClient.query(queryObterLeiloesInscritos);
-
-        // Faltam as validações...
-        if (result.rowCount === 0) {
-            res.status(404).send();
-        } else {
-            res.status(200).send();
-        }
-
-    } catch (error) {
-        console.log("Erro no /auction: " + error);
-        res.status(500).send();
-    }
-});
-
-// Devolve apenas os leilões em que participou, ou seja nos quais licitou.
-app.get("/user/:nif/subscribedAuctions", async (req, res) => {
-    try{
-
-        let queryObterLeiloesParticipou={
-            text: "SELECT DISTINCT id_leilao FROM licita WHERE nif=$1",
-            values: [req.params.nif]
-        }
-        let result = await dbClient.query(queryObterLeiloesParticipou);
-
-        // Faltam as validações...
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
@@ -1608,12 +1546,13 @@ app.get("/user/:nif/subscribedAuctions", async (req, res) => {
 });
 
 // Pagar objeto no fim do leilão
-app.post("/user/:nif/payAuction/:auction_id", async (req, res) => {
+app.post("/auction/registerWinner", async (req, res) => {
     try{
+        let { nif, id_leilao } = req.body;
 
         let queryPagarLeilao={
-            text: "",
-            values: [req.params.nif, req.params.auction_id]
+            text: "INSERT INTO ganha(nif, id_leilao) VALUES ($1, $2)",
+            values: [nif, id_leilao]
         }
         let result = await dbClient.query(queryPagarLeilao);
 
@@ -1631,34 +1570,11 @@ app.post("/user/:nif/payAuction/:auction_id", async (req, res) => {
 });
 
 // TODO: ...
-app.post("/auction/registerWinner", async (req, res) => {
+app.get("auction/user/:nif/auctionsWon", async (req, res) => {
     try{
 
-        let queryRegistarVencedorLeilao={
-            text: "",
-            values: []
-        }
-        let result = await dbClient.query(queryRegistarVencedorLeilao);
-
-        // Faltam as validações...
-        if (result.rowCount === 0) {
-            res.status(404).send();
-        } else {
-            res.status(200).send();
-        }
-
-    } catch (error) {
-        console.log("Erro no /auction: " + error);
-        res.status(500).send();
-    }
-});
-
-// TODO: ...
-app.get("/user/:nif/auctionsWon", async (req, res) => {
-    try{
-
-        let queryPagarLeilao={
-            text: "",
+        let queryPagarLeilao = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT  )",
             values: [req.params.nif, req.params.auction_id]
         }
         let result = await dbClient.query(queryPagarLeilao);

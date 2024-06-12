@@ -36,13 +36,6 @@ function FormRegistoObjetoAchado() {
     const [camposDaCategoria, setCamposDaCategoria] = useState([]);
     const [tiposDosCampos, setTiposDosCampos] = useState(new Object());
 
-
-    // TODO: 
-    //  - Editar categorias nos objetos achados;
-    //  - Objeto não é registado à primeira vez no perdido e no achado;
-    //  - Permitir editar polícias e estações;
-    //  - Auth0
-
     const maxNumber = 3;
 
     function obterValorDoCampo(nomeCampo) {
@@ -103,7 +96,8 @@ function FormRegistoObjetoAchado() {
                             { headers: {'Content-Type': 'application/json'}},
                         ).then ( (res) => {
                             if (res.status === 201) {
-                                setErroInternoRegistoAchado(true);
+                                setErroInternoRegistoAchado(false);
+                                navigate("/foundObject/register/success");
                             } 
                         }).catch(function (error) {
                             if ( error.response ) {
@@ -342,9 +336,6 @@ function FormRegistoObjetoAchado() {
             }
             processarObjeto(infoObjeto, infoLocalizacao, values);
 
-            if ( !erroInternoRegistoAchado ) {
-                //navigate("/lostObject/register/success");
-            }
         },
     });
 

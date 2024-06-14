@@ -193,7 +193,6 @@ function FormProcuraObjetos() {
         return (<option key={cat} value={cat}> {cat} </option>);
     });
 
-
     const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
         obterInfoCampo( campo );
         return(

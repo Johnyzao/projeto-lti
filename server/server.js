@@ -1750,110 +1750,130 @@ app.post("/lostObject/searchByField", async (req, res) => {
     }
 });
 
-function compararObjetos( objetoAchado, objetosPerdidos, campos, localizacaoAchado, localizacoesPerdidos ) {
+async function compararObjetos( objetoPerdido, objetosAchados, campos, localizacaoPerido ) {
     let afinidades = {};
-    let camposObjetoAchado = {};
+    let camposObjetoPerdido = {};
+    let afinidadeMaxima = 3;
     let valor = 0;
+
     campos.forEach( campo => {
-        if ( campo.idobj === objetoAchado.id ) {
-            camposObjetoAchado[campo.campo+""] = campo.valor.toLowerCase();
+        if ( campo.idobj === objetoPerdido.id ) {
+            camposObjetoPerdido[campo.campo+""] = campo.valor;
+
+            if ( campo.valor !== "" ) {
+                afinidadeMaxima += 2;
+            }
         }
     });
-    
-    for( let objetoPerdido of objetosPerdidos ) {
+
+    localizacaoPerido.dist === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
+    localizacaoPerido.munc === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
+    localizacaoPerido.freg === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
+    localizacaoPerido.rua === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
+    localizacaoPerido.morada === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
+    localizacaoPerido.codp === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
+
+    for( let objetoAchado of objetosAchados ) {
 
         // Comparação do título.
-        valor += stringSimilarity.stringSimilarity( objetoAchado.titulo, objetoPerdido.titulo );
+        valor += stringSimilarity.stringSimilarity( objetoPerdido.titulo, objetoAchado.titulo );
 
         // Comparação da descrição.
-        valor += stringSimilarity.stringSimilarity( objetoAchado.descricao, objetoPerdido.descricao );
+        valor += stringSimilarity.stringSimilarity( objetoPerdido.descricao, objetoAchado.descricao );
 
         // Comparações dos atributos genéricos.
-        objetoAchado.categoria === objetoPerdido.categoria ? valor += 1 : valor -= 1;
+        objetoPerdido.categoria === objetoAchado.categoria ? valor += 1 : valor -= 1;
 
         // Comparações da localização
-        localizacoesPerdidos.forEach( loc => {
+        let queryObterLocalizacoesAchados = {
+            text: "SELECT * FROM localizacao WHERE id IN ( SELECT achado_em FROM achado WHERE id=$1)",
+            values:[objetoAchado.id]
+        }
+        let loc = (await dbClient.query(queryObterLocalizacoesAchados)).rows[0];
 
-            if ( localizacaoAchado.dist !== null && loc.dist !== null ) {
-                valor += stringSimilarity.stringSimilarity( localizacaoAchado.dist, loc.dist );
-            }
+        if ( localizacaoPerido.dist !== null && loc.dist !== null ) {
+            valor += stringSimilarity.stringSimilarity( localizacaoPerido.dist, loc.dist );
+        } 
 
-            if ( localizacaoAchado.munc != null && loc.munc !== null ) {
-                valor += stringSimilarity.stringSimilarity( localizacaoAchado.munc, loc.munc );
-            }
+        if ( localizacaoPerido.munc != null && loc.munc !== null ) {
+            valor += stringSimilarity.stringSimilarity( localizacaoPerido.munc, loc.munc );
+        } 
 
-            if ( localizacaoAchado.freg !== null && loc.freg !== null ) {
-                valor += stringSimilarity.stringSimilarity( localizacaoAchado.freg, loc.freg );
-            }
+        if ( localizacaoPerido.freg !== null && loc.freg !== null ) {
+            valor += stringSimilarity.stringSimilarity( localizacaoPerido.freg, loc.freg );
+        } 
 
-            if ( localizacaoAchado.rua !== null && loc.rua !== null ) {
-                valor += stringSimilarity.stringSimilarity( localizacaoAchado.rua, loc.rua );
-            }
+        if ( localizacaoPerido.rua !== null && loc.rua !== null ) {
+            valor += stringSimilarity.stringSimilarity( localizacaoPerido.rua, loc.rua );
+        } 
 
-            if ( localizacaoAchado.morada !== null && loc.morada !== null ) {
-                valor += stringSimilarity.stringSimilarity( localizacaoAchado.morada, loc.morada );
-            }
+        if ( localizacaoPerido.morada !== null && loc.morada !== null ) {
+            valor += stringSimilarity.stringSimilarity( localizacaoPerido.morada, loc.morada );
+        } 
 
-            if ( localizacaoAchado.codp !== null && loc.codp !== null ) {
-                valor += stringSimilarity.stringSimilarity( localizacaoAchado.codp, loc.codp );
-            }
-        });
+        if ( localizacaoPerido.codp !== null && loc.codp !== null ) {
+            valor += stringSimilarity.stringSimilarity( localizacaoPerido.codp, loc.codp );
+        } 
 
         // Comparação dos campos.
         campos.forEach( campo => {
-            if ( campo.idobj !== objetoAchado.id && campo.idobj === objetoPerdido.id ) {
+            if ( campo.idobj !== objetoPerdido.id && campo.idobj === objetoAchado.id ) {
                 let campoAComparar = campo.campo;
-                let valorDoCampo = campo.valor.toLowerCase();
+                let valorDoCampo = campo.valor;
 
-                if ( camposObjetoAchado[ campoAComparar ] !== undefined ) {
-                    valor += (stringSimilarity.stringSimilarity( camposObjetoAchado[ campoAComparar ], valorDoCampo ) )*2;
+                if ( camposObjetoPerdido[ campoAComparar ] !== undefined ) {
+                    valor += stringSimilarity.stringSimilarity( camposObjetoPerdido[ campoAComparar ], valorDoCampo )*2;
                 }
             }
         });
 
-        afinidades[objetoPerdido.id] = Math.round(valor);
+        afinidades[objetoAchado.id] = Math.round(valor);
+        afinidades.maximo = afinidadeMaxima;
         valor = 0;
     }
 
     return afinidades;
 }
 
-app.get("/foundObject/:object_id/getMatches", async (req, res) => {
+app.get("/lostObject/:object_id/getMatches", async (req, res) => {
     try {
 
-        let queryObterObjetoAchado = {
+        let queryObterObjetosAchados = {
             text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado )"
         }
-        let objetoAchado = await dbClient.query(queryObterObjetoAchado);
+        let objetosAchados = (await dbClient.query(queryObterObjetosAchados)).rows;
 
-        let queryObterObjetosPerdidos = {
-            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido )"
+        let queryObterObjetoPerdido = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido WHERE id=$1 )",
+            values: [req.params.object_id]
         }
-        let objetosPerdidos = (await dbClient.query(queryObterObjetosPerdidos)).rows;
+        let objetoPerdido = (await dbClient.query(queryObterObjetoPerdido));
+        if ( objetoPerdido.rowCount === 0 ) {
+            res.status(404).send("No object found with this id.");
+        }
 
         let queryObterCampos = {
             text: "SELECT * FROM atributoobjeto"
         }
         let camposObjetos = (await dbClient.query(queryObterCampos)).rows;
 
-        let queryObterLocalizacaoAchado = {
-            text: "SELECT * FROM localizacao WHERE id IN ( SELECT achado_em FROM achado WHERE id=$1 )",
+        let queryObterLocalizacaoPerdido = {
+            text: "SELECT * FROM localizacao WHERE id IN ( SELECT perdido_em FROM perdido WHERE id=$1  )",
             values: [req.params.object_id]
         }
-        let localizacaoAchado = (await dbClient.query(queryObterLocalizacaoAchado)).rows[0];
+        let localizacaoPerdido = (await dbClient.query(queryObterLocalizacaoPerdido)).rows;
 
-        let queryObterLocalizacoesPerdidos = {
-            text: "SELECT * FROM localizacao WHERE id IN ( SELECT perdido_em FROM perdido )",
-        }
-        let localizacoesPerdidos = (await dbClient.query(queryObterLocalizacoesPerdidos)).rows;
+        let afinidades = await compararObjetos( objetoPerdido.rows[0], objetosAchados, camposObjetos, localizacaoPerdido[0]);
+        
+        objetosAchados.map( obj => {
+            obj.afinidade = afinidades[obj.id+""];
+        });
 
-        let afinidades = compararObjetos( objetoAchado.rows[0], objetosPerdidos, camposObjetos, localizacaoAchado, localizacoesPerdidos );
-
-        if ( objetoAchado.rowCount === 0 ) {
-            res.status(404).send("No objects matched these fields.");
-        } else {
-            res.status(200).send({ af: afinidades });
-        }
+        let objetosParecidos = objetosAchados.filter( function(obj) {
+            return obj.afinidade >= afinidades.maximo / 2;
+        });
+        
+        res.status(200).send({ afMaxima: afinidades.maximo , objetos: objetosParecidos });
 
     } catch(error) {
         console.log("Erro no /getMatches: " + error);

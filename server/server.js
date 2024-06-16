@@ -1751,9 +1751,10 @@ app.post("/lostObject/searchByField", async (req, res) => {
 });
 
 async function compararObjetos( objetoPerdido, objetosAchados, campos, localizacaoPerido ) {
+    let locs = {}
     let afinidades = {};
     let camposObjetoPerdido = {};
-    let afinidadeMaxima = 3;
+    let afinidadeMaxima = 9;
     let valor = 0;
 
     campos.forEach( campo => {
@@ -1765,13 +1766,6 @@ async function compararObjetos( objetoPerdido, objetosAchados, campos, localizac
             }
         }
     });
-
-    localizacaoPerido.dist === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
-    localizacaoPerido.munc === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
-    localizacaoPerido.freg === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
-    localizacaoPerido.rua === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
-    localizacaoPerido.morada === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
-    localizacaoPerido.codp === null ? afinidadeMaxima += 0 : afinidadeMaxima += 1;
 
     for( let objetoAchado of objetosAchados ) {
 
@@ -1790,31 +1784,38 @@ async function compararObjetos( objetoPerdido, objetosAchados, campos, localizac
             values:[objetoAchado.id]
         }
         let loc = (await dbClient.query(queryObterLocalizacoesAchados)).rows[0];
+        locs[objetoAchado.id] = loc;
 
-        if ( localizacaoPerido.dist !== null && loc.dist !== null ) {
-            valor += stringSimilarity.stringSimilarity( localizacaoPerido.dist, loc.dist );
-        } 
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.dist === null ? "null" : localizacaoPerido.dist, 
+            loc.dist === null ? "null" : loc.dist
+        );
 
-        if ( localizacaoPerido.munc != null && loc.munc !== null ) {
-            valor += stringSimilarity.stringSimilarity( localizacaoPerido.munc, loc.munc );
-        } 
-
-        if ( localizacaoPerido.freg !== null && loc.freg !== null ) {
-            valor += stringSimilarity.stringSimilarity( localizacaoPerido.freg, loc.freg );
-        } 
-
-        if ( localizacaoPerido.rua !== null && loc.rua !== null ) {
-            valor += stringSimilarity.stringSimilarity( localizacaoPerido.rua, loc.rua );
-        } 
-
-        if ( localizacaoPerido.morada !== null && loc.morada !== null ) {
-            valor += stringSimilarity.stringSimilarity( localizacaoPerido.morada, loc.morada );
-        } 
-
-        if ( localizacaoPerido.codp !== null && loc.codp !== null ) {
-            valor += stringSimilarity.stringSimilarity( localizacaoPerido.codp, loc.codp );
-        } 
-
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.munc === null ? "null" : localizacaoPerido.munc, 
+            loc.munc === null ? "null" : loc.munc
+        );
+    
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.freg === null ? "null" : localizacaoPerido.freg, 
+            loc.freg === null ? "null" : loc.freg 
+        );
+        
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.rua === null ? "null" : localizacaoPerido.rua, 
+            loc.rua === null ? "null" : loc.rua
+        );
+        
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.morada === null ? "null" : localizacaoPerido.morada, 
+            loc.morada === null ? "null" : loc.morada
+        );
+        
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.codp === null ? "null" : localizacaoPerido.codp, 
+            loc.codp === null ? "null" : loc.codp
+        );
+         
         // Comparação dos campos.
         campos.forEach( campo => {
             if ( campo.idobj !== objetoPerdido.id && campo.idobj === objetoAchado.id ) {
@@ -1832,7 +1833,7 @@ async function compararObjetos( objetoPerdido, objetosAchados, campos, localizac
         valor = 0;
     }
 
-    return afinidades;
+    return {afinidades: afinidades, locs: locs };
 }
 
 app.get("/lostObject/:object_id/getMatches", async (req, res) => {
@@ -1864,16 +1865,21 @@ app.get("/lostObject/:object_id/getMatches", async (req, res) => {
         let localizacaoPerdido = (await dbClient.query(queryObterLocalizacaoPerdido)).rows;
 
         let afinidades = await compararObjetos( objetoPerdido.rows[0], objetosAchados, camposObjetos, localizacaoPerdido[0]);
-        
+        console.log(afinidades);
         objetosAchados.map( obj => {
-            obj.afinidade = afinidades[obj.id+""];
+            obj.afinidade = afinidades.afinidades[obj.id+""];
         });
 
         let objetosParecidos = objetosAchados.filter( function(obj) {
-            return obj.afinidade >= afinidades.maximo / 2;
+            return obj.afinidade >= afinidades.afinidades.maximo / 2;
         });
         
-        res.status(200).send({ afMaxima: afinidades.maximo , objetos: objetosParecidos });
+        res.status(200).send({ 
+            afMaxima: afinidades.afinidades.maximo , 
+            objetos: fastSort.sort( objetosParecidos ).desc( o => o.afinidade ), 
+            locs: afinidades.locs, 
+            locPerdido: localizacaoPerdido[0] 
+        });
 
     } catch(error) {
         console.log("Erro no /getMatches: " + error);
@@ -1930,6 +1936,8 @@ async function identificarDiferencas(objetoAchado, objetoPerdido) {
         ? diferencas.dist = true 
         : diferencas.dist = false;
 
+    console.log(localizacaoObjetoAchado.munc);
+    console.log(localizacaoObjetoPerdido.munc);
     localizacaoObjetoAchado.munc !== localizacaoObjetoPerdido.munc
         ? diferencas.munc = true 
         : diferencas.munc = false;
@@ -2102,8 +2110,8 @@ app.get("/compare/lostObject/:lost_id/foundObject/:found_id", async (req, res) =
 });
 
 /** Posse de um objeto **/
-// Registo dono
-app.post("/registerOwner/foundObject/", async (req, res) => {
+// Registo de possível dono
+app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
     try {   
         let {nifDono, idObj, date} = req.body;
 
@@ -2126,21 +2134,15 @@ app.post("/registerOwner/foundObject/", async (req, res) => {
         }
 
         let queryRegistarDono = {
-            text: "INSERT INTO reclamado (nif, id, data, entregue, dataEntrega) VALUES ($1,$2,$3,$4,$5)",
-            values: [nifDono, idObj, date, 0, null]
+            text: "INSERT INTO reclamado (nif, id, data, aprovado) VALUES ($1,$2,$3,$4)",
+            values: [nifDono, idObj, date, 0]
         }
         let registarDono = await dbClient.query( queryRegistarDono );
 
-        let queryAtualizarAchado = {
-            text: "UPDATE achado SET removido=1 WHERE id=$1",
-            values: [ idObj ]
-        }
-        let remover = await dbClient.query( queryAtualizarAchado );
-
-        if ( registarDono.rowCount === 0 || remover.rowCount === 0 ) {
+        if ( registarDono.rowCount === 0 ) {
             res.status(400).send("Error: Unable to register ownership.");
         } else {
-            res.status(200).send("Ownership registered");
+            res.status(201).send("Ownership registered");
         }
 
     } catch(erro) {
@@ -2149,6 +2151,35 @@ app.post("/registerOwner/foundObject/", async (req, res) => {
     }
 });
 
+app.get("/objectReclamations/user/:nif", async (req, res) => {
+    try {   
+        let queryReclamacoes = {
+            text: "SELECT * FROM reclamado WHERE nif=$1",
+            values: [req.params.nif]
+        }
+        let objetosReclamados = await dbClient.query( queryReclamacoes );
+
+        let ids = {};
+        objetosReclamados.rows.forEach( obj  => {
+            ids[""+obj.id] = true;
+        })
+
+        if ( objetosReclamados.rowCount > 0 ) {
+            res.status(200).send({ objs: ids });
+        } else {
+            res.status(404).send("No reclamations found for this user.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+// Registo dono
+// TODO ...
+
+// TODO: Alterar estes dois...
 // Edição dono 
 app.put("/registerOwner/foundObject", async (req, res) => {
     try {

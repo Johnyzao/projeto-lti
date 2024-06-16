@@ -16,17 +16,19 @@ import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import ListGroup from 'react-bootstrap/ListGroup';
 
+import PopupMostrarDiferencas from '../Popups/PopupMostrarDiferencas';
+import PopupReclamarObjeto from '../Popups/PopupReclamarObjeto';
 
-// TODO: 
-//  - Ter um component que mostra os objetos perdidos do utilizador;
-//  - Seleciona-se um desses objetos;
-//  - E obtém-se os matches;
-//  - De seguida pode clicar-se num botão para mostrar as diferenças;
+// TODO: Trocar para o Auth0...
 function FormProcuraObjetosAchados(props) {
+    // Trocar o props para obter o Auth0!!!
 
     const [objetos, setObjetos] = useState([]);
     const [objetoSelecionado, setObjetoSelecionado] = useState(0);
+    const [localizacoesMatches, setLocalizacoesMatches] = useState({});
+    const [localizacaoPerdido, setLocalizacaoPerdido] = useState({});
     const [objetosAchadosEncontrados, setObjetosAchadosEncontrados] = useState([]);
+    const [objetosDesativados, setObjetosDesativados] = useState({});
     const [afinidadeMaxima, setAfinidadeMaxima] = useState(0);
 
     function obterTodosOsObjetos(nifUser) {
@@ -35,7 +37,7 @@ function FormProcuraObjetosAchados(props) {
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
             setObjetos(res.data.objPerdidos);
-            setObjetoSelecionado( res.data.objPerdidos[0].id );
+            setObjetoSelecionado( res.data.objPerdidos[0] );
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -50,6 +52,22 @@ function FormProcuraObjetosAchados(props) {
         ).then ( (res) => {
             setAfinidadeMaxima(res.data.afMaxima);
             setObjetosAchadosEncontrados(res.data.objetos);
+            setLocalizacoesMatches(res.data.locs);
+            setLocalizacaoPerdido(res.data.locPerdido);
+            console.log(res.data.locPerdido);
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    async function verificarObjetosJaReclamados(nifUser) {
+        await axios.get(
+            config.LINK_API + "/objectReclamations/user/" + nifUser, 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            setObjetosDesativados( res.data.objs );
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -60,7 +78,7 @@ function FormProcuraObjetosAchados(props) {
     const formik = useFormik({
         initialValues: {},
         onSubmit: values => {   
-            obterMatches( objetoSelecionado );
+            obterMatches( objetoSelecionado.id );
         }
     });
 
@@ -74,6 +92,9 @@ function FormProcuraObjetosAchados(props) {
 
     const desenharMatches = objetosAchadosEncontrados.map( obj => {
         let nivelDeMatch = (obj.afinidade/afinidadeMaxima).toFixed(2) * 100;
+        let dataLista = obj.dataregisto.split("/");
+        let dataRegisto = new Date(dataLista[2], ""+(parseInt(dataLista[1])-1), dataLista[0]);
+        dataRegisto.setDate(dataRegisto.getDate() + 7)
         return (
             <div key={obj.id} className='w-100 p-3'>
                 <ListGroup.Item>  
@@ -83,6 +104,23 @@ function FormProcuraObjetosAchados(props) {
                         <small className="text-muted"> Nível de match: {nivelDeMatch}% </small>
                         <br/>
                         <small className="text-muted"> Registado em {obj.dataregisto} </small>
+                        <br/>
+                        <br/>
+                        <div className='text-center'>
+                            <PopupMostrarDiferencas 
+                                perdido={objetoSelecionado} 
+                                achado={obj} 
+                                locAchado={localizacoesMatches[obj.id]} 
+                                locPerdido={localizacaoPerdido}
+                            /> &nbsp; &nbsp;
+                            {/** TROCAR PARA AUTH0 AQUI!!! */}
+                            <PopupReclamarObjeto 
+                                nif={177777052} 
+                                id={obj.id} 
+                                dataRegisto={dataRegisto.getTime()} 
+                                desativado={ objetosDesativados[""+obj.id] === true ? true : false }
+                            />
+                        </div>
                     </a>
                 </ListGroup.Item>
             </div>
@@ -91,6 +129,7 @@ function FormProcuraObjetosAchados(props) {
 
     // Substituir por props.nif aqui...
     useEffect( () => { obterTodosOsObjetos(177777052) }, [] );
+    useEffect( () => { verificarObjetosJaReclamados(177777052) }, [] );
 
     return (
         <>

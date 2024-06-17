@@ -16,6 +16,8 @@ import PaginaVerObjetosRegistados from './Pages/PaginaVerObjetosRegistados';
 import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
+import CriarLeilao from './Components/CriarLeilao';
+import Leiloes from './Components/Leiloes';
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
           <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
           <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
           <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
+          <Route path="/auction/register" element={<CriarLeilao/>} />
+          <Route path="/auction/Leiloes" element={<Leiloes/>} />
         </Routes>
     </BrowserRouter>
     </>

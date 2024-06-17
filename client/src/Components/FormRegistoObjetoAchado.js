@@ -52,11 +52,14 @@ function FormRegistoObjetoAchado() {
     const maxNumber = 3;
 
     function obterValorDoCampo(nomeCampo) {
+        console.log("Nome do campo: " + nomeCampo);
+        console.log("Documentos: " + document.forms['form']);
         let valor = document.forms['form'][''+nomeCampo].value;
         return valor;
     }
 
     function registarValorDoCampo(idObj, campo, valor) {
+        console.log("A CHEGAR AO SET FIELD");
         axios.post(
             config.LINK_API + "/object/setField",
             { idObj: idObj, campo: campo, valor: valor },
@@ -64,6 +67,8 @@ function FormRegistoObjetoAchado() {
         ).then ( (res) => {
         }).catch(function (error) {
             if ( error.response ) {
+                console.log(error.response);
+                console.log("OBJECT ERROR");
                 let codigo = error.response.status;
             }
         });
@@ -76,19 +81,26 @@ function FormRegistoObjetoAchado() {
             { headers: {'Content-Type': 'application/json'}},
 
         ).then ( (res) => {
+            console.log(res.status);
+            console.log("TEST2");
             if (res.status === 201) {
+                console.log(res.data);
                 let idObj = res.data.id;
-
+                console.log("ANTES DO SET FIELD");
+                console.log(camposDaCategoria);
                 camposDaCategoria.map( campo => {
                     let valor = obterValorDoCampo(campo);
+                    console.log("VALUR DO CAMP: " + valor);
                     registarValorDoCampo( idObj, campo, valor );
                 });
-
+                console.log("DEPOIS DO SET FIELD");
                 axios.post(
                     config.LINK_API + "/location", 
                     infoLocalizacao, 
                     { headers: {'Content-Type': 'application/json'}},
                 ).then ( (res) => {
+                    console.log("TEST3");
+                    console.log(res.status);
                     if (res.status === 201) {
                         let idLoc = res.data.id;
 
@@ -102,7 +114,7 @@ function FormRegistoObjetoAchado() {
                             foundDateSupLim: values.foundDateSupLim
                         }
                         console.log(infoObjetoAchado);
-
+                        console.log("TEST")
                         axios.post(
                             config.LINK_API + "/foundObject", 
                             infoObjetoAchado, 
@@ -119,13 +131,17 @@ function FormRegistoObjetoAchado() {
 
                     } 
                 }).catch(function (error) {
+                    console.log(error)
+                    console.log("ERRO?")
                     if ( error.response ) {
                         setErroInternoRegistoAchado(true);
                     }
                 });
-
+                console.log("TEST4");
             } 
         }).catch(function (error) {
+            console.log("TEST5");
+            console.log(error);
             if ( error.response ) {
                 setErroInternoRegistoAchado(true);
             }
@@ -308,7 +324,7 @@ function FormRegistoObjetoAchado() {
 
     useEffect(() => {
         if (!mapContainerRef.current) return;
-
+        console.log("tedst");
         mapboxgl.accessToken = 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHdjYWthd28wcWo0MnFwcGM4cnJzdTlnIn0.bkRMTa52BMm2Tv2EahXx0w';
 
         const map = new mapboxgl.Map({
@@ -341,14 +357,20 @@ function FormRegistoObjetoAchado() {
             setSelectedLocationCoordinates({ lng, lat });
             addMarker(lng, lat, '#ff0000', selectedLocationMarker);
         });
-
-        if (navigator.geolocation) {
+        
+        if (navigator.geolocation) { 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     map.setCenter([longitude, latitude]);
                     map.setZoom(12);
-                    addMarker(longitude, latitude, '#0000ff', userLocationMarker);
+                    try {
+                        addMarker(longitude, latitude, '#0000ff', userLocationMarker);    
+                    }
+                    catch {
+                        console.log("test");
+                    }
+                    
                 },
                 (error) => {
                     console.error('Error retrieving location:', error);
@@ -359,7 +381,7 @@ function FormRegistoObjetoAchado() {
         }
 
         return () => map.remove();
-    }, []);
+    }, [mapContainerRef]);
 
 
     useEffect( () => { obterPolicias() }, [] );
@@ -397,7 +419,6 @@ function FormRegistoObjetoAchado() {
                 dataRegisto: dataAtual,
                 categoria: categoria,
             }
-            console.log(camposDaCategoria);
 
             let infoLocalizacao = {
                 pais: values.pais,
@@ -470,7 +491,7 @@ function FormRegistoObjetoAchado() {
         return selectedLocationCoordinates.lat + ", " + selectedLocationCoordinates.lng;
     };
 
-    useEffect(() => { formik.setFieldValue('morada', getAddress()); }, [streetName]);
+    useEffect(() => { formik.setFieldValue('rua', getAddress()); }, [streetName]);
     useEffect(() => { formik.setFieldValue('codp', getPostalCode()); }, [streetName]);
     useEffect(() => { formik.setFieldValue('munc', getMunicipality()); }, [streetName]);
         
@@ -733,7 +754,7 @@ function FormRegistoObjetoAchado() {
                         type="text"
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        value={formik.values.rua}/>
+                        value={getAddress()}/>
                 { formik.errors.rua ? (<p className='text-danger'> {formik.errors.rua} </p>) : null } 
 
                 <br/>
@@ -744,7 +765,7 @@ function FormRegistoObjetoAchado() {
                         type="text"
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        value={getAddress()}/>
+                        value={formik.values.morada}/>
                 { formik.errors.morada ? (<p className='text-danger'> {formik.errors.morada} </p>) : null } 
 
                 <br/>

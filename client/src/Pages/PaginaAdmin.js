@@ -10,6 +10,7 @@ import FormPosto from '../Components/FormPosto';
 import Header from '../Components/Header';
 import AdminGestaoUsers from '../Components/AdminGestaoUsers';
 import FormCategorias from '../Components/FormCategorias';
+import AdminGestaoPosse from '../Components/AdminGestaoPosse';
 
 function PaginaAdmin() {
 
@@ -20,19 +21,23 @@ function PaginaAdmin() {
         <Header/>
         <Nav variant='tabs'>
             <Nav.Item>
-                <Nav.Link onClick={() => {setPaginaEscolhida("users")}} href="#">Gestão de utilizadores</Nav.Link>
+                <Nav.Link onClick={() => {setPaginaEscolhida("users")}}>Users</Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link onClick={() => {setPaginaEscolhida("police")}} href="#">Gestão de polícias</Nav.Link>
+                <Nav.Link onClick={() => {setPaginaEscolhida("police")}}>Polícias</Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link onClick={() => {setPaginaEscolhida("categories")}}>Gestão de categorias</Nav.Link>
+                <Nav.Link onClick={() => {setPaginaEscolhida("categories")}}>Categorias</Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link disabled href="#">Gestão de objetos</Nav.Link>
+                <Nav.Link onClick={() => {setPaginaEscolhida("recs")}}>Pedidos de posse</Nav.Link>
+            </Nav.Item>
+
+            <Nav.Item>
+                <Nav.Link onClick={() => {setPaginaEscolhida("posse")}}>Posse de objetos</Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
@@ -63,9 +68,20 @@ function PaginaAdmin() {
             : null
         }
 
-        { paginaEscolhida === "categories" ? (<div className='container-sm bg-dark-subtle'> <FormCategorias/> </div>) : null }
+        { paginaEscolhida === "categories" 
+            ? (<div className='container-sm bg-dark-subtle'> <FormCategorias/> </div>) 
+            : null 
+        }
 
+        { paginaEscolhida === "recs" 
+            ? (<AdminGestaoPosse/>) 
+            : null
+        }
 
+        { paginaEscolhida === "posse" 
+            ? <p>futura página aqui</p> 
+            : null 
+        }
 
     </>
     )

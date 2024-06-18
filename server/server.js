@@ -2151,6 +2151,67 @@ app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
     }
 });
 
+app.delete("/registerPossibleOwner/foundObject/:object_id/user/:nif", async (req, res) => {
+    try {   
+        let nifDono = req.params.nif;
+        let idObj = req.params.object_id;
+
+        let queryObterDono = {
+            text: "SELECT * FROM utilizador WHERE nif=$1",
+            values: [nifDono]
+        }
+        let dono = (await dbClient.query(queryObterDono)).rows;
+        if ( dono.length === 0 ) {
+            res.status(404).send("This user does not exist");
+        }
+
+        let queryObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE id=$1 )",
+            values: [idObj]
+        }
+        let objetoAchado = (await dbClient.query(queryObjetoAchado)).rows;
+        if ( objetoAchado.length === 0 ) {
+            res.status(404).send("This object does not exist.");
+        }
+
+        let queryApagarRegistarDono = {
+            text: "DELETE FROM reclamado WHERE nif=$1 AND id=$2",
+            values: [nifDono, idObj]
+        }
+        let registarDono = await dbClient.query( queryApagarRegistarDono );
+
+        if ( registarDono.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to register ownership.");
+        } else {
+            res.status(200).send("Ownership request rejected successfully.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+app.get("/objectReclamations", async (req, res) => {
+    try {   
+        let queryReclamacoes = {
+            text: "SELECT * FROM reclamado"
+        }
+        let objetosReclamados = await dbClient.query( queryReclamacoes );
+        console.log(objetosReclamados);
+
+        if ( objetosReclamados.rowCount > 0 ) {
+            res.status(200).send({ objs: objetosReclamados.rows });
+        } else {
+            res.status(404).send("No claims found.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
 app.get("/objectReclamations/user/:nif", async (req, res) => {
     try {   
         let queryReclamacoes = {
@@ -2177,7 +2238,15 @@ app.get("/objectReclamations/user/:nif", async (req, res) => {
 });
 
 // Registo dono
-// TODO ...
+// TODO: ...
+app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
+    try {   
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
 
 // TODO: Alterar estes dois...
 // Edição dono 

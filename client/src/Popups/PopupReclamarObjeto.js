@@ -14,9 +14,6 @@ import config from '../config';
 
 import { useFormik } from 'formik';
 
-// TODO:
-//  - Registar o pedido;
-//  - Desativar se já tiver sido pedido;
 function PopupReclamarObjeto(props) {
 
     const [registado, setRegistado] = useState(false);

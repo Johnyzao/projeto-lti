@@ -1840,7 +1840,7 @@ app.get("/lostObject/:object_id/getMatches", async (req, res) => {
     try {
 
         let queryObterObjetosAchados = {
-            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado )"
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE removido=0 )"
         }
         let objetosAchados = (await dbClient.query(queryObterObjetosAchados)).rows;
 
@@ -2238,9 +2238,27 @@ app.get("/objectReclamations/user/:nif", async (req, res) => {
 });
 
 // Registo dono
-// TODO: ...
-app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
+app.post("/registerOwner/foundObject/", async (req, res) => {
     try {   
+        let { nif, id, data } = req.body;
+
+        let queryAtualizarAchado = {
+            text: "UPDATE achado SET removido=1 WHERE id=$1",
+            values: [ req.params.object_id ]
+        }
+        let recuperarObjeto = await dbClient.query( queryAtualizarAchado );
+
+        let queryObterObjetosAchadosPossuidos = {
+            text: "INSERT INTO pertence(nif, id, data) VALUES ($1,$2,$3)",
+            values: [nif, id, data]
+        }
+        let reclamacoes = await dbClient.query(queryObterObjetosAchadosPossuidos);
+
+        if ( reclamacoes.rowCount > 0 ) {
+            res.status(201).send();
+        } else {
+            res.status(404).send("No user found with this nif.");
+        }
 
     } catch(erro) {
         console.log("Erro no /registerOwner/foundObject/" + erro);
@@ -2248,22 +2266,21 @@ app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
     }
 });
 
-// TODO: Alterar estes dois...
 // Edição dono 
-app.put("/registerOwner/foundObject", async (req, res) => {
+app.put("/editOwner/foundObject", async (req, res) => {
     try {
-        let {nifDono, idObj, date, delivered, deliveredDate} = req.body;
+        let {nifDono, idObj} = req.body;
 
         let queryAtualizarDono = {
-            text: "UPDATE reclamado SET nif=$1, data=$2, entregue=$4, dataEntrega=$5 WHERE id=$3",
-            values: [ nifDono, date, idObj, delivered, deliveredDate ]
+            text: "UPDATE pertence SET nif=$1 WHERE id=$2",
+            values: [ nifDono, idObj ]
         }
         let atualizacao = await dbClient.query( queryAtualizarDono );
 
         if ( atualizacao.rowCount === 0 ) {
             res.status(400).send("Error: Unable to edit ownership.");
         } else {
-            res.status(200).send("Ownership removed.");
+            res.status(200).send("Ownership changed.");
         }
 
 
@@ -2274,7 +2291,7 @@ app.put("/registerOwner/foundObject", async (req, res) => {
 });
 
 // Apagar dono
-app.delete("/registerOwner/foundObject/:object_id", async (req, res) => {
+app.delete("/deleteOwner/:nif/foundObject/:object_id", async (req, res) => {
     try {
         let queryAtualizarAchado = {
             text: "UPDATE achado SET removido=0 WHERE id=$1",
@@ -2283,8 +2300,8 @@ app.delete("/registerOwner/foundObject/:object_id", async (req, res) => {
         let recuperarObjeto = await dbClient.query( queryAtualizarAchado );
 
         let queryRemoverDono = {
-            text: "DELETE FROM reclamado WHERE id=$1",
-            values: [ req.params.object_id ]
+            text: "DELETE FROM pertence WHERE id=$1 AND nif=$2",
+            values: [ req.params.object_id, req.params.nif]
         }
         let remover = await dbClient.query( queryRemoverDono );
 
@@ -2297,6 +2314,27 @@ app.delete("/registerOwner/foundObject/:object_id", async (req, res) => {
         console.log("Erro no /registerOwner/foundObject/ " + erro);
         res.status(500).send();
     }    
+});
+
+app.get("/user/:nif/getOwnedObjects", async (req,res) => {
+    try {
+
+        let queryObterObjetosEmPosse = {
+            text: "SELECT * FROM pertence WHERE nif=$1",
+            values: [ req.params.nif ]
+        }
+        let recuperarObjeto = await dbClient.query( queryObterObjetosEmPosse );
+
+        if ( recuperarObjeto.rowCount > 0 ) {
+            res.status(200).send({objs : recuperarObjeto.rows});
+        } else {
+            res.status(404).send("No user found with this nif.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /user/:nif/getOwnedObjects " + erro);
+        res.status(500).send();
+    }  
 });
 
 /** **/

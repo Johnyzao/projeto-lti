@@ -2,7 +2,6 @@ import React, { useState,useEffect } from 'react';
 
 // Bootstrap
 import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/Container';
 
@@ -18,7 +17,9 @@ import {sort} from 'fast-sort';
 
 function AdminGestaoPosse() {
 
-    const [pedidos, setPedidos] = useState([])
+    const [pedidos, setPedidos] = useState([]);
+    const [pedidoAceiteComSucesso, setPedidoAceiteComSucesso] = useState(false);
+    const [pedidoRejeitadoComSucesso, setPedidoRejeitadoComSucesso] = useState(false);
 
     async function obterPedidos() {
         await axios.get(
@@ -34,9 +35,28 @@ function AdminGestaoPosse() {
         });
     }
 
-    // TODO: ...
-    async function aceitarPedido() {
+    async function aceitarPedido(nif, id) {
+        let dataAtual = new Date();
+        let dia = dataAtual.getDate();
+        let mes = dataAtual.getMonth() + 1;
+        let ano = dataAtual.getFullYear();
 
+        await axios.post(
+            config.LINK_API + "/registerOwner/foundObject/",
+            {nif: nif, id: id, data: (dia + "/" + mes + "/" + ano)},
+            { headers: {'Content-Type': 'application/json'}},
+        ).then( ( res ) => {
+            if ( res.status === 201 ) {
+                setPedidoAceiteComSucesso(true);
+
+                setTimeout(() => {
+                    setPedidoAceiteComSucesso( true );
+                }, 5000);
+            }
+        }).catch( function (error) {
+            if ( error.response ) {
+            }
+        });
     }
 
     async function rejeitarPedido(nif, id) {
@@ -44,8 +64,12 @@ function AdminGestaoPosse() {
             config.LINK_API + "/registerPossibleOwner/foundObject/" + id + "/user/" + nif,
             { headers: {'Content-Type': 'application/json'}},
         ).then( ( res ) => {
-            if ( res.status === 201 ) {
-                obterPedidos();
+            if ( res.status === 200 ) {
+                setPedidoRejeitadoComSucesso(true);
+
+                setTimeout(() => {
+                    setPedidoRejeitadoComSucesso( true );
+                }, 5000);
             }
         }).catch( function (error) {
             if ( error.response ) {
@@ -77,6 +101,8 @@ function AdminGestaoPosse() {
             <br/>
 
             <h3 className='text-center'> Pedidos ativos </h3>
+            {pedidoAceiteComSucesso ? (<p className='text-success text-center' >Pedido aceite com sucesso</p>) : null}
+            {pedidoRejeitadoComSucesso ? (<p className='text-success text-center' >Pedido rejeitado com sucesso</p>) : null}
             <Table size='sm' striped bordered hover responsive className='text-center'>
                 <thead>
                     <tr>

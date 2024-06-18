@@ -11,6 +11,7 @@ import Header from '../Components/Header';
 import AdminGestaoUsers from '../Components/AdminGestaoUsers';
 import FormCategorias from '../Components/FormCategorias';
 import AdminGestaoPosse from '../Components/AdminGestaoPosse';
+import AdminGestaoDono from '../Components/AdminGestaoDono';
 
 function PaginaAdmin() {
 
@@ -79,7 +80,7 @@ function PaginaAdmin() {
         }
 
         { paginaEscolhida === "posse" 
-            ? <p>futura página aqui</p> 
+            ? (<AdminGestaoDono/>)
             : null 
         }
 

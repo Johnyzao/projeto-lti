@@ -1,5 +1,4 @@
 import React, { useState,useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 // Informacoes da API.
 import config from '../config';
@@ -11,7 +10,6 @@ import { useFormik } from 'formik';
 import axios from 'axios';
 
 // Imports do bootstrap.
-import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import ListGroup from 'react-bootstrap/ListGroup';
@@ -94,7 +92,8 @@ function FormProcuraObjetosAchados(props) {
         let nivelDeMatch = (obj.afinidade/afinidadeMaxima).toFixed(2) * 100;
         let dataLista = obj.dataregisto.split("/");
         let dataRegisto = new Date(dataLista[2], ""+(parseInt(dataLista[1])-1), dataLista[0]);
-        dataRegisto.setDate(dataRegisto.getDate() + 7)
+        dataRegisto.setDate(dataRegisto.getDate() + 7);
+
         return (
             <div key={obj.id} className='w-100 p-3'>
                 <ListGroup.Item>  

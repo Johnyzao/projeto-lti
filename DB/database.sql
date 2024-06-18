@@ -104,6 +104,15 @@ CREATE TABLE Policia (
     removido INT
 );
 
+CREATE TABLE pertence(
+    nif INT,
+    id INT,
+    data TEXT,
+    PRIMARY KEY (nif, id),
+    FOREIGN KEY (nif) REFERENCES utilizador(nif),
+    FOREIGN KEY (id) REFERENCES Achado(id)
+);
+
 CREATE TABLE achado (
     id INT UNIQUE,
     idAchado INT UNIQUE,

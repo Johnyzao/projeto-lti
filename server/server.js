@@ -394,6 +394,22 @@ app.get("/police", async (req, res) => {
     res.status(200).send(results.rows);
 });
 
+app.get("/police/:police_id", async (req, res) => {
+
+    let querySelectPolicia = {
+        text: "SELECT * FROM policia WHERE id=$1",
+        values: [req.params.police_id]
+    }
+
+    let results = await dbClient.query(querySelectPolicia);
+
+    if ( results.rowCount > 0 ) {
+        res.status(200).send({policia: results.rows[0]});
+    } else {
+        res.send(404).send("No officer mathcing this ID was found.");
+    }
+});
+
 app.delete("/police/:id", async (req, res) => {
     let queryInsertPolicia = {
         text: "UPDATE policia SET removido=1 WHERE id=$1",

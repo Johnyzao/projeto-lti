@@ -102,7 +102,7 @@ function FormRegisto() {
         ).then( (res) => {
           if ( res.status === 201 ) {
               console.log( "Criado" );
-              navigate("/register/success")
+              navigate("/register/success");
           }
         })
     }

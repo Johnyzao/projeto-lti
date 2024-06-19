@@ -48,19 +48,19 @@ function FormPolicia() {
           })
       }
   
-      async function registarPoliciaNoAuth0(nome, id, mail, pass) {
+    async function registarPoliciaNoAuth0(info) {
   
         let jsonComInfo = {
-          "email": mail,
-          "user_metadata": { "admin": "false" },
-          "blocked": false,
-          "email_verified": false,
-          "app_metadata": {},
-          "nickname": nome,
-          "user_id": id,
-          "connection": "Username-Password-Authentication",
-          "password": pass,
-          "verify_email": false
+            "email": info.mail,
+            "user_metadata": { "admin": "false" },
+            "blocked": false,
+            "email_verified": false,
+            "app_metadata": {},
+            "nickname": info.nome,
+            "user_id": info.id,
+            "connection": "Username-Password-Authentication",
+            "password": info.pass,
+            "verify_email": false
           };
   
           await axios.post(
@@ -69,10 +69,10 @@ function FormPolicia() {
               { headers: {Authorization: `Bearer ${tokenAuth}`}},
           ).then( (res) => {
             if ( res.status === 201 ) {
-                console.log( "Criado" );
+                criarContaPolicia(info);
             }
-          })
-      }
+        })
+    }
 
     function verificarMailDuplicado(novoMail) {
         axios.get(
@@ -88,7 +88,7 @@ function FormPolicia() {
         }).catch(function (error) {
         if ( error.response ) {
         }});
-      }
+    }
 
     async function obterPostos() {
         await axios.get(
@@ -112,7 +112,6 @@ function FormPolicia() {
         ).then( ( res ) => {
 
             if ( res.status === 201 ) {
-                registarPoliciaNoAuth0(info.nome, info.id, info.mail, info.pass);
                 setNovoPoliciaCriado(true);
                 setTimeout(() => {
                     setNovoPoliciaCriado( false );
@@ -188,7 +187,8 @@ function FormPolicia() {
         validate,
         onSubmit: values => {
             let info = {id:values.id, nome: values.nome, pass: values.pass, posto: postoPolicia, mail: values.mail}
-            criarContaPolicia(info);
+            registarPoliciaNoAuth0(info);
+            //criarContaPolicia(info);
             // Auth0 aqui.
         },
     });

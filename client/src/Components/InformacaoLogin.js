@@ -16,8 +16,10 @@ import axios from 'axios';
 function InformacaoLogin() {
     const navigate = useNavigate();
     const { loginWithRedirect } = useAuth0();
-    const { user, isAuthenticated } = useAuth0();
-    const [ tipoConta, setTipoConta ] = useState("");
+    const { user, isAuthenticated, isLoading } = useAuth0();
+
+    const [userAdmin, setUserAdmin] = useState(false);
+    const [userPolicia, setUserPolicia] = useState(false);
 
     const irParaRegisto = () => {
         localStorage.clear();
@@ -32,14 +34,35 @@ function InformacaoLogin() {
                 { headers: {'Content-Type': 'application/json'}},
                 ).then ( (res) => {
                 if (res.status === 200) {
-                    setTipoConta( res.data.tipo_conta );
+                    setUserAdmin( true );
                 } 
             }).catch(function (error) {
                 if ( error.response ) {
                     let codigo = error.response.status;
 
                     if ( codigo === 404 ) {
-                        setTipoConta("");
+                        setUserAdmin(false);
+                    }
+                }
+            })
+        }
+    }
+
+    async function obterPaginaObjetosAchados(user) {
+        if (user !== undefined) {
+            await axios.get(
+                config.LINK_API + "/police/" + user.sub.split("|")[1],
+                { headers: {'Content-Type': 'application/json'}},
+                ).then ( (res) => {
+                if (res.status === 200) {
+                    setUserPolicia(true);
+                } 
+            }).catch(function (error) {
+                if ( error.response ) {
+                    let codigo = error.response.status;
+
+                    if ( codigo === 404 ) {
+                        setUserPolicia(false);
                     }
                 }
             })
@@ -48,9 +71,9 @@ function InformacaoLogin() {
 
     // TODO:
     //  - Atualizar info no Auth0 quando é enviada do editar user;
-    //  - Criar users de policias no Auth0;
 
-    useEffect( () => { obterPaginaAdmin(user) }, [user] );
+    useEffect( () => { obterPaginaAdmin(user) }, [isLoading] );
+    useEffect( () => { obterPaginaObjetosAchados(user) }, [isLoading] );
     return (
     <>
     { isAuthenticated === false ? 
@@ -66,11 +89,29 @@ function InformacaoLogin() {
     ( 
         <>
             <NavDropdown title="Menu" id="basic-nav-dropdown">
-                <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
-                <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
-                <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
-                <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
-                { tipoConta === "a" 
+
+                { userPolicia === false 
+                    ? (
+                    <>
+                        <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
+                        <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
+                        <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
+                    </>
+                    ) 
+                    : null
+                }
+
+                { userPolicia 
+                    ? (
+                        <>
+                            <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
+                            <NavDropdown.Item href="">Gerir entregas</NavDropdown.Item>
+                        </>
+                    ) 
+                    : null
+                }
+
+                { userAdmin 
                     ? (<NavDropdown.Item href="/admin">Página de administração</NavDropdown.Item>) 
                     : null
                 }

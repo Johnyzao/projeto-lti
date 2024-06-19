@@ -16,6 +16,9 @@ import PaginaVerObjetosRegistados from './Pages/PaginaVerObjetosRegistados';
 import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
+import PaginaProcuraObjetosPeridos from './Pages/PaginaProcuraObjetosPerdidos';
+import FormProcuraObjetosAchados from './Components/FormProcuraObjetosAchados';
+import PaginaProcurarMatches from './Pages/PaginaProcurarMatches';
 
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -41,6 +44,8 @@ function App() {
             <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
             <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
             <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
+            <Route path="search" element={<PaginaProcuraObjetosPeridos/>} />
+            <Route path="lostObject/getMatches" element={<PaginaProcurarMatches/>} />
           </Routes>
       </BrowserRouter>
       </>

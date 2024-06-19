@@ -75,16 +75,6 @@ CREATE TABLE objeto (
     FOREIGN KEY (nifUser) REFERENCES utilizador(nif)
 );
 
-CREATE TABLE Dono (
-    nif INT PRIMARY KEY,
-    FOREIGN KEY (nif) REFERENCES Utilizador(nif)
-);
-
-CREATE TABLE Licitante (
-    nif INT PRIMARY KEY,
-    FOREIGN KEY (nif) REFERENCES Utilizador(nif)
-);
-
 CREATE TABLE localizacao (
     id INT PRIMARY KEY,
     pais TEXT NOT NULL,
@@ -113,6 +103,15 @@ CREATE TABLE policia (
     password VARCHAR(255) NOT NULL,
     posto INT REFERENCES posto(id),
     removido INT
+);
+
+CREATE TABLE pertence(
+    nif INT,
+    id INT,
+    data TEXT,
+    PRIMARY KEY (nif, id),
+    FOREIGN KEY (nif) REFERENCES utilizador(nif),
+    FOREIGN KEY (id) REFERENCES Achado(id)
 );
 
 CREATE TABLE achado (
@@ -148,30 +147,13 @@ CREATE TABLE perdido (
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );
 
-CREATE TABLE encontrado (
-    id_achado INT,
-    id_nao_achado INT,
-    PRIMARY KEY (id_achado, id_nao_achado),
-    FOREIGN KEY (id_achado) REFERENCES Achado(id),
-    FOREIGN KEY (id_nao_achado) REFERENCES NaoAchado(id)
-);
-
-CREATE TABLE regista (
-    nif INT,
-    id INT,
-    data DATE NOT NULL,
-    data_fim DATE NOT NULL,
-    PRIMARY KEY (nif, id),
-    FOREIGN KEY (nif) REFERENCES Dono(nif),
-    FOREIGN KEY (id) REFERENCES NaoAchado(id)
-);
-
 CREATE TABLE reclamado (
     nif INT,
     id INT,
-    data DATE NOT NULL,
+    data TEXT NOT NULL,
+    aprovado INT,
     PRIMARY KEY (nif, id),
-    FOREIGN KEY (nif) REFERENCES Dono(nif),
+    FOREIGN KEY (nif) REFERENCES utilizador(nif),
     FOREIGN KEY (id) REFERENCES Achado(id)
 );
 

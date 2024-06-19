@@ -97,8 +97,9 @@ function FormRegistoObjetoAchado() {
                             { headers: {'Content-Type': 'application/json'}},
                         ).then ( (res) => {
                             if (res.status === 201) {
-                                setErroInternoRegistoAchado(true);
-                                navigate("/lostObject/register/success");
+
+                                setErroInternoRegistoAchado(false);
+                                navigate("/foundObject/register/success");
                             } 
                         }).catch(function (error) {
                             if ( error.response ) {

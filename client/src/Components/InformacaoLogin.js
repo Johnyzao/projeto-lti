@@ -69,9 +69,6 @@ function InformacaoLogin() {
         }
     }
 
-    // TODO:
-    //  - Atualizar info no Auth0 quando é enviada do editar user;
-
     useEffect( () => { obterPaginaAdmin(user) }, [isLoading] );
     useEffect( () => { obterPaginaObjetosAchados(user) }, [isLoading] );
     return (

@@ -81,7 +81,10 @@ function VerObjetosPerdidos(props) {
             <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
                 <div className="d-flex w-100 justify-content-between">
                     <h5 className="mb-1">{objeto.titulo}</h5>
-                    <small className="text-muted"> <Button onClick={() => { navigate("/lostObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoPerdido(objeto.idObjPerdido)}} variant='danger'>Remover</Button> </small>
+                    <small className="text-muted"> 
+                        <Button onClick={() => { navigate("/lostObject/edit/" + objeto.id) }}>Editar</Button> 
+                        <Button onClick={() => { removerObjetoPerdido(objeto.idObjPerdido) }} variant='danger'>Remover</Button>
+                    </small>
                 </div>
             <p className="mb-1">{objeto.descricao}</p>
             <small className="text-muted"> Registado em {objeto.dataregisto} </small>

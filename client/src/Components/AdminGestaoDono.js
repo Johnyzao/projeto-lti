@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 // Informacoes da API.
 import config from '../config';
@@ -15,7 +15,6 @@ import validator from 'validator';
 // Imports do bootstrap.
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
 import Table from 'react-bootstrap/Table';
 import PopupEditarDono from '../Popups/PopupEditarDono';
 import PopupRemoverDono from '../Popups/PopupRemoverDono';

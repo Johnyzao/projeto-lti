@@ -93,6 +93,7 @@ function FormRegistoObjetoPerdido() {
                         ).then ( (res) => {
                             if (res.status === 201) {
                                 setErroInternoRegistoPerdido(false);
+                                navigate("/lostObject/register/success");
                             } 
                         }).catch(function (error) {
                             if ( error.response ) {
@@ -307,9 +308,6 @@ function FormRegistoObjetoPerdido() {
             }
             processarObjeto(infoObjeto, infoLocalizacao, values);
 
-            if ( !erroInternoRegistoPerdido ) {
-                navigate("/lostObject/register/success");
-            }
         },
     });
 

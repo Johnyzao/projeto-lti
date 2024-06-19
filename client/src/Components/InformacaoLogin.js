@@ -44,6 +44,7 @@ function InformacaoLogin() {
                 <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
                 <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
                 <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
+                <NavDropdown.Item href="/search">Procurar objetos perdidos</NavDropdown.Item>
                 { dados.tipo === "a" 
                     ? (<NavDropdown.Item href="/admin">Página de administração</NavDropdown.Item>) 
                     : null

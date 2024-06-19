@@ -24,15 +24,13 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 function FormRegistoObjetoAchado() {
     const navigate = useNavigate();
-    const { user, isLoading } = useAuth0();
+    const { user, isAuthenticated, isLoading } = useAuth0();
 
     const [images, setImages] = useState([]);
     const [sabeData, setSabeData] = useState(false);
     const [naoSabeData, setNaoSabeData] = useState(false);
     const [distrito, setDistrito] = useState("Aveiro");
     const [erroInternoRegistoAchado, setErroInternoRegistoAchado] = useState(false);
-    const [policiasLista, setPoliciasLista] = useState([]);
-    const [idPolicia, setIdPolicia] = useState("");
 
     const [categoria, setCategoria] = useState("");
     const [categorias, setCategorias] = useState(new Object());
@@ -85,7 +83,7 @@ function FormRegistoObjetoAchado() {
                         let infoObjetoAchado= {
                             idObj: idObj,
                             idLoc: idLoc,
-                            policia: idPolicia,
+                            policia: user.sub.split("|")[1],
                             foundDate: values.foundDate,
                             foundTime: values.foundTime,
                             foundDateInfLim: values.foundDateInfLim,
@@ -181,28 +179,6 @@ function FormRegistoObjetoAchado() {
         }
     }
 
-    async function obterPolicias() {
-        await axios.get(
-            config.LINK_API + "/police",
-        ).then( ( res ) => {
-
-            if ( res.status === 200 ) {
-                console.log(res.data);
-                setPoliciasLista(res.data);
-            }
-
-        }).catch( function (error) {
-            if ( error.response ) {
-                let codigo = error.response.status;
-            }
-        });
-    }
-
-    const escreverPolicias = policiasLista.map( policia => {
-        let textoPolicia = "[" + policia.id + "] " + policia.nome;
-        return ( <option key={policia.id} value={policia.id}> {textoPolicia} </option> );
-    });
-
     const onChange = (imageList, addUpdateIndex) => {
         setImages(imageList);
     }
@@ -291,7 +267,6 @@ function FormRegistoObjetoAchado() {
         return errors;
     }
 
-    useEffect( () => { obterPolicias() }, [] );
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: {
@@ -320,7 +295,7 @@ function FormRegistoObjetoAchado() {
             let dataAtual = dias + "/" + mes + "/" + ano;
             let infoObjeto = { 
                 titulo: values.titulo, 
-                nifUser: user.sub.split("|")[1], 
+                nifUser: null, 
                 desc: values.desc,
                 imagens: images,
                 dataRegisto: dataAtual,
@@ -465,22 +440,6 @@ function FormRegistoObjetoAchado() {
                         { formik.errors.foundDateSupLim ? (<p className='text-danger'> {formik.errors.foundDateSupLim} </p>) : null } 
                     </>
                 ) : null }
-
-            <Form.Label htmlFor="data">Polícia a que foi entregue:<span className='text-danger'>*</span> </Form.Label>
-            <>  
-                <label htmlFor="exampleDataList" className="form-label"></label>
-                <input 
-                    className="form-control" 
-                    list="datalistOptions" 
-                    placeholder="Escreva o nome do agente ou o id..."
-                    onChange={(e) => {setIdPolicia(e.target.value);}}
-                />
-                <datalist id="datalistOptions">
-                    {escreverPolicias}
-                </datalist>
-            </>
-            { idPolicia === "" ? (<p className='text-danger'> Por favor selecione uma desta opções. </p>) : null }
-            <br/>
 
             <p>Imagens do objeto: </p>
             <p>Pode adicionar no máximo 3 imagens ao anúncio. </p>

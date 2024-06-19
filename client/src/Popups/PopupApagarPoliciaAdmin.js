@@ -7,7 +7,7 @@ import axios from 'axios';
 // Informacoes da API.
 import config from '../config';
 
-function PopupApagarContaAdmin(props) {
+function PopupApagarPoliciaAdmin(props) {
 
     const [tokenAuth, setTokenAuth] = useState("");
     const [sucessoApagar, setSucessoApagar] = useState(false);
@@ -30,9 +30,9 @@ function PopupApagarContaAdmin(props) {
         })
     }
 
-    async function adminApagarContaAuth0(nif){
+    async function adminApagarContaAuth0(id){
         await axios.delete(
-            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/users/auth0|" + nif,
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/users/auth0|" + id,
             { headers: { Authorization: `Bearer ${tokenAuth}` } },
         ).then( ( res ) => {
             if (res.status === 204) {
@@ -47,14 +47,19 @@ function PopupApagarContaAdmin(props) {
         });
     }
 
-    function apagarConta(userNif){
+    function apagarConta(id){
         axios.delete(
-            config.LINK_API+"/user/" + userNif,
+            config.LINK_API+"/police/" + id,
             { headers: {'Content-Type': 'application/json'}},
         ).then( ( res ) => {
             if (res.status === 200) {
                 setSucessoApagar(true);
-                adminApagarContaAuth0(userNif);
+                setTimeout(() => {
+                    setSucessoApagar(false);
+                }, 5000);
+
+
+                adminApagarContaAuth0(id);
             }
         }).catch(function(error) {
             if ( error.response ) {
@@ -64,10 +69,10 @@ function PopupApagarContaAdmin(props) {
     }
 
     const desenharBotao = () => {
-        if ( props.desativado === 1 || props.user === "a" ) {
-            return ( <Button variant="danger" disabled> Apagar conta </Button> )
+        if ( props.removido === 1 ) {
+            return ( <Button variant="danger" disabled> Apagar </Button> )
         } else {
-            return ( <Button variant="danger"> Apagar conta </Button>  )
+            return ( <Button variant="danger"> Apagar </Button>  )
         }
     }
 
@@ -92,12 +97,12 @@ function PopupApagarContaAdmin(props) {
                     <p> Esta ação não é revertível. </p>
                     <p> Se escolher apagar a conta deste utilizador ela será apagada permanentemente. </p>
                     <br/>
-                    { sucessoApagar ? (<p className='text-success'>Utilziador apagado com sucesso</p>) : null }
+                    { sucessoApagar ? (<p className='text-success text-center'>Polícia apagado com sucesso</p>) : null }
                 </Modal.Body>
 
                 <Modal.Footer>
                     <Button onClick={close} variant="primary">Cancelar</Button>
-                    <Button onClick={() => {apagarConta(props.nif)}} variant="danger">Confirmar</Button>
+                    <Button onClick={() => {apagarConta(props.id)}} variant="danger">Confirmar</Button>
                 </Modal.Footer>
                 </Modal.Dialog>
                 </div>
@@ -107,4 +112,5 @@ function PopupApagarContaAdmin(props) {
   )
 }
 
-export default PopupApagarContaAdmin;
+export default PopupApagarPoliciaAdmin;
+

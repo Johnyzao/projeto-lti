@@ -32,7 +32,7 @@ let queryGetUserByNif = (nif) => {
 
     const queryGetUser = {
         name: "get-user",
-        text: "SELECT * FROM utilizador WHERE nif = $1",
+        text: "SELECT * FROM utilizador WHERE nif=$1",
         values: [nif]
     };
 

@@ -96,8 +96,9 @@ CREATE TABLE Posto (
     removido INT
 );
 
-CREATE TABLE Policia (
+CREATE TABLE policia (
     id INT PRIMARY KEY,
+    mail TEXT,
     nome VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     posto INT REFERENCES posto(id),

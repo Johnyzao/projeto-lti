@@ -20,16 +20,17 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 
+import { useAuth0 } from "@auth0/auth0-react";
+
 function FormRegistoObjetoAchado() {
     const navigate = useNavigate();
+    const { user, isAuthenticated, isLoading } = useAuth0();
 
     const [images, setImages] = useState([]);
     const [sabeData, setSabeData] = useState(false);
     const [naoSabeData, setNaoSabeData] = useState(false);
     const [distrito, setDistrito] = useState("Aveiro");
     const [erroInternoRegistoAchado, setErroInternoRegistoAchado] = useState(false);
-    const [policiasLista, setPoliciasLista] = useState([]);
-    const [idPolicia, setIdPolicia] = useState("");
 
     const [categoria, setCategoria] = useState("");
     const [categorias, setCategorias] = useState(new Object());
@@ -82,7 +83,7 @@ function FormRegistoObjetoAchado() {
                         let infoObjetoAchado= {
                             idObj: idObj,
                             idLoc: idLoc,
-                            policia: idPolicia,
+                            policia: user.sub.split("|")[1],
                             foundDate: values.foundDate,
                             foundTime: values.foundTime,
                             foundDateInfLim: values.foundDateInfLim,
@@ -96,6 +97,7 @@ function FormRegistoObjetoAchado() {
                             { headers: {'Content-Type': 'application/json'}},
                         ).then ( (res) => {
                             if (res.status === 201) {
+
                                 setErroInternoRegistoAchado(false);
                                 navigate("/foundObject/register/success");
                             } 
@@ -177,28 +179,6 @@ function FormRegistoObjetoAchado() {
             });
         }
     }
-
-    async function obterPolicias() {
-        await axios.get(
-            config.LINK_API + "/police",
-        ).then( ( res ) => {
-
-            if ( res.status === 200 ) {
-                console.log(res.data);
-                setPoliciasLista(res.data);
-            }
-
-        }).catch( function (error) {
-            if ( error.response ) {
-                let codigo = error.response.status;
-            }
-        });
-    }
-
-    const escreverPolicias = policiasLista.map( policia => {
-        let textoPolicia = "[" + policia.id + "] " + policia.nome;
-        return ( <option key={policia.id} value={policia.id}> {textoPolicia} </option> );
-    });
 
     const onChange = (imageList, addUpdateIndex) => {
         setImages(imageList);
@@ -288,7 +268,6 @@ function FormRegistoObjetoAchado() {
         return errors;
     }
 
-    useEffect( () => { obterPolicias() }, [] );
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: {
@@ -317,7 +296,7 @@ function FormRegistoObjetoAchado() {
             let dataAtual = dias + "/" + mes + "/" + ano;
             let infoObjeto = { 
                 titulo: values.titulo, 
-                nifUser: JSON.parse(localStorage.getItem("dados")).nif, 
+                nifUser: null, 
                 desc: values.desc,
                 imagens: images,
                 dataRegisto: dataAtual,
@@ -335,7 +314,6 @@ function FormRegistoObjetoAchado() {
                 codp: values.codp
             }
             processarObjeto(infoObjeto, infoLocalizacao, values);
-
         },
     });
 
@@ -365,285 +343,271 @@ function FormRegistoObjetoAchado() {
 
     return (
         <>
+        { isLoading ? null : (
             <Container className='bg-light' fluid="sm">
-                <h1 className='text-center'> Registo de um objeto achado </h1>
+            <h1 className='text-center'> Registo de um objeto achado </h1>
 
-                <Form name="form" onSubmit={formik.handleSubmit}>
-                
-                <br/>
-                <h4>Informações do anúncio do objeto</h4>
-                <Form.Group className='border'>
-                    <Form.Label htmlFor="titulo">Título do anúncio:<span className='text-danger'>*</span> </Form.Label>
-                    <Form.Control                     
-                        id="titulo"
-                        name="titulo"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.titulo}/>
-                    <Form.Text muted>Escreva um título curto.</Form.Text>
-                    { formik.errors.titulo ? (<p className='text-danger'> {formik.errors.titulo} </p>) : null }
-                <br/>
-                    <Form.Label htmlFor="desc">Descrição: </Form.Label>
-                    <Form.Control as={"textarea"}                         
-                        id="desc"
-                        name="desc"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.desc}/>
-                    <Form.Text muted>Na descrição pode incluir quaisquer detalhes que ache relevantes.</Form.Text>
-                    { formik.errors.desc ? (<p className='text-danger'> {formik.errors.desc} </p>) : null }
-                <br/>
-                    <Form.Label htmlFor="data">Informações acerca da data em que achou o objeto:<span className='text-danger'>*</span> </Form.Label>
+            <Form name="form" onSubmit={formik.handleSubmit}>
+            
+            <br/>
+            <h4>Informações do anúncio do objeto</h4>
+            <Form.Group className='border'>
+                <Form.Label htmlFor="titulo">Título do anúncio:<span className='text-danger'>*</span> </Form.Label>
+                <Form.Control                     
+                    id="titulo"
+                    name="titulo"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.titulo}/>
+                <Form.Text muted>Escreva um título curto.</Form.Text>
+                { formik.errors.titulo ? (<p className='text-danger'> {formik.errors.titulo} </p>) : null }
+            <br/>
+                <Form.Label htmlFor="desc">Descrição: </Form.Label>
+                <Form.Control as={"textarea"}                         
+                    id="desc"
+                    name="desc"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.desc}/>
+                <Form.Text muted>Na descrição pode incluir quaisquer detalhes que ache relevantes.</Form.Text>
+                { formik.errors.desc ? (<p className='text-danger'> {formik.errors.desc} </p>) : null }
+            <br/>
+                <Form.Label htmlFor="data">Informações acerca da data em que achou o objeto:<span className='text-danger'>*</span> </Form.Label>
 
-                <div>
-                    <Form.Check 
-                        type="radio" 
-                        name="grupo1" 
-                        label="Não sei a data em que achei o objeto." 
-                        onChange={handleChangeNaoSabeData}
-                    />
-                    <Form.Check 
-                        type="radio" 
-                        name="grupo1" 
-                        label="Eu sei a data em que achei o objeto." 
-                        onChange={handleChangeSabeData}    
-                    />
-                </div>
-                { sabeData === false && naoSabeData === false ? (<p className='text-danger'> Por favor selecione uma desta opções. </p>) : null }
-                <br/>
-                    { sabeData ? (
-                        <>
-                            <Form.Label>Data em que achou o objeto:<span className='text-danger'>*</span> </Form.Label>
-                            <Form.Control 
-                                type="date"                         
-                                id="foundDate"
-                                name="foundDate"
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.foundDate}/>
-                            { formik.errors.foundDate ? (<p className='text-danger'> {formik.errors.foundDate} </p>) : null }
-                            <br/>
-                            <Form.Label>Horas em que achou o objeto: </Form.Label>
-                            <Form.Control                        
-                                id="foundTime"
-                                name="foundTime"
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.foundTime}/>
-                            { formik.errors.foundTime ? (<p className='text-danger'> {formik.errors.foundTime} </p>) : null }
-                            <Form.Text muted>Utilize o formato Horas:Minutos. Se não souber exatamente, estime as horas a que acha que achou o objeto.</Form.Text>
-                        </>
-                    ) : null }
+            <div>
+                <Form.Check 
+                    type="radio" 
+                    name="grupo1" 
+                    label="Não sei a data em que achei o objeto." 
+                    onChange={handleChangeNaoSabeData}
+                />
+                <Form.Check 
+                    type="radio" 
+                    name="grupo1" 
+                    label="Eu sei a data em que achei o objeto." 
+                    onChange={handleChangeSabeData}    
+                />
+            </div>
+            { sabeData === false && naoSabeData === false ? (<p className='text-danger'> Por favor selecione uma desta opções. </p>) : null }
+            <br/>
+                { sabeData ? (
+                    <>
+                        <Form.Label>Data em que achou o objeto:<span className='text-danger'>*</span> </Form.Label>
+                        <Form.Control 
+                            type="date"                         
+                            id="foundDate"
+                            name="foundDate"
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            value={formik.values.foundDate}/>
+                        { formik.errors.foundDate ? (<p className='text-danger'> {formik.errors.foundDate} </p>) : null }
+                        <br/>
+                        <Form.Label>Horas em que achou o objeto: </Form.Label>
+                        <Form.Control                        
+                            id="foundTime"
+                            name="foundTime"
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            value={formik.values.foundTime}/>
+                        { formik.errors.foundTime ? (<p className='text-danger'> {formik.errors.foundTime} </p>) : null }
+                        <Form.Text muted>Utilize o formato Horas:Minutos. Se não souber exatamente, estime as horas a que acha que achou o objeto.</Form.Text>
+                    </>
+                ) : null }
 
-                    { naoSabeData ? (
-                        <>  
-                            <p>Defina um intervalo no qual adimite ter achado o objeto:<span className='text-danger'>*</span> </p>
+                { naoSabeData ? (
+                    <>  
+                        <p>Defina um intervalo no qual adimite ter achado o objeto:<span className='text-danger'>*</span> </p>
 
-                            <Form.Label>Começo do intervalo:<span className='text-danger'>*</span> </Form.Label>
-                            <Form.Control                                 
-                                type="date"                         
-                                id="foundDateInfLim"
-                                name="foundDateInfLim"
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.foundDateInfLim}/>
-                            { formik.errors.foundDateInfLim ? (<p className='text-danger'> {formik.errors.foundDateInfLim} </p>) : null } 
+                        <Form.Label>Começo do intervalo:<span className='text-danger'>*</span> </Form.Label>
+                        <Form.Control                                 
+                            type="date"                         
+                            id="foundDateInfLim"
+                            name="foundDateInfLim"
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            value={formik.values.foundDateInfLim}/>
+                        { formik.errors.foundDateInfLim ? (<p className='text-danger'> {formik.errors.foundDateInfLim} </p>) : null } 
 
-                            <Form.Label>Fim do intervalo:<span className='text-danger'>*</span> </Form.Label>
-                            <Form.Control                                 
-                                type="date"                         
-                                id="foundDateSupLim"
-                                name="foundDateSupLim"
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.foundDateSupLim}/>
-                            { formik.errors.foundDateSupLim ? (<p className='text-danger'> {formik.errors.foundDateSupLim} </p>) : null } 
-                        </>
-                    ) : null }
+                        <Form.Label>Fim do intervalo:<span className='text-danger'>*</span> </Form.Label>
+                        <Form.Control                                 
+                            type="date"                         
+                            id="foundDateSupLim"
+                            name="foundDateSupLim"
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            value={formik.values.foundDateSupLim}/>
+                        { formik.errors.foundDateSupLim ? (<p className='text-danger'> {formik.errors.foundDateSupLim} </p>) : null } 
+                    </>
+                ) : null }
 
-                <Form.Label htmlFor="data">Polícia a que foi entregue:<span className='text-danger'>*</span> </Form.Label>
-                <>  
-                    <label htmlFor="exampleDataList" className="form-label"></label>
-                    <input 
-                        className="form-control" 
-                        list="datalistOptions" 
-                        placeholder="Escreva o nome do agente ou o id..."
-                        onChange={(e) => {setIdPolicia(e.target.value);}}
-                    />
-                    <datalist id="datalistOptions">
-                        {escreverPolicias}
-                    </datalist>
-                </>
-                { idPolicia === "" ? (<p className='text-danger'> Por favor selecione uma desta opções. </p>) : null }
-                <br/>
-   
-                <p>Imagens do objeto: </p>
-                <p>Pode adicionar no máximo 3 imagens ao anúncio. </p>
-                <ImageUploading
-                    multiple
-                    value={images}
-                    onChange={onChange}
-                    maxNumber={maxNumber}
-                    dataURLKey="data_url"
-                    >
-                        {({
-                        imageList,
-                        onImageUpload,
-                        onImageRemoveAll,
-                        onImageUpdate,
-                        onImageRemove,
-                        isDragging,
-                        dragProps,
-                        }) => (
-                        <Container fluid className="upload__image-wrapper text-center">
-                            <Button
-                                variant={isDragging ? 'warning' : undefined}
-                                onClick={onImageUpload}
-                                {...dragProps}
-                            >
-                            Adicionar imagem
-                            </Button>
-                            &nbsp;
-                            <Button variant='danger' onClick={onImageRemoveAll}>Remover todas as imagens</Button>
-                            <br/>
-                            <br/>
-                            { imageList.length === 0 ? (<p>Não adicionou nenhuma foto ainda.</p>) : (<p>Imagens que adicionou:</p>) }
-                            <Container>
-                            {imageList.map((image, index) => (
-                                <Container key={index} fluid="sm" className="image-item">
-                                    <Image src={image['data_url']} fluid thumbnail width="100" />
-                                    <Container fluid className="image-item__btn-wrapper">
-                                        <Button onClick={() => onImageUpdate(index)}>Trocar</Button>
-                                        <Button variant='danger' onClick={() => onImageRemove(index)}>Remover</Button>
-                                    </Container>
+            <p>Imagens do objeto: </p>
+            <p>Pode adicionar no máximo 3 imagens ao anúncio. </p>
+            <ImageUploading
+                multiple
+                value={images}
+                onChange={onChange}
+                maxNumber={maxNumber}
+                dataURLKey="data_url"
+                >
+                    {({
+                    imageList,
+                    onImageUpload,
+                    onImageRemoveAll,
+                    onImageUpdate,
+                    onImageRemove,
+                    isDragging,
+                    dragProps,
+                    }) => (
+                    <Container fluid className="upload__image-wrapper text-center">
+                        <Button
+                            variant={isDragging ? 'warning' : undefined}
+                            onClick={onImageUpload}
+                            {...dragProps}
+                        >
+                        Adicionar imagem
+                        </Button>
+                        &nbsp;
+                        <Button variant='danger' onClick={onImageRemoveAll}>Remover todas as imagens</Button>
+                        <br/>
+                        <br/>
+                        { imageList.length === 0 ? (<p>Não adicionou nenhuma foto ainda.</p>) : (<p>Imagens que adicionou:</p>) }
+                        <Container>
+                        {imageList.map((image, index) => (
+                            <Container key={index} fluid="sm" className="image-item">
+                                <Image src={image['data_url']} fluid thumbnail width="100" />
+                                <Container fluid className="image-item__btn-wrapper">
+                                    <Button onClick={() => onImageUpdate(index)}>Trocar</Button>
+                                    <Button variant='danger' onClick={() => onImageRemove(index)}>Remover</Button>
                                 </Container>
-                            ))}
                             </Container>
+                        ))}
                         </Container>
-                        )}
-                    </ImageUploading>
-                </Form.Group>
-                
-                <br/>
-                <br/>
-                <h4>Informações acerca da localização onde achou o objeto</h4>
-                <Form.Group className='border'>
-                    <Form.Label htmlFor="pais">País: </Form.Label>
-                    <Form.Control value={"Portugal"} disabled/>
-                    <Form.Text muted>Portugal é o único país suportado.</Form.Text>
-                <br/>
-                    <Form.Label htmlFor="distrito">Distrito:<span className='text-danger'>*</span> </Form.Label>
-                    <Form.Select                    
-                        id="dist"
-                        name="dist"
-                        onChange={(e) => {setDistrito(e.target.value)}}>
-                        <option values="Aveiro">Aveiro</option>
-                        <option values="Beja">Beja</option>
-                        <option values="Braga">Braga</option>
-                        <option values="Bragança">Bragança</option>
-                        <option values="Castelo Branco">Castelo Branco</option>
-                        <option values="Coimbra">Coimbra</option>
-                        <option values="Évora">Évora</option>
-                        <option values="Faro">Faro</option>
-                        <option values="Guarda">Guarda</option>
-                        <option values="Leiria">Leiria</option>
-                        <option values="Lisboa">Lisboa</option>
-                        <option values="Porto">Porto</option>
-                        <option values="Santarém">Santarém</option>
-                        <option values="Setúbal">Setúbal</option>
-                        <option values="Viana do Castelo">Viana do Castelo</option>
-                        <option values="Vila Real">Vila Real</option>
-                        <option values="Viseu">Viseu</option>
-                    </Form.Select>
-                <br/>
-                <br/>
+                    </Container>
+                    )}
+                </ImageUploading>
+            </Form.Group>
+            
+            <br/>
+            <br/>
+            <h4>Informações acerca da localização onde achou o objeto</h4>
+            <Form.Group className='border'>
+                <Form.Label htmlFor="pais">País: </Form.Label>
+                <Form.Control value={"Portugal"} disabled/>
+                <Form.Text muted>Portugal é o único país suportado.</Form.Text>
+            <br/>
+                <Form.Label htmlFor="distrito">Distrito:<span className='text-danger'>*</span> </Form.Label>
+                <Form.Select                    
+                    id="dist"
+                    name="dist"
+                    onChange={(e) => {setDistrito(e.target.value)}}>
+                    <option values="Aveiro">Aveiro</option>
+                    <option values="Beja">Beja</option>
+                    <option values="Braga">Braga</option>
+                    <option values="Bragança">Bragança</option>
+                    <option values="Castelo Branco">Castelo Branco</option>
+                    <option values="Coimbra">Coimbra</option>
+                    <option values="Évora">Évora</option>
+                    <option values="Faro">Faro</option>
+                    <option values="Guarda">Guarda</option>
+                    <option values="Leiria">Leiria</option>
+                    <option values="Lisboa">Lisboa</option>
+                    <option values="Porto">Porto</option>
+                    <option values="Santarém">Santarém</option>
+                    <option values="Setúbal">Setúbal</option>
+                    <option values="Viana do Castelo">Viana do Castelo</option>
+                    <option values="Vila Real">Vila Real</option>
+                    <option values="Viseu">Viseu</option>
+                </Form.Select>
+            <br/>
+            <br/>
 
-                <p> Se introduzir algum dos campos abaixo, garanta que existe. </p>
-                    <Form.Label htmlFor="munc">Município: </Form.Label>
-                    <Form.Control                        
-                        id="munc"
-                        name="munc"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.munc}/>
-                { formik.errors.munc ? (<p className='text-danger'> {formik.errors.munc} </p>) : null } 
+            <p> Se introduzir algum dos campos abaixo, garanta que existe. </p>
+                <Form.Label htmlFor="munc">Município: </Form.Label>
+                <Form.Control                        
+                    id="munc"
+                    name="munc"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.munc}/>
+            { formik.errors.munc ? (<p className='text-danger'> {formik.errors.munc} </p>) : null } 
 
-                <br/>
-                    <Form.Label htmlFor="freg">Freguesia: </Form.Label>
-                    <Form.Control                        
-                        id="freg"
-                        name="freg"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.freg}/>
-                { formik.errors.freg ? (<p className='text-danger'> {formik.errors.freg} </p>) : null }             
+            <br/>
+                <Form.Label htmlFor="freg">Freguesia: </Form.Label>
+                <Form.Control                        
+                    id="freg"
+                    name="freg"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.freg}/>
+            { formik.errors.freg ? (<p className='text-danger'> {formik.errors.freg} </p>) : null }             
 
-                <br/>
-                    <Form.Label htmlFor="rua">Rua: </Form.Label>
-                    <Form.Control                        
-                        id="rua"
-                        name="rua"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.rua}/>
-                { formik.errors.rua ? (<p className='text-danger'> {formik.errors.rua} </p>) : null } 
+            <br/>
+                <Form.Label htmlFor="rua">Rua: </Form.Label>
+                <Form.Control                        
+                    id="rua"
+                    name="rua"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.rua}/>
+            { formik.errors.rua ? (<p className='text-danger'> {formik.errors.rua} </p>) : null } 
 
-                <br/>
-                    <Form.Label htmlFor="morada">Morada: </Form.Label>
-                    <Form.Control                         
-                        id="morada"
-                        name="morada"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.morada}/>
-                { formik.errors.morada ? (<p className='text-danger'> {formik.errors.morada} </p>) : null } 
+            <br/>
+                <Form.Label htmlFor="morada">Morada: </Form.Label>
+                <Form.Control                         
+                    id="morada"
+                    name="morada"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.morada}/>
+            { formik.errors.morada ? (<p className='text-danger'> {formik.errors.morada} </p>) : null } 
 
-                <br/>
-                    <Form.Label htmlFor="codp">Código postal: </Form.Label>
-                    <Form.Control                        
-                        id="codp"
-                        name="codp"
-                        type="text"
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.codp}/>
-                <Form.Text className="text-muted">Um código postal tem o formato: XXXX-XXX.</Form.Text> 
-                { formik.errors.codp ? (<p className='text-danger'> {formik.errors.codp} </p>) : null } 
+            <br/>
+                <Form.Label htmlFor="codp">Código postal: </Form.Label>
+                <Form.Control                        
+                    id="codp"
+                    name="codp"
+                    type="text"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.codp}/>
+            <Form.Text className="text-muted">Um código postal tem o formato: XXXX-XXX.</Form.Text> 
+            { formik.errors.codp ? (<p className='text-danger'> {formik.errors.codp} </p>) : null } 
 
-                <br/>
-                </Form.Group>
+            <br/>
+            </Form.Group>
 
-                <br/>
-                <br/>
-                <h4>Categorização do objeto</h4>
-                <Form.Group className='border'>
-                <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
-                <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
-                    <Form.Select                    
-                        id="categoria"
-                        name="categoria"
-                        onChange={(e) => {setCategoria(e.target.value);}}
-                    >
-                        {desenharCategorias}
-                    </Form.Select>
-                <br/>
-                { desenharCamposDaCategoria }
+            <br/>
+            <br/>
+            <h4>Categorização do objeto</h4>
+            <Form.Group className='border'>
+            <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
+            <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
+                <Form.Select                    
+                    id="categoria"
+                    name="categoria"
+                    onChange={(e) => {setCategoria(e.target.value);}}
+                >
+                    {desenharCategorias}
+                </Form.Select>
+            <br/>
+            { desenharCamposDaCategoria }
 
-                </Form.Group>
+            </Form.Group>
 
-                <br/>
-                <Container className='text-center'>
-                    { erroInternoRegistoAchado ? (<p>Erro interno, por favor tente de novo.</p>) : null }
-                    <Button type="submit"> Criar anúncio </Button>
-                </Container>
-                </Form>
+            <br/>
+            <Container className='text-center'>
+                { erroInternoRegistoAchado ? (<p>Erro interno, por favor tente de novo.</p>) : null }
+                <Button type="submit"> Criar anúncio </Button>
             </Container>
+            </Form>
+        </Container>
+        )}
         </>
     )
 }

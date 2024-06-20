@@ -1,3 +1,5 @@
+const stringSimilarity = require('string-similarity-js');
+const fastSort = require('fast-sort');
 const express = require('express');
 const app = express();
 const session = require('express-session');
@@ -205,7 +207,8 @@ app.post("/login", async(req, res) => {
     }
 });
 
-app.post("/user/:nif/verifyPassword", async(req, res) => {
+// TODO: Tem um erro algures aqui, possivelmente...
+app.post("/user/:nif/verifyPassword", async (req, res) => {
     try {
         let { pass } = req.body;
 
@@ -279,6 +282,7 @@ app.delete("/user/:userNif", async(req, res) => {
 app.put("/user/:userNif/deactivate", async(req, res) => {
     try {
         const nif = req.params.userNif;
+        console.log(nif);
 
         const queryDesativarUser = queries.queryDeactivateUser(nif);
         const row = await dbClient.query(queryDesativarUser);
@@ -342,8 +346,8 @@ app.post("/searchUsers", async(req, res) => {
     }
 });
 
-app.post("/police", async(req, res) => {
-    let { id, nome, pass, posto } = req.body;
+app.post("/police", async (req, res) => {
+    let { id, nome, pass, posto, mail } = req.body;
 
     let querySelectPolicia = {
         text: "SELECT * FROM policia WHERE id=$1",
@@ -355,10 +359,9 @@ app.post("/police", async(req, res) => {
         res.status(401).send();
     } else {
         let queryInsertPolicia = {
-            text: "INSERT INTO policia(id, nome, password, posto, removido) VALUES($1, $2, $3, $4, $5)",
-            values: [id, nome, pass, posto, 0]
+            text: "INSERT INTO policia(id, mail, nome, password, posto, removido) VALUES($1, $2, $3, $4, $5, $6)",
+            values: [id, mail ,nome, pass, posto, 0]
         }
-
         let results = await dbClient.query(queryInsertPolicia);
 
         if (results.rowCount === 1) {
@@ -367,13 +370,12 @@ app.post("/police", async(req, res) => {
     }
 });
 
-// TODO: Testar
-app.put("/police", async(req, res) => {
-    let { id, nome, password, posto } = req.body;
+app.put("/police", async (req, res) => {
+    let { id, nome, password, posto, mail } = req.body;
 
     let queryInsertPolicia = {
-        text: "UPDATE utilizador SET nome=$2, password=$3, posto=$4 WHERE id=$1",
-        values: [id, nome, password, posto]
+        text: "UPDATE policia SET nome=$2, password=$3, posto=$4, mail=$5 WHERE id=$1",
+        values: [id, nome, password, posto, mail]
     }
 
     let results = await dbClient.query(queryInsertPolicia);
@@ -395,8 +397,23 @@ app.get("/police", async(req, res) => {
     res.status(200).send(results.rows);
 });
 
-// Por testar...
-app.delete("/police/:id", async(req, res) => {
+app.get("/police/:police_id", async (req, res) => {
+
+    let querySelectPolicia = {
+        text: "SELECT * FROM policia WHERE id=$1",
+        values: [req.params.police_id]
+    }
+
+    let results = await dbClient.query(querySelectPolicia);
+
+    if ( results.rowCount > 0 ) {
+        res.status(200).send({policia: results.rows[0]});
+    } else {
+        res.send(404).send("No officer mathcing this ID was found.");
+    }
+});
+
+app.delete("/police/:id", async (req, res) => {
     let queryInsertPolicia = {
         text: "UPDATE policia SET removido=1 WHERE id=$1",
         values: [req.params.id]
@@ -479,23 +496,28 @@ app.get("/checkMailDuplicate/:userMail", async(req, res) => {
 
 });
 
-app.put("/user/:userNif/changePassword", async(req, res) => {
+// TODO: Tem um erro algures aqui...
+app.put("/user/:userNif/changePassword", async (req, res) => {
     try {
         let nif = req.params.userNif;
         let novaPass = req.body.novaPass;
         let passAtual = req.body.passAtual;
 
-        let queryUser = queries.queryGetUserByNif(nif);
+        const queryVerificarPass = {
+            text: "SELECT * FROM utilizador WHERE nif = $1",
+            values: [nif]
+        };
 
         // Verificar se as passes são iguais aqui.
         // Se sim -> atualizar.
-        const row = await dbClient.query(queryUser);
+        const row = await dbClient.query(queryVerificarPass);
         if (row.rowCount === 0) {
             res.status(404).send();
             return;
         }
 
         const user = row.rows[0];
+        console.log(user);
         let comparacao = await bcrypt.compare(passAtual, user.password);
         if (!comparacao) {
             res.status(400).send();
@@ -544,6 +566,7 @@ app.get("/user/:userNif", async(req, res) => {
                 morada: user.morada,
                 nif: user.nif,
                 nic: user.nic,
+                tipo_conta: user.tipo_conta
             }
 
             res.status(200).send(dados);
@@ -580,26 +603,18 @@ app.post("/policeStation", async(req, res) => {
     }
 });
 
-// TODO: por fazer...
-app.put("/policeStation", async(req, res) => {
-    const { codp, morada, localidade, telefone } = req.body;
+app.put("/policeStation", async (req, res) => {
+    const { id, codp, morada, localidade, telefone } = req.body;
 
     const querySelectPostos = {
         name: "update-station",
-        text: ""
+        text: "UPDATE posto SET codpostal=$1, morada=$2, localidade=$3, telefone=$4 WHERE id=$5",
+        values: [ codp, morada, localidade, telefone, id ]
     };
 
-    let resultsNumeroPostos = await dbClient.query(querySelectPostos);
-    let id = resultsNumeroPostos.rowCount + 1;
-
-    const queryCriarPosto = {
-        text: "INSERT INTO posto(id, codpostal, morada, localidade, telefone, removido) VALUES ($1, $2, $3, $4, $5, $6)",
-        values: [id, codp, morada, localidade, telefone, 0]
-    };
-
-    let results = await dbClient.query(queryCriarPosto);
+    let results = await dbClient.query(querySelectPostos);
     if (results.rowCount === 1) {
-        res.send(201);
+        res.send(200);
     } else {
         res.send(409);
     }
@@ -685,6 +700,8 @@ app.post("/object", async(req, res) => {
 app.post("/object/setField", async(req, res) => {
     try {
         let { idObj, campo, valor } = req.body;
+        console.log("Categorias: ");
+        console.log( req.body );
 
         let queryInserirValorCampo = {
             text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
@@ -814,8 +831,8 @@ app.get("/object/atributes/:object_id", async(req, res) => {
     }
 });
 
-// Não usar...
-app.delete("/object/:object_id", async(req, res) => {
+// TODO: Testar...
+app.delete("/object/:object_id", async (req, res) => {
     try {
         let queryApagarObjeto = {
             text: "UPDATE objeto SET removido=1 WHERE id=$1",
@@ -1079,8 +1096,7 @@ app.get("/lostObject/:object_id", async(req, res) => {
     }
 });
 
-// TODO: Por testar
-app.post("/lostObject", async(req, res) => {
+app.post("/lostObject", async (req, res) => {
     try {
         let { idObj, idLoc, lostDate, lostTime, lostDateInfLim, lostDateSupLim } = req.body;
         if (lostTime === "" && lostDate === "") {
@@ -1613,6 +1629,680 @@ app.get("auction/user/:nif/auctionsWon", async (req, res) => {
 });
 /** TODO: auction **/
 
+/** Procura, Estatísticas e Registo de posse/entrega **/
+app.post("/lostObject/searchByDescription", async (req, res) => {
+    try {
+        let { descObj } = req.body;
+
+        let queryProcurarPorDesc = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido )",
+        }
+        let objetosMatched = await dbClient.query( queryProcurarPorDesc );
+
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No matches found for this description.");
+        } else{
+            let objsParecidos = [];
+            objetosMatched.rows.forEach( obj => {
+                let parecenca = stringSimilarity.stringSimilarity(obj.descricao, descObj);
+                if ( parecenca >= 0.3 ) {
+                    objsParecidos.push( obj );
+                    obj.afinidade = parecenca;
+                }
+            });
+            let objetosDesc = fastSort.sort( objsParecidos ).desc( obj => obj.afinidade );
+            res.status(200).send({ objs: objetosDesc });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByDescription: " + error);
+        res.status(500).send();
+    }
+});
+
+app.get("/lostObject/searchByCategory/:category", async (req, res) => {
+    try {
+
+        let queryProcurarPorCat = {
+            text: "SELECT * FROM objeto WHERE categoria=$1 AND id IN ( SELECT id FROM perdido )",
+            values: [ req.params.category ]
+        }
+
+        let objetosMatched = await dbClient.query( queryProcurarPorCat );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No matches found for this category.");
+        } else{
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByCategory: " + error);
+        res.status(500).send();
+    }
+});
+
+app.post("/lostObject/searchByField", async (req, res) => {
+    try {
+        let { cat, campos } = req.body;
+
+        let camposRecebidos = Object.keys(campos);
+        let numeroCampos = camposRecebidos.length;
+        let parteDaQuery = "WHERE ";
+        camposRecebidos.forEach( campo => {
+            parteDaQuery += "campo='" + campo + "' AND valor LIKE '" + campos[campo] + "%'";
+            numeroCampos -= 1;
+            if ( numeroCampos !== 0 ) {
+                parteDaQuery += " AND "
+            }
+        });
+
+        let queryProcurarPorCampos = {
+            text: "SELECT * FROM objeto WHERE categoria=$1 AND id IN ( SELECT id FROM perdido ) AND id IN ( SELECT idObj FROM atributoobjeto " + parteDaQuery + ")",
+            values: [ cat ]
+        }
+
+        let objetosMatched= await dbClient.query( queryProcurarPorCampos );
+        if ( objetosMatched.rowCount === 0 ) {
+            res.status(404).send("No objects matched these fields.");
+        } else{
+
+            res.status(200).send({ objs: objetosMatched.rows });
+        }
+
+    } catch(error) {
+        console.log("Erro no /lostObject/searchByCategory: " + error);
+        res.status(500).send();
+    }
+});
+
+async function compararObjetos( objetoPerdido, objetosAchados, campos, localizacaoPerido ) {
+    let locs = {}
+    let afinidades = {};
+    let camposObjetoPerdido = {};
+    let afinidadeMaxima = 9;
+    let valor = 0;
+
+    campos.forEach( campo => {
+        if ( campo.idobj === objetoPerdido.id ) {
+            camposObjetoPerdido[campo.campo+""] = campo.valor;
+
+            if ( campo.valor !== "" ) {
+                afinidadeMaxima += 2;
+            }
+        }
+    });
+
+    for( let objetoAchado of objetosAchados ) {
+
+        // Comparação do título.
+        valor += stringSimilarity.stringSimilarity( objetoPerdido.titulo, objetoAchado.titulo );
+
+        // Comparação da descrição.
+        valor += stringSimilarity.stringSimilarity( objetoPerdido.descricao, objetoAchado.descricao );
+
+        // Comparações dos atributos genéricos.
+        objetoPerdido.categoria === objetoAchado.categoria ? valor += 1 : valor -= 1;
+
+        // Comparações da localização
+        let queryObterLocalizacoesAchados = {
+            text: "SELECT * FROM localizacao WHERE id IN ( SELECT achado_em FROM achado WHERE id=$1)",
+            values:[objetoAchado.id]
+        }
+        let loc = (await dbClient.query(queryObterLocalizacoesAchados)).rows[0];
+        locs[objetoAchado.id] = loc;
+
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.dist === null ? "null" : localizacaoPerido.dist, 
+            loc.dist === null ? "null" : loc.dist
+        );
+
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.munc === null ? "null" : localizacaoPerido.munc, 
+            loc.munc === null ? "null" : loc.munc
+        );
+    
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.freg === null ? "null" : localizacaoPerido.freg, 
+            loc.freg === null ? "null" : loc.freg 
+        );
+        
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.rua === null ? "null" : localizacaoPerido.rua, 
+            loc.rua === null ? "null" : loc.rua
+        );
+        
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.morada === null ? "null" : localizacaoPerido.morada, 
+            loc.morada === null ? "null" : loc.morada
+        );
+        
+        valor += stringSimilarity.stringSimilarity( 
+            localizacaoPerido.codp === null ? "null" : localizacaoPerido.codp, 
+            loc.codp === null ? "null" : loc.codp
+        );
+         
+        // Comparação dos campos.
+        campos.forEach( campo => {
+            if ( campo.idobj !== objetoPerdido.id && campo.idobj === objetoAchado.id ) {
+                let campoAComparar = campo.campo;
+                let valorDoCampo = campo.valor;
+
+                if ( camposObjetoPerdido[ campoAComparar ] !== undefined ) {
+                    valor += stringSimilarity.stringSimilarity( camposObjetoPerdido[ campoAComparar ], valorDoCampo )*2;
+                }
+            }
+        });
+
+        afinidades[objetoAchado.id] = Math.round(valor);
+        afinidades.maximo = afinidadeMaxima;
+        valor = 0;
+    }
+
+    return {afinidades: afinidades, locs: locs };
+}
+
+app.get("/lostObject/:object_id/getMatches", async (req, res) => {
+    try {
+
+        let queryObterObjetosAchados = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE removido=0 )"
+        }
+        let objetosAchados = (await dbClient.query(queryObterObjetosAchados)).rows;
+
+        let queryObterObjetoPerdido = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido WHERE id=$1 )",
+            values: [req.params.object_id]
+        }
+        let objetoPerdido = (await dbClient.query(queryObterObjetoPerdido));
+        if ( objetoPerdido.rowCount === 0 ) {
+            res.status(404).send("No object found with this id.");
+        }
+
+        let queryObterCampos = {
+            text: "SELECT * FROM atributoobjeto"
+        }
+        let camposObjetos = (await dbClient.query(queryObterCampos)).rows;
+
+        let queryObterLocalizacaoPerdido = {
+            text: "SELECT * FROM localizacao WHERE id IN ( SELECT perdido_em FROM perdido WHERE id=$1  )",
+            values: [req.params.object_id]
+        }
+        let localizacaoPerdido = (await dbClient.query(queryObterLocalizacaoPerdido)).rows;
+
+        let afinidades = await compararObjetos( objetoPerdido.rows[0], objetosAchados, camposObjetos, localizacaoPerdido[0]);
+        console.log(afinidades);
+        objetosAchados.map( obj => {
+            obj.afinidade = afinidades.afinidades[obj.id+""];
+        });
+
+        let objetosParecidos = objetosAchados.filter( function(obj) {
+            return obj.afinidade >= afinidades.afinidades.maximo / 2;
+        });
+        
+        res.status(200).send({ 
+            afMaxima: afinidades.afinidades.maximo , 
+            objetos: fastSort.sort( objetosParecidos ).desc( o => o.afinidade ), 
+            locs: afinidades.locs, 
+            locPerdido: localizacaoPerdido[0] 
+        });
+
+    } catch(error) {
+        console.log("Erro no /getMatches: " + error);
+        res.status(500).send();
+    }
+});
+
+async function identificarDiferencas(objetoAchado, objetoPerdido) {
+
+    // false - se iguais; true - se diferentes
+    let diferencas = {
+        titulo: false,
+        descricao: false,
+        dist: false,
+        munc: false,
+        freg: false,
+        rua: false,
+        morada: false,
+        codp: false,
+        coords: false,
+        categoria: false,
+        campos: false
+    };
+
+    // Comparação dos título.
+    objetoAchado.titulo.toLowerCase() !== objetoPerdido.titulo.toLowerCase() 
+        ? diferencas.titulo = true 
+        : diferencas.titulo = false;
+
+    // Comparação das descrições.
+    objetoAchado.descricao.toLowerCase() !== objetoPerdido.descricao.toLowerCase() 
+        ? diferencas.descricao = true 
+        : diferencas.descricao = false;
+    
+    // Comparar categorias.
+    objetoAchado.categoria !== objetoPerdido.categoria
+        ? diferencas.categoria = true 
+        : diferencas.categoria = false;
+
+    // Comparar localizações.
+    let queryObterLocalizacaoPerdido = {
+        text: "SELECT * FROM localizacao WHERE id IN ( SELECT perdido_em FROM perdido WHERE id=$1 )",
+        values: [objetoPerdido.id]
+    }
+    let localizacaoObjetoPerdido = (await dbClient.query(queryObterLocalizacaoPerdido)).rows[0];
+
+    let queryObterLocalizacaoAchado = {
+        text: "SELECT * FROM localizacao WHERE id IN ( SELECT achado_em FROM achado WHERE id=$1 )",
+        values: [objetoAchado.id]
+    }
+    let localizacaoObjetoAchado = (await dbClient.query(queryObterLocalizacaoAchado)).rows[0];
+
+    localizacaoObjetoAchado.dist !== localizacaoObjetoPerdido.dist
+        ? diferencas.dist = true 
+        : diferencas.dist = false;
+
+    console.log(localizacaoObjetoAchado.munc);
+    console.log(localizacaoObjetoPerdido.munc);
+    localizacaoObjetoAchado.munc !== localizacaoObjetoPerdido.munc
+        ? diferencas.munc = true 
+        : diferencas.munc = false;
+
+    localizacaoObjetoAchado.freg !== localizacaoObjetoPerdido.freg
+        ? diferencas.freg = true 
+        : diferencas.freg = false;
+    
+    localizacaoObjetoAchado.rua !== localizacaoObjetoPerdido.rua
+        ? diferencas.rua = true 
+        : diferencas.rua = false;
+
+    localizacaoObjetoAchado.morada !== localizacaoObjetoPerdido.morada
+        ? diferencas.morada = true 
+        : diferencas.morada = false;
+
+    localizacaoObjetoAchado.codp !== localizacaoObjetoPerdido.codp
+        ? diferencas.codp = true 
+        : diferencas.codp = false;
+
+    localizacaoObjetoAchado.coords !== localizacaoObjetoPerdido.coords
+        ? diferencas.coords = true 
+        : diferencas.coords = false;
+
+    // Comparar campos.
+    let queryCamposObjetoPerdido = {
+        text: "SELECT * FROM atributoobjeto WHERE idobj IN ( SELECT id FROM perdido WHERE id=$1 )",
+        values: [objetoPerdido.id]
+    }
+    let camposObjetoPerdido = (await dbClient.query(queryCamposObjetoPerdido)).rows;
+
+    let queryCamposObjetoAchado = {
+        text: "SELECT * FROM atributoobjeto WHERE idobj IN ( SELECT id FROM achado WHERE id=$1 )",
+        values: [objetoAchado.id]
+    }
+    let camposObjetoAchado = (await dbClient.query(queryCamposObjetoAchado)).rows;
+
+    camposObjetoAchado.forEach( campoAchado => {
+        let existeCampo = false;
+        camposObjetoPerdido.forEach( campoPerdido => {
+            if ( campoAchado.campo === campoPerdido.campo ) {
+                existeCampo = true;
+                if ( campoAchado.valor !== campoPerdido.valor ) {
+                    diferencas.campos = true;
+                }
+            }
+        });
+        if ( !existeCampo ) {
+            diferencas.campos = true;
+        }
+    });
+
+    return diferencas;
+}
+
+app.get("/statistics", async (req, res) => {
+    try {
+        let estatisticas = {
+            totalUsers: 0,
+            totalPolicias: 0,
+            totalPostos: 0,
+            totalObjetos: 0,
+            totalObjetosPerdidos: 0,
+            totalObjetosAchados: 0,
+            totalMunc: 0,
+            totalFreg: 0,
+            totalRua: 0,
+            totalMorada: 0,
+            totalCategoria: 0,
+            distMaisFrequentes: {}
+        };
+
+        let distritosPresentes = {};
+
+        // Estatísticas dos objetos.
+        let queryObterObjetosStats = {
+            text: "SELECT * FROM objeto"
+        }
+        let objetosRegistados = (await dbClient.query(queryObterObjetosStats)).rows;
+        estatisticas.totalObjetos = objetosRegistados.length;
+
+        // Estatísticas dos objetos achados.
+        let queryObterObjetosAchadosStats = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado )"
+        }
+        let objetosAchados = (await dbClient.query(queryObterObjetosAchadosStats)).rows;
+        estatisticas.totalObjetosAchados = objetosAchados.length;
+
+        // Estatísticas dos objetos perdidos.
+        let queryObterObjetosPerdidosStats = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido )"
+        }
+        let objetosPerdidos = (await dbClient.query(queryObterObjetosPerdidosStats)).rows;
+        estatisticas.totalObjetosPerdidos = objetosPerdidos.length;
+
+        // Estatísticas das localizações.
+        let queryObterLocalizacoesStats = {
+            text: "SELECT * FROM localizacao"
+        }
+        let localizacoes = (await dbClient.query(queryObterLocalizacoesStats)).rows;
+        localizacoes.forEach( loc => {
+            if (distritosPresentes[loc.dist] === undefined) {
+                distritosPresentes[loc.dist] = 1
+            } else {
+                distritosPresentes[loc.dist] += 1
+            }
+
+            loc.munc !== null ? estatisticas.totalMunc += 1 : estatisticas.totalMunc += 0;
+            loc.freg !== null ? estatisticas.totalFreg += 1 : estatisticas.totalFreg += 0;
+            loc.rua  !== null ? estatisticas.totalRua += 1  : estatisticas.totalRua += 0;
+            loc.morada !== null ? estatisticas.totalMorada += 1 : estatisticas.totalMorada += 0;
+        });
+        estatisticas.distMaisFrequentes = distritosPresentes;
+
+        // Estatísticas dos polícias.
+        let queryObterPoliciasStats = {
+            text: "SELECT * FROM policia"
+        }
+        let policias = (await dbClient.query(queryObterPoliciasStats)).rows;
+        estatisticas.totalPolicias = policias.length;
+
+        // Estatísticas dos utilizadores.
+        let queryObterUsersStats = {
+            text: "SELECT * FROM utilizador"
+        }
+        let users = (await dbClient.query(queryObterUsersStats)).rows;
+        estatisticas.totalUsers = users.length;
+
+        // Estatísticas dos postos.
+        let queryObterPostosStats = {
+            text: "SELECT * FROM posto"
+        }
+        let postos = (await dbClient.query(queryObterPostosStats)).rows;
+        estatisticas.totalPostos = postos.length;
+
+        res.status(200).send({ estatisticas: estatisticas, localizacoes: localizacoes });
+    } catch(error) {
+        console.log("Erro no /object/statistics: " + error);
+        res.status(500).send();
+    }
+});
+
+app.get("/compare/lostObject/:lost_id/foundObject/:found_id", async (req, res) => {
+    try{
+        let idAchado = req.params.found_id;
+        let idPerdido = req.params.lost_id;
+
+        let queryObterObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE id=$1 )",
+            values: [idAchado]
+        }
+        let objetoAchado = (await dbClient.query(queryObterObjetoAchado)).rows[0];
+
+        let queryObterObjetoPerdido = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM perdido WHERE id=$1 )",
+            values: [idPerdido]
+        }
+        let objetoPerdido = (await dbClient.query(queryObterObjetoPerdido)).rows[0];
+
+        if ( objetoPerdido === null || objetoAchado === null ) {
+            res.status(404).send("One or both of the objects dont exist.")
+        } else {
+            res.status(200).send({dif : await identificarDiferencas(objetoAchado, objetoPerdido)})
+        }
+
+    } catch(error) {
+        console.log("Erro no /compare " + error);
+        res.status(500).send();
+    }
+});
+
+/** Posse de um objeto **/
+// Registo de possível dono
+app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
+    try {   
+        let {nifDono, idObj, date} = req.body;
+
+        let queryObterDono = {
+            text: "SELECT * FROM utilizador WHERE nif=$1",
+            values: [nifDono]
+        }
+        let dono = (await dbClient.query(queryObterDono)).rows;
+        if ( dono.length === 0 ) {
+            res.status(404).send("This user does not exist");
+        }
+
+        let queryObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE id=$1 )",
+            values: [idObj]
+        }
+        let objetoAchado = (await dbClient.query(queryObjetoAchado)).rows;
+        if ( objetoAchado.length === 0 ) {
+            res.status(404).send("This object does not exist.");
+        }
+
+        let queryRegistarDono = {
+            text: "INSERT INTO reclamado (nif, id, data, aprovado) VALUES ($1,$2,$3,$4)",
+            values: [nifDono, idObj, date, 0]
+        }
+        let registarDono = await dbClient.query( queryRegistarDono );
+
+        if ( registarDono.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to register ownership.");
+        } else {
+            res.status(201).send("Ownership registered");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+app.delete("/registerPossibleOwner/foundObject/:object_id/user/:nif", async (req, res) => {
+    try {   
+        let nifDono = req.params.nif;
+        let idObj = req.params.object_id;
+
+        let queryObterDono = {
+            text: "SELECT * FROM utilizador WHERE nif=$1",
+            values: [nifDono]
+        }
+        let dono = (await dbClient.query(queryObterDono)).rows;
+        if ( dono.length === 0 ) {
+            res.status(404).send("This user does not exist");
+        }
+
+        let queryObjetoAchado = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT id FROM achado WHERE id=$1 )",
+            values: [idObj]
+        }
+        let objetoAchado = (await dbClient.query(queryObjetoAchado)).rows;
+        if ( objetoAchado.length === 0 ) {
+            res.status(404).send("This object does not exist.");
+        }
+
+        let queryApagarRegistarDono = {
+            text: "DELETE FROM reclamado WHERE nif=$1 AND id=$2",
+            values: [nifDono, idObj]
+        }
+        let registarDono = await dbClient.query( queryApagarRegistarDono );
+
+        if ( registarDono.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to register ownership.");
+        } else {
+            res.status(200).send("Ownership request rejected successfully.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+app.get("/objectReclamations", async (req, res) => {
+    try {   
+        let queryReclamacoes = {
+            text: "SELECT * FROM reclamado"
+        }
+        let objetosReclamados = await dbClient.query( queryReclamacoes );
+        console.log(objetosReclamados);
+
+        if ( objetosReclamados.rowCount > 0 ) {
+            res.status(200).send({ objs: objetosReclamados.rows });
+        } else {
+            res.status(404).send("No claims found.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+app.get("/objectReclamations/user/:nif", async (req, res) => {
+    try {   
+        let queryReclamacoes = {
+            text: "SELECT * FROM reclamado WHERE nif=$1",
+            values: [req.params.nif]
+        }
+        let objetosReclamados = await dbClient.query( queryReclamacoes );
+
+        let ids = {};
+        objetosReclamados.rows.forEach( obj  => {
+            ids[""+obj.id] = true;
+        })
+
+        if ( objetosReclamados.rowCount > 0 ) {
+            res.status(200).send({ objs: ids });
+        } else {
+            res.status(404).send("No reclamations found for this user.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+// Registo dono
+app.post("/registerOwner/foundObject/", async (req, res) => {
+    try {   
+        let { nif, id, data } = req.body;
+
+        let queryAtualizarAchado = {
+            text: "UPDATE achado SET removido=1 WHERE id=$1",
+            values: [ req.params.object_id ]
+        }
+        let recuperarObjeto = await dbClient.query( queryAtualizarAchado );
+
+        let queryObterObjetosAchadosPossuidos = {
+            text: "INSERT INTO pertence(nif, id, data) VALUES ($1,$2,$3)",
+            values: [nif, id, data]
+        }
+        let reclamacoes = await dbClient.query(queryObterObjetosAchadosPossuidos);
+
+        if ( reclamacoes.rowCount > 0 ) {
+            res.status(201).send();
+        } else {
+            res.status(404).send("No user found with this nif.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/" + erro);
+        res.status(500).send();
+    }
+});
+
+// Edição dono 
+app.put("/editOwner/foundObject", async (req, res) => {
+    try {
+        let {nifDono, idObj} = req.body;
+
+        let queryAtualizarDono = {
+            text: "UPDATE pertence SET nif=$1 WHERE id=$2",
+            values: [ nifDono, idObj ]
+        }
+        let atualizacao = await dbClient.query( queryAtualizarDono );
+
+        if ( atualizacao.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to edit ownership.");
+        } else {
+            res.status(200).send("Ownership changed.");
+        }
+
+
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/ " + erro);
+        res.status(500).send();
+    }
+});
+
+// Apagar dono
+app.delete("/deleteOwner/:nif/foundObject/:object_id", async (req, res) => {
+    try {
+        let queryAtualizarAchado = {
+            text: "UPDATE achado SET removido=0 WHERE id=$1",
+            values: [ req.params.object_id ]
+        }
+        let recuperarObjeto = await dbClient.query( queryAtualizarAchado );
+
+        let queryRemoverDono = {
+            text: "DELETE FROM pertence WHERE id=$1 AND nif=$2",
+            values: [ req.params.object_id, req.params.nif]
+        }
+        let remover = await dbClient.query( queryRemoverDono );
+
+        if ( remover.rowCount === 0 || recuperarObjeto.rowCount === 0 ) {
+            res.status(400).send("Error: Unable to delete ownership.");
+        } else {
+            res.status(200).send("Ownership removed.");
+        }
+    } catch(erro) {
+        console.log("Erro no /registerOwner/foundObject/ " + erro);
+        res.status(500).send();
+    }    
+});
+
+app.get("/user/:nif/getOwnedObjects", async (req,res) => {
+    try {
+
+        let queryObterObjetosEmPosse = {
+            text: "SELECT * FROM pertence WHERE nif=$1",
+            values: [ req.params.nif ]
+        }
+        let recuperarObjeto = await dbClient.query( queryObterObjetosEmPosse );
+
+        if ( recuperarObjeto.rowCount > 0 ) {
+            res.status(200).send({objs : recuperarObjeto.rows});
+        } else {
+            res.status(404).send("No user found with this nif.");
+        }
+
+    } catch(erro) {
+        console.log("Erro no /user/:nif/getOwnedObjects " + erro);
+        res.status(500).send();
+    }  
+});
+
+/** **/
 app.listen(3001, (err) => {
     if (err) console.log(err);
     console.log("Servidor a correr.");

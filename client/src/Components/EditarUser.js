@@ -14,7 +14,6 @@ import validator from 'validator';
 
 import PopupAlterarPass from '../Popups/PopupAlterarPass';
 import PopupApagarConta from '../Popups/PopupApagarConta';
-import PopupDesativarConta from '../Popups/PopupDesativarConta';
 
 // Imports do bootstrap.
 import Container from 'react-bootstrap/Container';
@@ -22,13 +21,10 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
-import PasswordStrengthBar from 'react-password-strength-bar';
 
+import { useAuth0 } from "@auth0/auth0-react";
 
 function EditarUser() {
-    let nif = JSON.parse( localStorage.getItem( "dados" ) ).nif;
-    let mailAtual = JSON.parse( localStorage.getItem( "dados" ) ).mail;
-
     let templateDados = {
         nome: "",
         mail: "",
@@ -39,7 +35,12 @@ function EditarUser() {
         nic: 0,
         dnasc: "01/01/2000"
     };
-    
+
+    const { user, isLoading } = useAuth0();
+    const [tokenAuth, setTokenAuth] = useState("");
+
+    const [nif, setNif] = useState("");
+    const [mailAtual, setMailAtual] = useState("");
     const [modoEdicao, setModoEdicao] = useState(false);
     const [dadosAtuais, setDadosAtuais] = useState(templateDados);
     const [mailDuplicado, setMailDuplicado] = useState(false);
@@ -47,36 +48,38 @@ function EditarUser() {
     const [dadosAlterados, setDadosAlterados] = useState(false);
 
     function verificarMailDuplicado(novoMail) {
-        axios.get(
-            config.LINK_API + "/checkMailDuplicate/" + novoMail,
-            { headers: {'Content-Type': 'application/json'}},
-            { validateStatus: function (status) {
-              return true;
-            }}
-        ).then( (res) => {
-            res.status === 200 
-                ? setMailDuplicado(false)
-                : setMailDuplicado(true);
-
-      }).catch(function (error) {
-        if ( error.response ) {
-            let codigo = error.response.status;
+        if ( !isLoading ) {
+            axios.get(
+                config.LINK_API + "/checkMailDuplicate/" + novoMail,
+                { headers: {'Content-Type': 'application/json'}},
+                { validateStatus: function (status) {
+                  return true;
+                }}
+            ).then( (res) => {
+                res.status === 200 
+                    ? setMailDuplicado(false)
+                    : setMailDuplicado(true);
     
-            codigo === 401
-              ? setMailDuplicado(true) 
-              : setMailDuplicado(false); 
+          }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+        
+                codigo === 401
+                  ? setMailDuplicado(true) 
+                  : setMailDuplicado(false); 
+        
+                codigo === 500 
+                  ? setErroInternoEdicao(true) 
+                  : setErroInternoEdicao(false); 
     
-            codigo === 500 
-              ? setErroInternoEdicao(true) 
-              : setErroInternoEdicao(false); 
-
-            
-            setTimeout(() => {
-                setErroInternoEdicao( false );
-            }, 5000);
+                
+                setTimeout(() => {
+                    setErroInternoEdicao( false );
+                }, 5000);
+            }
+            })
         }
-        })
-      }
+    }
 
     const validate = values => {
         const errors = {};
@@ -86,15 +89,15 @@ function EditarUser() {
             ? delete errors.nome  
             :  errors.nome = "Nome inválido.";
         
-        /** Verificacoes do Mail **/
-        validator.isEmail( values.mail ) && values.mail !== ""  
-            ? delete errors.mail
-            : errors.mail = "Email inválido.";
-        
         verificarMailDuplicado(values.mail);
         mailDuplicado
             ? errors.mail = "Email já existe, por favor insira outro."
             : delete errors.mail;
+
+        /** Verificacoes do Mail **/
+        validator.isEmail( values.mail ) && values.mail !== ""  
+            ? delete errors.mail
+            : errors.mail = "Email inválido.";
 
         if (values.mail === mailAtual) {
             delete errors.mail;
@@ -114,27 +117,74 @@ function EditarUser() {
             ? delete errors.erroInterno
             : errors.erroInterno = "Erro interno, por favor tente de novo.";
 
+        console.log(mailAtual);
+        console.log(values.mail);
+
         console.table(errors);
         return errors;
     }
 
-    async function obterInfoUtilizador(nif) {
-        await axios.get(
-            config.LINK_API + "/user/" + nif,
-            { headers: {'Content-Type': 'application/json'}},
-        ).then( ( res ) => {
-            setDadosAtuais( res.data );
-        }).catch( function (error) {
-            if ( error.response ) {
-                let codigo = error.response.status;
-                codigo === 500 
-                  ? setErroInternoEdicao(true) 
-                  : setErroInternoEdicao(false); 
+    async function obterInfoUtilizador(user) {
+            try {
+                await axios.get(
+                    config.LINK_API + "/user/" + user.sub.split("|")[1],
+                    { headers: {'Content-Type': 'application/json'}},
+                ).then( ( res ) => {
+                    setDadosAtuais( res.data );
 
-                setTimeout(() => {
-                    setErroInternoEdicao( false );
-                }, 5000);
+                    setNif(res.data.nif);
+                    setMailAtual(res.data.mail);
+        
+                }).catch( function (error) {
+                    if ( error.response ) {
+                        let codigo = error.response.status;
+                        codigo === 500 
+                            ? setErroInternoEdicao(true) 
+                            : setErroInternoEdicao(false); 
+        
+                        setTimeout(() => {
+                            setErroInternoEdicao( false );
+                        }, 5000);
+                    }
+                });
+            } catch(error) {
+                console.log("lol");
             }
+    }
+
+    function obterTokenAuth0() {
+        let jsonCreds = {
+            "grant_type": "client_credentials",
+            "client_id": "265wBrgSH3GDA6dHNZPYlpEiJM7Gl5S2",
+            "client_secret": "srJBHxmqhcQGZroywI0aacKwxgSjApdC6K2nXVFxmTnASUN6G-95Jb_Y1jvLYRQi",
+            "audience": "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/"
+        }
+        axios.post(
+            "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/oauth/token",
+            jsonCreds,
+            { headers: { 'Content-Type': 'application/json' } },
+        ).then((res) => {
+            if (res.status === 200) {
+                setTokenAuth(res.data.access_token);
+            }
+        })
+    }
+
+    async function editarUserAuth0(novoMail, novoUsername){
+        let jsonComInfo = {
+            "email": novoMail,
+            "nickname": novoUsername,
+            "connection": "Username-Password-Authentication",
+        };
+
+        await axios.patch(
+                "https://dev-bsdo6ujjdkx3ra55.eu.auth0.com/api/v2/users/" + user.sub,
+                jsonComInfo,
+                { headers: { Authorization: `Bearer ${tokenAuth}` } },
+            ).then((res) => {
+                if (res.status === 200) {
+                    console.log("Atualizado");
+                }
         });
     }
 
@@ -154,6 +204,7 @@ function EditarUser() {
                     setDadosAlterados( false );
                 }, 5000);
 
+                editarUserAuth0(novaInfoUser.mail, novaInfoUser.nome);
                 obterInfoUtilizador(nif);
             } 
     
@@ -172,7 +223,9 @@ function EditarUser() {
         })
     };
 
-    useEffect( () => { obterInfoUtilizador(nif) }, [] );
+    useEffect( () => { obterTokenAuth0() }, [] );
+    useEffect( () => { obterInfoUtilizador(user) }, [isLoading] );
+
     const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -188,6 +241,26 @@ function EditarUser() {
         atualizarUtilizador( dadosNovos );
     },
     });
+
+    // TODO: User bloqueados não recebem feedback nenhum, apenas não levam login...
+    const desenharBotaoApagarConta = () => {
+        try {
+            let nifValido = user.sub.split("|")[1];
+            return ( <PopupApagarConta nif={nifValido}/> );
+        } catch(error) {
+
+        }
+    }
+
+    // TODO: Não funciona...
+    const desenharBotaoAlterarPass = () => {
+        try {
+            let nifValido = user.sub.split("|")[1];
+            return ( <PopupAlterarPass nif={nifValido}/>);
+        } catch(error) {
+
+        }
+    }
 
     return (
         <div className='container-sm bg-light'>
@@ -346,7 +419,7 @@ function EditarUser() {
 
         <div>
             <h4> Alterar a sua password </h4>
-            <PopupAlterarPass nif={dadosAtuais.nif}/>
+            { desenharBotaoAlterarPass() }
         </div>
 
         <br/>
@@ -356,7 +429,7 @@ function EditarUser() {
         <div>
             <h4> Apagar conta </h4>
             {' '}
-            <PopupApagarConta nif={dadosAtuais.nif}/>
+            { desenharBotaoApagarConta() }
         </div>
         </div>
     )

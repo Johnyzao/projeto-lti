@@ -9,9 +9,12 @@ import axios from 'axios';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 
+import PopupEditarPosto from '../Popups/PopupEditarPosto';
+import PopupRemoverPoliciasDoPosto from '../Popups/PopupRemoverPoliciasDoPosto';
+
 function TabelaPostos() {
 
-    const [postos, setPostos] = useState(new Array());
+    const [postos, setPostos] = useState([]);
     const [postosBloqueados, setPostosBloqueados] = useState(new Set());
     const [erroInternoObterPosto, setErroInternoObterPosto] = useState(false);
 
@@ -23,7 +26,6 @@ function TabelaPostos() {
             if ( res.status === 200 ) {
                 console.log(res.data);
                 setPostos(res.data);
-
             }
 
         }).catch( function (error) {
@@ -57,17 +59,6 @@ function TabelaPostos() {
         });
     }
 
-    async function verificarRemocaoValida(id){
-        await axios.get(
-            config.LINK_API + "/police/policeStation/" + id,
-        ).then( ( res ) => {
-            if ( !res.data ) {
-                let novoSet = postosBloqueados.add(id);
-                setPostosBloqueados( new Set(novoSet) );
-            }
-        })
-    }
-
     async function removerPoliciasDoPosto(id){
         await axios.delete(
             config.LINK_API + "/police/policeStation/" + id,
@@ -79,11 +70,6 @@ function TabelaPostos() {
         });
     }
 
-    function bloquearRemocao(id) {
-        verificarRemocaoValida(id);
-        return postosBloqueados.has(id);
-    }
-
     const escreverPostos = postos.map( posto => 
         ( <tr key={posto.id}>
             <td> {posto.id} </td>
@@ -91,8 +77,15 @@ function TabelaPostos() {
             <td> {posto.morada} </td>
             <td> {posto.localidade} </td> 
             <td> {posto.telefone} </td> 
-            <td> <Button className='text-center' variant="danger"  disabled={ bloquearRemocao(posto.id)} onClick={ () => {removerPosto(posto.id)}}> Remover posto </Button> &nbsp; &nbsp;
-                 <Button className='text-center' variant="warning" disabled={ !bloquearRemocao(posto.id)} onClick={ () => {removerPoliciasDoPosto(posto.id)}}> Remover todos os polícias deste posto </Button> 
+            <td> {posto.removido === 1 ? "Removido" : "Ativo"} </td> 
+            <td> 
+                 { posto.removido === 0 ? (
+                    <>
+                        <Button className='text-center' variant="danger"  disabled={ posto.removido === 1 }  onClick={ () => {removerPosto(posto.id)}}> Remover posto </Button> &nbsp; &nbsp;
+                        <PopupEditarPosto posto={posto} />
+                        <PopupRemoverPoliciasDoPosto id={posto.id} /> &nbsp; &nbsp;
+                    </>
+                 ) : <p> Posto removido </p> }
             </td> 
         </tr> )
     );
@@ -111,6 +104,7 @@ function TabelaPostos() {
                             <th>Morada</th>
                             <th>Localidade</th>
                             <th>Telefone</th>
+                            <th>Estado </th>
                             <th> </th>
                         </tr>
                     </thead>

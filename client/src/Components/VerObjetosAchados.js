@@ -9,6 +9,7 @@ import config from '../config';
 import axios from 'axios';
 
 import Button from 'react-bootstrap/Button';
+import PopupVerInfoObjeto from '../Popups/PopupVerInfoObjeto';
 
 function VerObjetosAchados(props) {
     const navigate = useNavigate();
@@ -36,17 +37,17 @@ function VerObjetosAchados(props) {
         //window.location.reload();
     }
 
-    function obterObjetoAchado(idObjetoPerido) {
-        axios.get(
-            config.LINK_API + "/foundObject/" + idObjetoPerido, 
-            { headers: {'Content-Type': 'application/json'}},
-        ).then ( (res) => {
-        }).catch(function (error) {
-            if ( error.response ) {
-                let codigo = error.response.status;
-            }
-        });
-    }
+    // function obterObjetoAchado(idObjetoPerido) {
+    //     axios.get(
+    //         config.LINK_API + "/foundObject/" + idObjetoPerido, 
+    //         { headers: {'Content-Type': 'application/json'}},
+    //     ).then ( (res) => {
+    //     }).catch(function (error) {
+    //         if ( error.response ) {
+    //             let codigo = error.response.status;
+    //         }
+    //     });
+    // }
 
     function obterTodosOsObjetos(nifUser) {
         axios.get(
@@ -60,7 +61,7 @@ function VerObjetosAchados(props) {
             }
         });
     }
-    //useEffect( () => { obterTodosOsObjetos(props.nif) }, [] );
+
     useEffect( () => { obterTodosOsObjetos(props.nif) }, [objetoAchadoApagado] );
 
     const desenharObjetosAchados = objetosAchados.map( objeto => {
@@ -80,7 +81,7 @@ function VerObjetosAchados(props) {
             <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
                 <div className="d-flex w-100 justify-content-between">
                     <h5 className="mb-1">{objeto.titulo}</h5>
-                    <small className="text-muted"> <Button onClick={() => { navigate("/foundObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoAchado(objeto.id)}} variant='danger'>Remover</Button> </small>
+                    <small className="text-muted"> <PopupVerInfoObjeto objeto={objeto}/> <Button onClick={() => { navigate("/foundObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoAchado(objeto.idObjAchado)}} variant='danger'>Remover</Button> </small>
                 </div>
             <p className="mb-1">{objeto.descricao}</p>
             <small className="text-muted"> Registado em {objeto.dataregisto} </small>

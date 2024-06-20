@@ -4,24 +4,25 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.css';
+import { Auth0Provider } from '@auth0/auth0-react';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-/**
- *     <Auth0Provider
-        domain="dev-bsdo6ujjdkx3ra55.eu.auth0.com"
-        clientId="1rdwnixb3In4mqS6xgAATkHY9BVo4y6n"
-        authorizationParams={{
-          redirect_uri: "http://localhost:3001/home"
-        }}
-      >
- *    </Auth0Provider>
- */
+// TODO:
+//  - Proteger routes para apenas users autenticados;
+//  - Refresh dos tokens;
+//  - Parar de pedir consentimento ao users quando se registam;
 
 root.render(
-  <React.StrictMode>
-      <App/>
-  </React.StrictMode>
+    <Auth0Provider
+      domain="dev-bsdo6ujjdkx3ra55.eu.auth0.com"
+      clientId="132Pf8v9ahcEbUS9gRJF75cqifSHhHj9"
+      authorizationParams={{
+        redirect_uri: window.location.origin
+      }}
+    >
+      <App />
+    </Auth0Provider>,
 );
 
 // If you want to start measuring performance in your app, pass a function

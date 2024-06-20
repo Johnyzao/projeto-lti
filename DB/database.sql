@@ -7,6 +7,7 @@ DROP TABLE Reclamado;
 DROP TABLE Regista;
 DROP TABLE Encontrado;
 DROP TABLE Perdido;
+DROP TABLE Pertence;
 DROP TABLE Achado;
 DROP TABLE Policia;
 DROP TABLE Posto;
@@ -66,7 +67,7 @@ CREATE TABLE Campo(
     tipo_valor TEXT
 );
 
-CREATE TABLE Categoria ( 
+CREATE TABLE Categoria (
     cat TEXT,
     campo TEXT,
     FOREIGN KEY (cat) REFERENCES NomeCategoria(nome),
@@ -86,7 +87,7 @@ CREATE TABLE Objeto (
     FOREIGN KEY (nifUser) REFERENCES Utilizador(nif)
 );
 
-CREATE TABLE AtributoObjeto (
+CREATE TABLE AtributoObjeto(
     idObj INT,
     campo TEXT,
     valor TEXT,
@@ -106,6 +107,7 @@ CREATE TABLE Posto (
 
 CREATE TABLE Policia (
     id INT PRIMARY KEY,
+    mail TEXT,
     nome VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     posto INT REFERENCES Posto(id),
@@ -129,6 +131,14 @@ CREATE TABLE Achado (
     FOREIGN KEY (id) REFERENCES Objeto(id)
 );
 
+CREATE TABLE Pertence(
+    nif INT,
+    id INT,
+    data TEXT,
+    PRIMARY KEY (nif, id),
+    FOREIGN KEY (nif) REFERENCES utilizador(nif),
+    FOREIGN KEY (id) REFERENCES Achado(id)
+);
 
 CREATE TABLE Perdido (
     id INT UNIQUE,
@@ -167,9 +177,10 @@ CREATE TABLE Regista (
 CREATE TABLE Reclamado (
     nif INT,
     id INT,
-    data DATE NOT NULL,
+    data TEXT NOT NULL,
+    aprovado INT,
     PRIMARY KEY (nif, id),
-    FOREIGN KEY (nif) REFERENCES Dono(nif),
+    FOREIGN KEY (nif) REFERENCES utilizador(nif),
     FOREIGN KEY (id) REFERENCES Achado(id)
 );
 

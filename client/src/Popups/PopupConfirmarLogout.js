@@ -1,17 +1,18 @@
 import {React} from 'react';
+
+// Bootstrap
 import Popup from 'reactjs-popup';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
+
+// React router
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+
+// Auth0
+import { useAuth0 } from "@auth0/auth0-react";
 
 function PopupApagarConta() {
-    const navigate = useNavigate();
-
-    function terminarSessao() {
-        localStorage.clear();
-        navigate("/");
-    }
+    const { logout } = useAuth0();
 
     return (
     <Popup trigger={<Link> Logout </Link>} modal>
@@ -34,7 +35,7 @@ function PopupApagarConta() {
 
         <Modal.Footer>
             <Button onClick={close} variant="secondary">Cancelar</Button>
-            <Button onClick={() => {terminarSessao()}} variant="success">Confirmar</Button>
+            <Button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} variant="success">Confirmar</Button>
         </Modal.Footer>
         </Modal.Dialog>
     </div>

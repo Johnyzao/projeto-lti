@@ -21,6 +21,7 @@
     "express": "^4.19.2",
     "express-openid-connect": "^2.17.1",
     "express-session": "^1.18.0",
+    "fast-sort": "^3.4.0",
     "jsonwebtoken": "^9.0.2",
     "path": "^0.12.7",
     "pg": "^8.11.3",

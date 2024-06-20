@@ -408,7 +408,7 @@ app.get("/police/:police_id", async (req, res) => {
     if ( results.rowCount > 0 ) {
         res.status(200).send({policia: results.rows[0]});
     } else {
-        res.send(404).send("No officer mathcing this ID was found.");
+        res.status(404).send("No officer mathcing this ID was found.");
     }
 });
 

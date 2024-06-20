@@ -9,6 +9,8 @@ import { useFormik } from 'formik';
 // https://axios-http.com/docs/res_schema 
 import axios from 'axios';
 
+import { useAuth0 } from "@auth0/auth0-react";
+
 // Imports do bootstrap.
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
@@ -17,9 +19,8 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import PopupMostrarDiferencas from '../Popups/PopupMostrarDiferencas';
 import PopupReclamarObjeto from '../Popups/PopupReclamarObjeto';
 
-// TODO: Trocar para o Auth0...
-function FormProcuraObjetosAchados(props) {
-    // Trocar o props para obter o Auth0!!!
+function FormProcuraObjetosAchados() {
+    const { user, isLoading } = useAuth0();
 
     const [objetos, setObjetos] = useState([]);
     const [objetoSelecionado, setObjetoSelecionado] = useState(0);
@@ -30,20 +31,23 @@ function FormProcuraObjetosAchados(props) {
     const [afinidadeMaxima, setAfinidadeMaxima] = useState(0);
 
     function obterTodosOsObjetos(nifUser) {
-        axios.get(
-            config.LINK_API + "/lostObject/user/" + nifUser, 
-            { headers: {'Content-Type': 'application/json'}},
-        ).then ( (res) => {
-            setObjetos(res.data.objPerdidos);
-            setObjetoSelecionado( res.data.objPerdidos[0] );
-        }).catch(function (error) {
-            if ( error.response ) {
-                let codigo = error.response.status;
-            }
-        });
+        if ( nifUser !== undefined ) {
+            axios.get(
+                config.LINK_API + "/lostObject/user/" + nifUser.sub.split("|")[1], 
+                { headers: {'Content-Type': 'application/json'}},
+            ).then ( (res) => {
+                setObjetos(res.data.objPerdidos);
+                setObjetoSelecionado( res.data.objPerdidos[0].id );
+            }).catch(function (error) {
+                if ( error.response ) {
+                    let codigo = error.response.status;
+                }
+            });
+        }
     }
 
     async function obterMatches(idObjPerdido) {
+        console.log( idObjPerdido );
         await axios.get(
             config.LINK_API + "/lostObject/" + idObjPerdido + "/getMatches" ,
             { headers: {'Content-Type': 'application/json'}},
@@ -52,7 +56,6 @@ function FormProcuraObjetosAchados(props) {
             setObjetosAchadosEncontrados(res.data.objetos);
             setLocalizacoesMatches(res.data.locs);
             setLocalizacaoPerdido(res.data.locPerdido);
-            console.log(res.data.locPerdido);
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -61,8 +64,9 @@ function FormProcuraObjetosAchados(props) {
     }
 
     async function verificarObjetosJaReclamados(nifUser) {
+        if ( nifUser !== undefined ) {
         await axios.get(
-            config.LINK_API + "/objectReclamations/user/" + nifUser, 
+            config.LINK_API + "/objectReclamations/user/" + nifUser.sub.split("|")[1], 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
             setObjetosDesativados( res.data.objs );
@@ -71,12 +75,14 @@ function FormProcuraObjetosAchados(props) {
                 let codigo = error.response.status;
             }
         });
+        }
     }
 
     const formik = useFormik({
         initialValues: {},
         onSubmit: values => {   
-            obterMatches( objetoSelecionado.id );
+            obterMatches( objetoSelecionado );
+            verificarObjetosJaReclamados(user);
         }
     });
 
@@ -112,9 +118,8 @@ function FormProcuraObjetosAchados(props) {
                                 locAchado={localizacoesMatches[obj.id]} 
                                 locPerdido={localizacaoPerdido}
                             /> &nbsp; &nbsp;
-                            {/** TROCAR PARA AUTH0 AQUI!!! */}
                             <PopupReclamarObjeto 
-                                nif={177777052} 
+                                nif={user} 
                                 id={obj.id} 
                                 dataRegisto={dataRegisto.getTime()} 
                                 desativado={ objetosDesativados[""+obj.id] === true ? true : false }
@@ -126,9 +131,8 @@ function FormProcuraObjetosAchados(props) {
         );
     });
 
-    // Substituir por props.nif aqui...
-    useEffect( () => { obterTodosOsObjetos(177777052) }, [] );
-    useEffect( () => { verificarObjetosJaReclamados(177777052) }, [] );
+    useEffect( () => { obterTodosOsObjetos(user) }, [isLoading] );
+    useEffect( () => { verificarObjetosJaReclamados(user) }, [isLoading] );
 
     return (
         <>

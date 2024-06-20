@@ -27,7 +27,7 @@ function PopupReclamarObjeto(props) {
         initialValues: {},
         validate,
         onSubmit: values => {
-            submeterReclamacao(props.nif, props.id)
+            submeterReclamacao(props.nif.sub.split("|")[1], props.id);
     }});
 
     async function submeterReclamacao(nif, idObj) {

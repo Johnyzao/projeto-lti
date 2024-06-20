@@ -33,6 +33,7 @@ function VerObjetosAchados(props) {
                 let codigo = error.response.status;
             }
         });
+        //window.location.reload();
     }
 
     function obterObjetoAchado(idObjetoPerido) {

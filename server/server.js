@@ -1238,6 +1238,26 @@ app.get("/foundObject/user/:userNif", async(req, res) => {
     }
 });
 
+app.get("/foundObject", async(req, res) => {
+    try {
+        let queryObterObjetoAchadoPorId = {
+            text: "SELECT * FROM objeto WHERE id IN (SELECT id FROM achado WHERE removido != 1)",
+            values: []
+        }
+        let result = await dbClient.query(queryObterObjetoAchadoPorId);
+        let objetos = result.rows;
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({ objAchados: objetos });
+        }
+    } catch (error) {
+        console.log(error);
+
+    }
+});
+
 app.put("/foundObject", async(req, res) => {
     try {
         let { idObj, foundDate, foundTime, foundDateInfLim, foundDateSupLim } = req.body;
@@ -1375,12 +1395,11 @@ app.delete("/auction/:auction_id", async(req, res) => {
 });
 
 // TODO: Verificar
-app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
+app.get("/auction/getAllByDate/:data_inicio/:data_fim", async (req, res) => {
     try{
-
         let queryObterLeiloesPorData = {
-            text: "SELECT * FROM leilao WHERE initialDate>=$1 AND finalDate<=$2",
-            values: [req.params.initialDate, req.params.finalDate]
+            text: "SELECT * FROM leilao WHERE data_inicio>=$1 AND data_fim<=$2",
+            values: [req.params.data_inicio, req.params.data_fim]
         }
         let result = await dbClient.query(queryObterLeiloesPorData);
 

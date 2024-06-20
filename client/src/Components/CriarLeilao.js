@@ -23,8 +23,10 @@ function CriarLeilao() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        axios.get(`${config.LINK_API}/foundObject/user/${JSON.parse(localStorage.getItem("dados")).nif}`)
+        axios.get(`${config.LINK_API}/foundObject`)
             .then(response => {
+                console.log(response.data);
+                console.log(JSON.parse(localStorage.getItem("dados")).nif);
                 setObjetosAchados(response.data.objAchados);
             })
             .catch(error => {
@@ -50,10 +52,10 @@ function CriarLeilao() {
     const handleSubmit = (e) => {
         e.preventDefault();
         const auctionData = {
-            startingPrice: parseFloat(state.startingPrice),
-            selectedObjectId: state.selectedObjectId,
-            startDate: state.startDate,
-            endDate: state.endDate
+            valor: parseFloat(state.startingPrice),
+            id_achado: state.selectedObjectId,
+            data_inicio: state.startDate,
+            data_fim: state.endDate
         };
 
         axios.post(config.LINK_API + '/auction', auctionData)

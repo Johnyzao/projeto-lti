@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
+import axios from 'axios';
+import { Link } from 'react-router-dom'; // Make sure to import Link if it's used
 import Header from './Header';
+import config from '../config';
 
 const styles = {
   container: {
@@ -106,10 +109,7 @@ class Leiloes extends Component {
     super(props);
     this.state = {
       selectedTab: 'ativos',
-      auctions: [
-        { id: 1, title: 'Vestido Floral', description: 'Vestido branco às flores. Tamanho S', endDate: '2024-06-10', currentBid: 10 },
-        { id: 2, title: 'Camisola Malha Azul', description: 'Camisola Malha Azul', endDate: '2024-06-07', currentBid: 15 },
-      ],
+      auctions: [],
       pastAuctions: [],
       futureAuctions: [],
       isModalOpen: false,
@@ -121,8 +121,54 @@ class Leiloes extends Component {
     };
   }
 
+  fetchAuctions = async () => {
+    const now = new Date();
+    const data_inicio = '2020-01-01'; // Example start date
+    const data_fim = '2030-01-01';
+
+    try {
+      const response = await axios.get(config.LINK_API + "/auction/getAllByDate/" + data_inicio + "/" + data_fim);
+      const auctions = response.data.leiloes;
+      const actualAuctions = [];
+
+      for (let auction of auctions) {
+        const objectId = auction.id_achado;
+        const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
+        const actualObjectId = response.data.objAchado.id;
+        const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
+        auction.description = response1.data.obj.descricao;
+        actualAuctions.push(auction);
+      }
+
+      const activeAuctions = auctions.filter(auction => {
+        const endDate = new Date(auction.data_fim);
+        return endDate >= now;
+      });
+
+      const pastAuctions = auctions.filter(auction => {
+        const endDate = new Date(auction.finalDate);
+        return endDate <= now;
+      });
+
+      this.setState({
+        auctions: actualAuctions,
+        pastAuctions: pastAuctions,
+        futureAuctions: []
+      });
+
+    } catch (error) {
+      console.error('Error fetching auctions:', error);
+    }
+  }
+
+  componentDidMount() {
+    this.fetchAuctions();
+  }
+
   openModal = (auction) => {
     this.setState({ isModalOpen: true, currentAuction: auction });
+    console.log(this.props)
+    //this.props.history.push(`/auction/Leiloes/ChatLeilao`);
   }
 
   closeModal = () => {
@@ -136,15 +182,16 @@ class Leiloes extends Component {
   handleSubmitBid = () => {
     const { currentAuction, bidAmount, auctions } = this.state;
     const newBid = parseFloat(bidAmount);
+
     if (newBid > currentAuction.currentBid) {
-      const updatedAuctions = auctions.map(auction => 
+      const updatedAuctions = auctions.map(auction =>
         auction.id === currentAuction.id ? { ...auction, currentBid: newBid } : auction
       );
       this.setState({
         auctions: updatedAuctions,
         isModalOpen: false,
         bidAmount: '',
-        notification: 'Licitação registada com sucesso!'
+        notification: 'Licitação registrada com sucesso!'
       });
     } else {
       this.setState({ notification: 'O valor da licitação deve ser maior que a oferta atual.' });
@@ -187,107 +234,109 @@ class Leiloes extends Component {
     }
 
     // Filtrando os leilões com base no termo de pesquisa
-    displayedAuctions = displayedAuctions.filter(auction => 
-      auction.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    displayedAuctions = displayedAuctions.filter(async (auction) => {
+      const objectId = auction.id_achado;
+      const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
+      const actualObjectId = response.data.objAchado.id;
+      const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
+
+      return response1.data.obj.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     // Ordenando os leilões com base na opção selecionada
     displayedAuctions.sort((a, b) => {
-        if (a[sortBy] < b[sortBy]) return -1;
-        if (a[sortBy] > b[sortBy]) return 1;
-        return 0;
-      });
-  
-      return (
-        <div>
-          <Header />
-          <div style={styles.container}>
-            <div style={styles.tabs}>
-              <div
-                style={selectedTab === 'passados' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-                onClick={() => this.selectTab('passados')}
-              >
-                Leilões Passados
-              </div>
-              <div
-                style={selectedTab === 'ativos' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-                onClick={() => this.selectTab('ativos')}
-              >
-                Leilões Ativos
-              </div>
-              <div
-                style={selectedTab === 'futuros' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-                onClick={() => this.selectTab('futuros')}
-              >
-                Leilões Futuros
-              </div>
-            </div>
-            <h2>{`Leilões ${selectedTab.charAt(0).toUpperCase() + selectedTab.slice(1)}`}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px', marginBottom: '10px' }}>
-              <input
-                type="text"
-                placeholder="Pesquisar"
-                value={searchTerm}
-                onChange={this.handleSearchChange}
-                style={{
-                  marginRight: '10px',
-                  padding: '8px',
-                  border: '1px solid #ccc',
-                  borderRadius: '5px',
-                  flex: 1,
-                }}
-              />
-              <select
-                value={sortBy}
-                onChange={this.handleSortChange}
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ccc',
-                  borderRadius: '5px',
-                }}
-              >
-                <option value="endDate">Ordenar por Data de Fim</option>
-                <option value="currentBid">Ordenar por Oferta Atual</option>
-              </select>
-            </div>
-            {notification && <div style={notification.includes('sucesso') ? styles.notification : styles.errorNotification}>{notification}</div>}
-            {displayedAuctions.map((auction, index) => (
-              <div key={auction.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', marginBottom: '10px' }}>
-                <div style={styles.auctionHeader}>
-                  <h3 style={{ margin: 0 }}>{auction.title}</h3>
-                  <button style={styles.bidButton} onClick={() => this.openModal(auction)}>Licitar</button>
-                </div>
-                
-                <p><strong>Descrição:</strong> {auction.description}</p>
-                <p><strong>Data de fim:</strong> {auction.endDate}</p>
-                <p><strong>Oferta Atual:</strong> €{auction.currentBid}</p>
-              </div>
-            ))}
-          </div>
+      if (a[sortBy] < b[sortBy]) return -1;
+      if (a[sortBy] > b[sortBy]) return 1;
+      return 0;
+    });
 
-          {isModalOpen && (
-            <div>
-              <div style={styles.overlay} onClick={this.closeModal}></div>
-              <div style={styles.modal}>
-                <h2>Colocar Licitação</h2>
-                <input
-                  type="number"
-                  style={styles.modalInput}
-                  value={bidAmount}
-                  onChange={this.handleBidChange}
-                  placeholder="Introduza o valor da licitação"
-                />
-                {notification && <div style={notification.includes('sucesso') ? styles.notification : styles.errorNotification}>{notification}</div>}
-                <div>
-                  <button style={styles.modalButton} onClick={this.handleSubmitBid}>Enviar</button>
-                  <button style={styles.cancelButton} onClick={this.closeModal}>Cancelar</button>
-                </div>
-              </div>
+    return (
+      <div>
+        <Header />
+        <div style={styles.container}>
+          <div style={styles.tabs}>
+            <div
+              style={selectedTab === 'passados' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+              onClick={() => this.selectTab('passados')}
+            >
+              Leilões Passados
             </div>
-          )}
+            <div
+              style={selectedTab === 'ativos' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+              onClick={() => this.selectTab('ativos')}
+            >
+              Leilões Ativos
+            </div>
+            <div
+              style={selectedTab === 'futuros' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+              onClick={() => this.selectTab('futuros')}
+            >
+              Leilões Futuros
+            </div>
+          </div>
+          <h2>{`Leilões ${selectedTab.charAt(0).toUpperCase() + selectedTab.slice(1)}`}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px', marginBottom: '10px' }}>
+            <input
+              type="text"
+              placeholder="Pesquisar"
+              value={searchTerm}
+              onChange={this.handleSearchChange}
+              style={{
+                marginRight: '10px',
+                padding: '8px',
+                border: '1px solid #ccc',
+                borderRadius: '5px',
+                flex: 1,
+              }}
+            />
+            <select
+              value={sortBy}
+              onChange={this.handleSortChange}
+              style={{
+                padding: '8px',
+                border: '1px solid #ccc',
+                borderRadius: '5px',
+              }}
+            >
+              <option value="endDate">Ordenar por Data de Fim</option>
+              <option value="currentBid">Ordenar por Oferta Atual</option>
+            </select>
+          </div>
+          {notification && <div style={notification.includes('sucesso') ? styles.notification : styles.errorNotification}>{notification}</div>}
+          {displayedAuctions.map((auction) => (
+            <div key={auction.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', marginBottom: '10px' }}>
+              <div style={styles.auctionHeader}>
+                <h3 style={{ margin: 0 }}>{auction.title}</h3>
+                <Link to="/auction/Leiloes/ChatLeilao" style={{ textDecoration: 'none' }}>
+                  <button style={styles.bidButton} onClick={() => this.openModal(auction)}>Licitar</button>
+                </Link>
+              </div>
+
+              <p><strong>Descrição:</strong> {auction.description}</p>
+              <p><strong>Data de fim:</strong> {auction.data_fim}</p>
+              <p><strong>Oferta Atual:</strong> €{auction.valor}</p>
+            </div>
+          ))}
         </div>
-      );
-    }
+        {isModalOpen && (
+          <>
+            <div style={styles.overlay} onClick={this.closeModal} />
+            <div style={styles.modal}>
+              <h2>Licitar no Leilão</h2>
+              <input
+                type="number"
+                value={bidAmount}
+                onChange={this.handleBidChange}
+                style={styles.modalInput}
+              />
+              <button onClick={this.handleSubmitBid} style={styles.modalButton}>Enviar Licitação</button>
+              <button onClick={this.closeModal} style={styles.cancelButton}>Cancelar</button>
+            </div>
+          </>
+        )}
+      </div>
+    );
   }
-  
-  export default Leiloes;
+}
+
+export default Leiloes;

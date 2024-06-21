@@ -108,10 +108,12 @@ CREATE TABLE policia (
 CREATE TABLE pertence(
     nif INT,
     id INT,
+    idPerd INT,
     data TEXT,
     PRIMARY KEY (nif, id),
     FOREIGN KEY (nif) REFERENCES utilizador(nif),
-    FOREIGN KEY (id) REFERENCES Achado(id)
+    FOREIGN KEY (id) REFERENCES Achado(id),    
+    FOREIGN KEY (idPerd) REFERENCES perdido(id)
 );
 
 CREATE TABLE achado (
@@ -150,11 +152,13 @@ CREATE TABLE perdido (
 CREATE TABLE reclamado (
     nif INT,
     id INT,
+    idPerd INT,
     data TEXT NOT NULL,
     aprovado INT,
     PRIMARY KEY (nif, id),
     FOREIGN KEY (nif) REFERENCES utilizador(nif),
-    FOREIGN KEY (id) REFERENCES Achado(id)
+    FOREIGN KEY (id) REFERENCES Achado(id),
+    FOREIGN KEY (idPerd) REFERENCES perdido(id)
 );
 
 CREATE TABLE Entrega (

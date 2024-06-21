@@ -27,10 +27,10 @@ function PopupReclamarObjeto(props) {
         initialValues: {},
         validate,
         onSubmit: values => {
-            submeterReclamacao(props.nif.sub.split("|")[1], props.id);
+            submeterReclamacao(props.nif.sub.split("|")[1], props.id, props.idPerdido);
     }});
 
-    async function submeterReclamacao(nif, idObj) {
+    async function submeterReclamacao(nif, idObj, idPerdido) {
 
         let dataAtual = new Date();
         let dia = dataAtual.getDate();
@@ -39,7 +39,7 @@ function PopupReclamarObjeto(props) {
 
         await axios.post(
             config.LINK_API + "/registerPossibleOwner/foundObject/",
-            {nifDono: nif, idObj: idObj, date: (dia + "/" + mes + "/" + ano)},
+            {nifDono: nif, idObj: idObj, date: (dia + "/" + mes + "/" + ano), idPerdido: idPerdido},
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
             if ( res.status === 201 ) {

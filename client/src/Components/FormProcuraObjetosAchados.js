@@ -121,6 +121,7 @@ function FormProcuraObjetosAchados() {
                             <PopupReclamarObjeto 
                                 nif={user} 
                                 id={obj.id} 
+                                idPerdido={objetoSelecionado}
                                 dataRegisto={dataRegisto.getTime()} 
                                 desativado={ objetosDesativados[""+obj.id] === true ? true : false }
                             />

@@ -9,9 +9,7 @@ import { Auth0Provider } from '@auth0/auth0-react';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 // TODO:
-//  - Proteger routes para apenas users autenticados;
 //  - Refresh dos tokens;
-//  - Parar de pedir consentimento ao users quando se registam;
 
 root.render(
     <Auth0Provider
@@ -20,6 +18,8 @@ root.render(
       authorizationParams={{
         redirect_uri: window.location.origin
       }}
+      useRefreshTokens={true}
+      cacheLocation="localstorage"
     >
       <App />
     </Auth0Provider>,

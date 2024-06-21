@@ -35,7 +35,7 @@ function AdminGestaoPosse() {
         });
     }
 
-    async function aceitarPedido(nif, id) {
+    async function aceitarPedido(nif, id, idPerd) {
         let dataAtual = new Date();
         let dia = dataAtual.getDate();
         let mes = dataAtual.getMonth() + 1;
@@ -43,7 +43,7 @@ function AdminGestaoPosse() {
 
         await axios.post(
             config.LINK_API + "/registerOwner/foundObject/",
-            {nif: nif, id: id, data: (dia + "/" + mes + "/" + ano)},
+            {nif: nif, id: id, data: (dia + "/" + mes + "/" + ano), idPerd: idPerd},
             { headers: {'Content-Type': 'application/json'}},
         ).then( ( res ) => {
             if ( res.status === 201 ) {
@@ -82,10 +82,11 @@ function AdminGestaoPosse() {
             <tr key={obj.id}>
                 <td> {obj.nif} </td>
                 <td> {obj.id} </td>
+                <td> {obj.idperd} </td>
                 <td> {obj.data} </td>
                 <td> 
-                    <Button onClick={() => {aceitarPedido(obj.nif, obj.id)}} variant='success'> Aceitar </Button> 
-                    <Button onClick={() => {rejeitarPedido(obj.nif, obj.id)}} variant='danger'> Rejeitar </Button> 
+                    <Button onClick={() => {aceitarPedido(obj.nif, obj.id, obj.idperd)}} variant='success'> Aceitar </Button> 
+                    <Button onClick={() => {rejeitarPedido(obj.nif, obj.id, obj.idperd)}} variant='danger'> Rejeitar </Button> 
                 </td>
             </tr>
         )
@@ -107,7 +108,8 @@ function AdminGestaoPosse() {
                 <thead>
                     <tr>
                         <th> NIF </th>
-                        <th> ID do objeto </th>
+                        <th> ID achado </th>
+                        <th> ID perdido </th>
                         <th> Data do pedido </th>
                         <th> Ações </th>
                     </tr>

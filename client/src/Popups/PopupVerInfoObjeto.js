@@ -11,6 +11,31 @@ import config from '../config';
 
 function PopupVerInfoObjeto(props) {
 
+    const id_achado = props.objeto.idObjAchado 
+    const [location, setLocation] = useState();
+
+    function getLocation() {
+      axios.get(
+        config.LINK_API + "/foundObject/" + id_achado, 
+        { headers: {'Content-Type': 'application/json'}},
+      ).then ( (res) => {
+        const achado_em = res.data.objAchado.achado_em
+        axios.get(
+          config.LINK_API + "/location/" + achado_em, 
+          { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+          const rua = res.data.loc.rua
+          setLocation(rua)
+        }).catch(function (error) {
+            
+        });
+      }).catch(function (error) {
+          
+      });
+    }
+    
+    useEffect( () => { getLocation() }, [] );
+
     const {titulo, descricao, categoria} = props.objeto;
 
     return (
@@ -33,7 +58,7 @@ function PopupVerInfoObjeto(props) {
                 <br/>
                 <p>Descrição: {descricao}</p>
                 <br/>
-                <p>Localização: {} </p>
+                <p>Localização: {location} </p>
                 <br/>
                 <p>Categoria: {categoria} </p>
                 <p>Campo: blabla</p>

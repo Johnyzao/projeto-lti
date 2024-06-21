@@ -28,19 +28,23 @@ function InformacaoLogin() {
     }
 
     async function obterPaginaAdmin(user){
-        if (user !== undefined) {
+        if (user !== undefined) {                    
             await axios.get(
                 config.LINK_API + "/user/" + user.sub.split("|")[1],
                 { headers: {'Content-Type': 'application/json'}},
                 ).then ( (res) => {
                 if (res.status === 200) {
-                    setUserAdmin( true );
+                    if(res.data.tipo_conta === "a") {
+                        setUserAdmin( true );
+                    
+                    }
                 } 
             }).catch(function (error) {
+                console.log(error)
                 if ( error.response ) {
                     let codigo = error.response.status;
 
-                    if ( codigo === 404 ) {
+                    if ( codigo === 404 || codigo == 500) {
                         setUserAdmin(false);
                     }
                 }
@@ -61,7 +65,7 @@ function InformacaoLogin() {
                 if ( error.response ) {
                     let codigo = error.response.status;
 
-                    if ( codigo === 404 ) {
+                    if ( codigo === 404 || codigo == 500 ) {
                         setUserPolicia(false);
                     }
                 }
@@ -86,15 +90,6 @@ function InformacaoLogin() {
     ( 
         <>
             <NavDropdown title="Menu" id="basic-nav-dropdown">
-<<<<<<< HEAD
-                <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
-                <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
-                <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
-                <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
-                <NavDropdown.Item href="/auction/register"> Criar Leilão </NavDropdown.Item>
-                <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
-                { dados.tipo === "a" 
-=======
 
                 { userPolicia === false 
                     ? (
@@ -102,6 +97,7 @@ function InformacaoLogin() {
                         <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
                         <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
                         <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
+                        <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
                     </>
                     ) 
                     : null
@@ -111,6 +107,9 @@ function InformacaoLogin() {
                     ? (
                         <>
                             <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
+                            <NavDropdown.Item href="/auction/register"> Criar Leilão </NavDropdown.Item>
+                            <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
+                            <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
                             <NavDropdown.Item href="">Gerir entregas</NavDropdown.Item>
                         </>
                     ) 
@@ -118,7 +117,6 @@ function InformacaoLogin() {
                 }
 
                 { userAdmin 
->>>>>>> d9f0326dc7f876f0fd4496b717cea443342d0b31
                     ? (<NavDropdown.Item href="/admin">Página de administração</NavDropdown.Item>) 
                     : null
                 }

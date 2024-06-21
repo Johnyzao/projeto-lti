@@ -288,53 +288,68 @@ function FormRegistoObjetoAchado() {
         return errors;
     }
 
-    const formik = useFormik({
-        enableReinitialize: true,
-        initialValues: {
-            titulo:"",
-            desc:"",
-            pais:"Portugal",
-            foundDate:"",
-            foundTime:"",
-            munc:"",
-            foundDateInfLim:"",
-            foundDateSupLim:"",
-            freg:"",
-            rua:"",
-            morada: "",
-            codp:""
-        },
-        validate,
-        validateOnChange:false,
-        validateOnBlur:false,
-        onSubmit: values => {
+    const mapContainerRef = useRef(null);
+    const userLocationMarker = useRef(null);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const selectedLocationMarker = useRef(null);
+    const [selectedLocationCoordinates, setSelectedLocationCoordinates] = useState(null);
 
-            let dias = new Date().getDate();
-            let mes = new Date().getMonth() + 1;
-            let ano = new Date().getFullYear();
-            
-            let dataAtual = dias + "/" + mes + "/" + ano;
-            let infoObjeto = { 
-                titulo: values.titulo, 
-                nifUser: null, 
-                desc: values.desc,
-                imagens: images,
-                dataRegisto: dataAtual,
-                categoria: categoria,
+
+    useEffect(() => {
+        if (!mapContainerRef.current) return;
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHhvanZwbHcwNXBoMmpxeXlsaW45b29pIn0.8-giJPprtRSTtpSNHowNng';
+
+        const map = new mapboxgl.Map({
+            container: mapContainerRef.current,
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-8.0, 39.5],
+            zoom: 6
+        });
+        
+        const addMarker = (lng, lat, color, markerRef) => {
+            if (markerRef.current) {
+                markerRef.current.remove();
             }
 
-            let infoLocalizacao = {
-                pais: values.pais,
-                dist: distrito,                
-                munc: values.munc,
-                freg: values.freg,
-                rua: values.rua,
-                morada: values.morada,
-                codp: values.codp
-            }
-            processarObjeto(infoObjeto, infoLocalizacao, values);
-        },
-    });
+            const newMarker = new mapboxgl.Marker({
+                color,
+                draggable: false
+            })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+            markerRef.current = newMarker;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+        };
+
+        map.on('click', (e) => {
+            const { lng, lat } = e.lngLat;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+            addMarker(lng, lat, '#ff0000', selectedLocationMarker);
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setCenter([longitude, latitude]);
+                    map.setZoom(12);
+                    addMarker(longitude, latitude, '#0000ff', userLocationMarker);
+                },
+                (error) => {
+                    console.error('Error retrieving location:', error);
+                }
+            );
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+
+        return () => map.remove();
+    }, []);
+
 
     const geocodingClient = mbxGeocoding({ accessToken: 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHd6aW1oY2IwNzQ3MmpxdWY1dXJkaTh3In0.ynaz2urwBsr7vgv0Pn9ppg' });
 
@@ -390,6 +405,55 @@ function FormRegistoObjetoAchado() {
         return selectedLocationCoordinates.lat + ", " + selectedLocationCoordinates.lng;
     };
 
+    const formik = useFormik({
+        enableReinitialize: true,
+        initialValues: {
+            titulo:"",
+            desc:"",
+            pais:"Portugal",
+            foundDate:"",
+            foundTime:"",
+            munc:"",
+            foundDateInfLim:"",
+            foundDateSupLim:"",
+            freg:"",
+            rua:"",
+            morada: "",
+            codp:""
+        },
+        validate,
+        validateOnChange:false,
+        validateOnBlur:false,
+        onSubmit: values => {
+
+            let dias = new Date().getDate();
+            let mes = new Date().getMonth() + 1;
+            let ano = new Date().getFullYear();
+            
+            let dataAtual = dias + "/" + mes + "/" + ano;
+            let infoObjeto = { 
+                titulo: values.titulo, 
+                nifUser: null, 
+                desc: values.desc,
+                imagens: images,
+                dataRegisto: dataAtual,
+                categoria: categoria,
+            }
+            console.log(camposDaCategoria);
+
+            let infoLocalizacao = {
+                pais: values.pais,
+                dist: distrito,                
+                munc: values.munc,
+                freg: values.freg,
+                rua: values.rua,
+                morada: values.morada,
+                codp: values.codp
+            }
+            processarObjeto(infoObjeto, infoLocalizacao, values);
+        },
+    });
+
     useEffect(() => { formik.setFieldValue('rua', getAddress()); }, [streetName]);
     useEffect(() => { formik.setFieldValue('codp', getPostalCode()); }, [streetName]);
     useEffect(() => { formik.setFieldValue('munc', getMunicipality()); }, [streetName]);
@@ -401,7 +465,7 @@ function FormRegistoObjetoAchado() {
     const desenharCategorias = Object.keys(categorias).map( cat => {
         return (<option key={cat} value={cat}> {cat} </option>);
     });
-
+ 
     const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
         obterInfoCampo( campo );
         return(
@@ -577,7 +641,7 @@ function FormRegistoObjetoAchado() {
                 <Form.Label htmlFor="distrito">Distrito:<span className='text-danger'>*</span> </Form.Label>
                 <Form.Select                    
                     id="dist"
-                    name="dist"
+                    name="dist" 
                     onChange={(e) => {setDistrito(e.target.value)}}>
                     <option values="Aveiro">Aveiro</option>
                     <option values="Beja">Beja</option>
@@ -600,6 +664,8 @@ function FormRegistoObjetoAchado() {
             <br/>
             <br/>
 
+            <div ref={mapContainerRef} style={{ width: '100%', height: '400px' }} />
+
             <p> Se introduzir algum dos campos abaixo, garanta que existe. </p>
                 <Form.Label htmlFor="munc">Município: </Form.Label>
                 <Form.Control                        
@@ -608,7 +674,7 @@ function FormRegistoObjetoAchado() {
                     type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    value={formik.values.munc}/>
+                    value={getMunicipality()}/>
             { formik.errors.munc ? (<p className='text-danger'> {formik.errors.munc} </p>) : null } 
 
             <br/>
@@ -630,7 +696,7 @@ function FormRegistoObjetoAchado() {
                     type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    value={formik.values.rua}/>
+                    value={getAddress()}/>
             { formik.errors.rua ? (<p className='text-danger'> {formik.errors.rua} </p>) : null } 
 
             <br/>
@@ -652,7 +718,7 @@ function FormRegistoObjetoAchado() {
                     type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    value={formik.values.codp}/>
+                    value={getPostalCode()}/>
             <Form.Text className="text-muted">Um código postal tem o formato: XXXX-XXX.</Form.Text> 
             { formik.errors.codp ? (<p className='text-danger'> {formik.errors.codp} </p>) : null } 
 
@@ -661,13 +727,13 @@ function FormRegistoObjetoAchado() {
 
             <br/>
             <br/>
-            <h4>Categorização do objeto</h4>
+            <h4>Categorização do objeto</h4> 
             <Form.Group className='border'>
             <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
             <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
                 <Form.Select                    
                     id="categoria"
-                    name="categoria"
+                    name="categoria"  
                     onChange={(e) => {setCategoria(e.target.value);}}
                 >
                     {desenharCategorias}

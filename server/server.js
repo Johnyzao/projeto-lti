@@ -404,12 +404,18 @@ app.get("/police/:police_id", async (req, res) => {
         values: [req.params.police_id]
     }
 
-    let results = await dbClient.query(querySelectPolicia);
+    try {
+        let results = await dbClient.query(querySelectPolicia);
 
-    if ( results.rowCount > 0 ) {
-        res.status(200).send({policia: results.rows[0]});
-    } else {
-        res.send(404).send("No officer mathcing this ID was found.");
+        if (results.rowCount > 0) {
+            res.status(200).send({ policia: results.rows[0] });
+        } else {
+            res.status(404).send("No officer matching this ID was found.");
+        }
+
+    } catch (err) {
+        console.error("Error retrieving police officer:", err);
+        res.status(500).send("Internal server error");
     }
 });
 
@@ -941,13 +947,13 @@ app.get("/categoryFields/:categoryName", async(req, res) => {
 
 app.post("/field", async(req, res) => {
     try {
-        let { nomeCampo, tipoValor, valores } = req.body;
+        let { nomeCampo, tipoValor } = req.body;
 
         valores = null;
 
         let queryCriarCampo = {
-            text: "INSERT INTO campo(nome, tipo_valor, valores) VALUES($1, $2, $3)",
-            values: [nomeCampo, tipoValor, valores]
+            text: "INSERT INTO campo(nome, tipo_valor) VALUES($1, $2)",
+            values: [nomeCampo, tipoValor]
         }
 
         let criarNomeCat = await dbClient.query(queryCriarCampo);

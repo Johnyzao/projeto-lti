@@ -14,7 +14,7 @@ import axios from 'axios';
 import { useFormik } from 'formik';
 import validator from 'validator';
 import { useNavigate } from 'react-router-dom';
-import config from '../config';
+
 
 function FormRegisto() {
   const navigate = useNavigate();

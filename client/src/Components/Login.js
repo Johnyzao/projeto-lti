@@ -40,6 +40,7 @@ function Login() {
       { validateStatus: function (status) { return true; } },
       { headers: { 'Content-Type': 'application/json' } }
     ).then((res) => {
+      console.log(res)
       if (res.status === 200) {
         const { nome, mail, nif, estado, tipo } = res.data;
         let dadosUser = { nome: nome, mail: mail, nif: nif, estado: estado, tipo: tipo };
@@ -51,6 +52,7 @@ function Login() {
         setErroCreds(true);
       }
     }).catch(function (error) {
+      console.log(error)
       if (error.response) {
         setErroServidor(true);
       }

@@ -26,8 +26,8 @@ function CriarLeilao() {
         axios.get(`${config.LINK_API}/foundObject`)
             .then(response => {
                 console.log(response.data);
-                console.log(JSON.parse(localStorage.getItem("dados")).nif);
                 setObjetosAchados(response.data.objAchados);
+                console.log(objetosAchados);
             })
             .catch(error => {
                 console.error('Erro ao carregar objetos achados:', error);
@@ -74,7 +74,7 @@ function CriarLeilao() {
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
     };
-
+    console.log(objetosAchados)
     const filteredObjects = objetosAchados.filter(objeto =>
         objeto.titulo.toLowerCase().includes(searchTerm.toLowerCase())
     );

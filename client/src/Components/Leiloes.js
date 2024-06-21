@@ -125,7 +125,7 @@ class Leiloes extends Component {
     const now = new Date();
     const data_inicio = '2020-01-01'; // Example start date
     const data_fim = '2030-01-01';
-
+ 
     try {
       const response = await axios.get(config.LINK_API + "/auction/getAllByDate/" + data_inicio + "/" + data_fim);
       const auctions = response.data.leiloes;
@@ -139,11 +139,6 @@ class Leiloes extends Component {
         auction.description = response1.data.obj.descricao;
         actualAuctions.push(auction);
       }
-
-      const activeAuctions = auctions.filter(auction => {
-        const endDate = new Date(auction.data_fim);
-        return endDate >= now;
-      });
 
       const pastAuctions = auctions.filter(auction => {
         const endDate = new Date(auction.finalDate);

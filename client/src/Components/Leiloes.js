@@ -145,11 +145,16 @@ class Leiloes extends Component {
         const endDate = new Date(auction.data_fim);
         const currentDate = new Date();
         console.log(auction)
+        auction.data_inicio = startDate.toLocaleDateString();
+        auction.data_fim = endDate.toLocaleDateString();
         if(currentDate > endDate) {
+          auction.isDone = true;
           pastAuctions.push(auction);
         } else if(currentDate < startDate) {
+          auction.isDone = true;
           futureAuctions.push(auction);
         } else {
+          auction.isDone = false;
           actualAuctions.push(auction);
         }
       }
@@ -306,12 +311,15 @@ class Leiloes extends Component {
             <div key={auction.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', marginBottom: '10px' }}>
               <div style={styles.auctionHeader}>
                 <h3 style={{ margin: 0 }}>{auction.title}</h3>
+                {!auction.isDone && (
                 <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`} style={{ textDecoration: 'none' }}>
                   <button style={styles.bidButton} >Licitar</button>
                 </Link>
+                )}
               </div>
 
               <p><strong>Descrição:</strong> {auction.description}</p>
+              <p><strong>Data de Inicio:</strong> {auction.data_inicio}</p>
               <p><strong>Data de fim:</strong> {auction.data_fim}</p>
               <p><strong>Oferta Atual:</strong> €{auction.valor}</p>
             </div>

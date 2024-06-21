@@ -65,23 +65,40 @@ function VerObjetosAchados(props) {
     useEffect( () => { obterTodosOsObjetos(props.nif) }, [objetoAchadoApagado] );
 
     const desenharObjetosAchados = objetosAchados.map( objeto => {
-
+    let location = null;
         axios.get(
             config.LINK_API + "/foundObject/" + objeto.id, 
             { headers: {'Content-Type': 'application/json'}},
         ).then ( (res) => {
             objeto['idObjAchado'] = res.data.objAchado.idachado;
+            axios.get(
+                config.LINK_API + "/foundObject/" + objeto.id, 
+                { headers: {'Content-Type': 'application/json'}},
+              ).then ( (res) => {
+                const achado_em = res.data.objAchado.achado_em
+                axios.get(
+                  config.LINK_API + "/location/" + achado_em, 
+                  { headers: {'Content-Type': 'application/json'}},
+                ).then ( (res) => {
+                  location = res.data.loc;
+                  objeto['localizacao'] = location.rua; 
+                }).catch(function (error) {
+                    
+                });
+              });
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
             }
         });
 
+        
+
         return (<div key={objeto.id} className="list-group">
             <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
                 <div className="d-flex w-100 justify-content-between">
                     <h5 className="mb-1">{objeto.titulo}</h5>
-                    <small className="text-muted"> <PopupVerInfoObjeto objeto={objeto}/> <Button onClick={() => { navigate("/foundObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoAchado(objeto.idObjAchado)}} variant='danger'>Remover</Button> </small>
+                    <small className="text-muted"> <PopupVerInfoObjeto localizacao={location} objeto={objeto}/> <Button onClick={() => { navigate("/foundObject/edit/" + objeto.id) }}>Editar</Button> <Button onClick={() => {removerObjetoAchado(objeto.idObjAchado)}} variant='danger'>Remover</Button> </small>
                 </div>
             <p className="mb-1">{objeto.descricao}</p>
             <small className="text-muted"> Registado em {objeto.dataregisto} </small>

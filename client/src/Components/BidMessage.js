@@ -1,11 +1,15 @@
 import React from 'react';
 import { ListGroupItem } from 'react-bootstrap';
+import Header from './Header';
 
 const BidMessage = ({ bid }) => {
   return (
-    <ListGroupItem>
-      <strong>{bid.user}:</strong> ${bid.amount}
-    </ListGroupItem>
+    <>
+      <Header />
+      <ListGroupItem>
+        <strong>{bid.user}:</strong> ${bid.amount}
+      </ListGroupItem>
+    </>
   );
 };
 

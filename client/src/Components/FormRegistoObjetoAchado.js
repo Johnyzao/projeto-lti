@@ -465,7 +465,7 @@ function FormRegistoObjetoAchado() {
     const desenharCategorias = Object.keys(categorias).map( cat => {
         return (<option key={cat} value={cat}> {cat} </option>);
     });
- 
+   
     const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
         obterInfoCampo( campo );
         return(

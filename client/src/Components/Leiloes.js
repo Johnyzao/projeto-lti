@@ -122,7 +122,6 @@ class Leiloes extends Component {
   }
 
   fetchAuctions = async () => {
-    const now = new Date();
     const data_inicio = '2020-01-01'; // Example start date
     const data_fim = '2030-01-01';
  
@@ -130,6 +129,8 @@ class Leiloes extends Component {
       const response = await axios.get(config.LINK_API + "/auction/getAllByDate/" + data_inicio + "/" + data_fim);
       const auctions = response.data.leiloes;
       const actualAuctions = [];
+      const pastAuctions = [];
+      const futureAuctions = [];
 
       for (let auction of auctions) {
         const objectId = auction.id_achado;
@@ -137,18 +138,24 @@ class Leiloes extends Component {
         const actualObjectId = response.data.objAchado.id;
         const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
         auction.description = response1.data.obj.descricao;
-        actualAuctions.push(auction);
+        const startDate = new Date(auction.data_inicio);
+        const endDate = new Date(auction.data_fim);
+        const currentDate = new Date();
+        console.log(auction)
+        if(currentDate > endDate) {
+          pastAuctions.push(auction);
+        } else if(currentDate < startDate) {
+          futureAuctions.push(auction);
+        } else {
+          actualAuctions.push(auction);
+        }
       }
 
-      const pastAuctions = auctions.filter(auction => {
-        const endDate = new Date(auction.finalDate);
-        return endDate <= now;
-      });
 
       this.setState({
         auctions: actualAuctions,
         pastAuctions: pastAuctions,
-        futureAuctions: []
+        futureAuctions: futureAuctions
       });
 
     } catch (error) {

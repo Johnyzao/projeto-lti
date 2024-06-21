@@ -52,7 +52,7 @@ function App() {
           <Route path="lostObject/getMatches" element={<PaginaProcurarMatches/>} />
           <Route path="/auction/register" element={<CriarLeilao/>} />
           <Route path="/auction/Leiloes" element={<Leiloes/>} />
-          <Route path="/auction/Leiloes/ChatLeilao" element={<ChatLeilao/>} />
+          <Route path="/auction/Leiloes/ChatLeilao/:idLeilao" element={<ChatLeilao/>} />
           <Route path="/auction/Leiloes/BidMessage" element={<BidMessage/>} />
 
   

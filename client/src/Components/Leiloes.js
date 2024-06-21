@@ -1,8 +1,11 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom'; // Make sure to import Link if it's used
-import Header from './Header';
 import config from '../config';
+import Header from './Header';
+
+import { useHistory } from 'react-router-dom';
+//const history = useHistory();
 
 const styles = {
   container: {
@@ -167,43 +170,37 @@ class Leiloes extends Component {
     this.fetchAuctions();
   }
 
-  openModal = (auction) => {
-    this.setState({ isModalOpen: true, currentAuction: auction });
-    console.log(this.props)
-    //this.props.history.push(`/auction/Leiloes/ChatLeilao`);
-  }
+  // closeModal = () => {
+  //   this.setState({ isModalOpen: false, currentAuction: null, bidAmount: '', notification: '' });
+  // }
 
-  closeModal = () => {
-    this.setState({ isModalOpen: false, currentAuction: null, bidAmount: '', notification: '' });
-  }
+  // handleBidChange = (event) => {
+  //   this.setState({ bidAmount: event.target.value });
+  // }
 
-  handleBidChange = (event) => {
-    this.setState({ bidAmount: event.target.value });
-  }
+  // handleSubmitBid = () => {
+  //   const { currentAuction, bidAmount, auctions } = this.state;
+  //   const newBid = parseFloat(bidAmount);
 
-  handleSubmitBid = () => {
-    const { currentAuction, bidAmount, auctions } = this.state;
-    const newBid = parseFloat(bidAmount);
-
-    if (newBid > currentAuction.currentBid) {
-      const updatedAuctions = auctions.map(auction =>
-        auction.id === currentAuction.id ? { ...auction, currentBid: newBid } : auction
-      );
-      this.setState({
-        auctions: updatedAuctions,
-        isModalOpen: false,
-        bidAmount: '',
-        notification: 'Licitação registrada com sucesso!'
-      });
-    } else {
-      this.setState({ notification: 'O valor da licitação deve ser maior que a oferta atual.' });
-    }
+  //   if (newBid > currentAuction.currentBid) {
+  //     const updatedAuctions = auctions.map(auction =>
+  //       auction.id === currentAuction.id ? { ...auction, currentBid: newBid } : auction
+  //     );
+  //     this.setState({
+  //       auctions: updatedAuctions,
+  //       isModalOpen: false,
+  //       bidAmount: '',
+  //       notification: 'Licitação registrada com sucesso!'
+  //     });
+  //   } else {
+  //     this.setState({ notification: 'O valor da licitação deve ser maior que a oferta atual.' });
+  //   }
 
     // Limpar a mensagem de notificação após um intervalo de tempo
-    setTimeout(() => {
-      this.setState({ notification: '' });
-    }, 3000); // Tempo em milissegundos (3 segundos)
-  }
+  //   setTimeout(() => {
+  //     this.setState({ notification: '' });
+  //   }, 3000); // Tempo em milissegundos (3 segundos)
+  // }
 
   selectTab = (tab) => {
     this.setState({ selectedTab: tab, notification: '' });
@@ -251,7 +248,7 @@ class Leiloes extends Component {
       if (a[sortBy] > b[sortBy]) return 1;
       return 0;
     });
-
+    console.log(displayedAuctions);
     return (
       <div>
         <Header />
@@ -309,8 +306,8 @@ class Leiloes extends Component {
             <div key={auction.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', marginBottom: '10px' }}>
               <div style={styles.auctionHeader}>
                 <h3 style={{ margin: 0 }}>{auction.title}</h3>
-                <Link to="/auction/Leiloes/ChatLeilao" style={{ textDecoration: 'none' }}>
-                  <button style={styles.bidButton} onClick={() => this.openModal(auction)}>Licitar</button>
+                <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`} style={{ textDecoration: 'none' }}>
+                  <button style={styles.bidButton} >Licitar</button>
                 </Link>
               </div>
 
@@ -320,22 +317,6 @@ class Leiloes extends Component {
             </div>
           ))}
         </div>
-        {isModalOpen && (
-          <>
-            <div style={styles.overlay} onClick={this.closeModal} />
-            <div style={styles.modal}>
-              <h2>Licitar no Leilão</h2>
-              <input
-                type="number"
-                value={bidAmount}
-                onChange={this.handleBidChange}
-                style={styles.modalInput}
-              />
-              <button onClick={this.handleSubmitBid} style={styles.modalButton}>Enviar Licitação</button>
-              <button onClick={this.closeModal} style={styles.cancelButton}>Cancelar</button>
-            </div>
-          </>
-        )}
       </div>
     );
   }

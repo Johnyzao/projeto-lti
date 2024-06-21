@@ -348,7 +348,7 @@ function FormRegistoObjetoAchado() {
         }
 
         return () => map.remove();
-    }, []);
+    }, [user]);
 
 
     const geocodingClient = mbxGeocoding({ accessToken: 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHd6aW1oY2IwNzQ3MmpxdWY1dXJkaTh3In0.ynaz2urwBsr7vgv0Pn9ppg' });

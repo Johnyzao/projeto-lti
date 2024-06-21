@@ -140,11 +140,18 @@ class Leiloes extends Component {
         const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
         const actualObjectId = response.data.objAchado.id;
         const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
+        const history = await axios.get(config.LINK_API + "/auction/" + auction.id + "/history").catch((error) => {
+          return [];
+        });
+        if(history.length == 0) {
+          auction.current_bid = "";
+        } else {
+          auction.current_bid = history.data.historico[history.data.historico.length - 1].valor;
+        }
         auction.description = response1.data.obj.descricao;
         const startDate = new Date(auction.data_inicio);
         const endDate = new Date(auction.data_fim);
         const currentDate = new Date();
-        console.log(auction)
         auction.data_inicio = startDate.toLocaleDateString();
         auction.data_fim = endDate.toLocaleDateString();
         if(currentDate > endDate) {
@@ -253,7 +260,7 @@ class Leiloes extends Component {
       if (a[sortBy] > b[sortBy]) return 1;
       return 0;
     });
-    console.log(displayedAuctions);
+
     return (
       <div>
         <Header />
@@ -321,7 +328,8 @@ class Leiloes extends Component {
               <p><strong>Descrição:</strong> {auction.description}</p>
               <p><strong>Data de Inicio:</strong> {auction.data_inicio}</p>
               <p><strong>Data de fim:</strong> {auction.data_fim}</p>
-              <p><strong>Oferta Atual:</strong> €{auction.valor}</p>
+              <p><strong>Oferta Inicial:</strong> €{auction.valor}</p>
+              <p><strong>Oferta Atual:</strong> {auction.current_bid ? "€" + auction.current_bid : "No bids made"}</p>
             </div>
           ))}
         </div>

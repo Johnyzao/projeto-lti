@@ -1537,6 +1537,48 @@ app.put("/auction/:auction_id/end", async(req, res) => {
     }
 });
 
+app.get("/licitante/:nif", async(req, res) => {
+    try {
+
+        let queryObterLicitante = {
+            text: "SELECT * FROM licitante WHERE nif=$1",
+            values: [req.params.nif]
+        }
+        let result = await dbClient.query(queryObterLicitante);
+        if (result.rowCount === 0) {
+            res.status(400).send();
+        }
+        else {
+            res.status(200).send({licitante: result.rows[0]});
+        }
+    } catch (error) {
+        console.log("Erro no /auction: " + error);
+        res.status(500).send();
+    }
+});
+
+app.post("/licitante", async(req, res) => {
+    let queryObterLicitante = {
+        text: "SELECT * FROM licitante WHERE nif=$1",
+        values: [req.body.nif]
+    }
+    let result = await dbClient.query(queryObterLicitante);
+    if (result.rowCount === 0) {
+        let queryCriarLicitante = {
+            text: "INSERT INTO licitante(nif) VALUES($1)",
+            values: [req.body.nif]
+        }
+        let result = await dbClient.query(queryCriarLicitante);
+        if (result.rowCount === 0) {
+            res.status(400).send();
+        } else {
+            res.status(200).send();
+        }
+    } else {
+        res.status(201).send();
+    }
+});
+
 app.get("/auction/:auction_id/history", async(req, res) => {
     try {
 

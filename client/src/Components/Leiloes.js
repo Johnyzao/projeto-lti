@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // Make sure to import Link if it's used
+import { Link } from 'react-router-dom';
 import config from '../config';
 import Header from './Header';
-
-import { useHistory } from 'react-router-dom';
-//const history = useHistory();
+import { Button } from 'react-bootstrap';
+import { useAuth0 } from "@auth0/auth0-react";
+import PopupVenceLeilao from '../Popups/PopupVenceuLeilao';
 
 const styles = {
   container: {
@@ -18,6 +18,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: '10px',
+    marginLeft: '300px',
   },
   bidButton: {
     backgroundColor: 'blue',
@@ -107,27 +108,28 @@ const styles = {
   }
 };
 
-class Leiloes extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      selectedTab: 'ativos',
-      auctions: [],
-      pastAuctions: [],
-      futureAuctions: [],
-      isModalOpen: false,
-      currentAuction: null,
-      bidAmount: '',
-      notification: '',
-      searchTerm: '',
-      sortBy: 'endDate', // Default sorting by end date
-    };
-  }
 
-  fetchAuctions = async () => {
+const Leiloes = () => {
+  const { user, isAuthenticated, isLoading } = useAuth0();
+  const [selectedTab, setSelectedTab] = useState('ativos');
+  const [auctions, setAuctions] = useState([]);
+  const [pastAuctions, setPastAuctions] = useState([]);
+  const [futureAuctions, setFutureAuctions] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentAuction, setCurrentAuction] = useState(null);
+  const [bidAmount, setBidAmount] = useState('');
+  const [notification, setNotification] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('endDate');
+
+  useEffect(() => {
+    fetchAuctions();
+  }, [user]);
+
+  const fetchAuctions = async () => {
     const data_inicio = '2020-01-01'; // Example start date
     const data_fim = '2030-01-01';
- 
+
     try {
       const response = await axios.get(config.LINK_API + "/auction/getAllByDate/" + data_inicio + "/" + data_fim);
       const auctions = response.data.leiloes;
@@ -143,6 +145,17 @@ class Leiloes extends Component {
         const history = await axios.get(config.LINK_API + "/auction/" + auction.id + "/history").catch((error) => {
           return [];
         });
+        const nif = user.sub.split("|")[1];
+        const policia = await axios.get(
+          config.LINK_API + "/police/" + nif,
+          { headers: { 'Content-Type': 'application/json' } }
+        ).then(res => {
+          return res.data;
+        }).catch(error => {
+          //console.error("There was an error fetching the police!", error);
+          return null;
+        });
+        
         if(history.length == 0) {
           auction.current_bid = "";
         } else {
@@ -155,187 +168,261 @@ class Leiloes extends Component {
         auction.data_inicio = startDate.toLocaleDateString();
         auction.data_fim = endDate.toLocaleDateString();
         if(currentDate > endDate) {
+          if(history.length == 0) {
+            auction.vencedor = "Ninguém";
+          } else {
+            const winnersNif = history.data.historico[history.data.historico.length - 1].nif;
+            if(winnersNif == nif) {
+              auction.vencedor = "Você";
+            } else {
+              const u = await axios.get(config.LINK_API + "/user/" + winnersNif).catch((error) => {
+                return null;
+              });
+              auction.vencedor = u.data.nome;
+            }
+          }
+          
           auction.isDone = true;
+          auction.isEditable = false;
           pastAuctions.push(auction);
         } else if(currentDate < startDate) {
           auction.isDone = true;
+          const u = await axios.get(config.LINK_API + "/user/" + nif).catch((error) => {
+            return null;
+          });
+          auction.isEditable = u.data.tipo_conta == "a" || policia != null;
           futureAuctions.push(auction);
         } else {
           auction.isDone = false;
+          auction.isEditable = false;
           actualAuctions.push(auction);
         }
       }
 
-
-      this.setState({
-        auctions: actualAuctions,
-        pastAuctions: pastAuctions,
-        futureAuctions: futureAuctions
-      });
+      setAuctions(actualAuctions);
+      setPastAuctions(pastAuctions);
+      setFutureAuctions(futureAuctions);
 
     } catch (error) {
       console.error('Error fetching auctions:', error);
     }
-  }
+  };
 
-  componentDidMount() {
-    this.fetchAuctions();
-  }
+  function convertDateFormat(dateString) {
+    // Split the date string into an array using the hyphen as a delimiter
+    const dateParts = dateString.split('/');
 
-  // closeModal = () => {
-  //   this.setState({ isModalOpen: false, currentAuction: null, bidAmount: '', notification: '' });
-  // }
+    // Rearrange the parts into the new format YYYY-MM-DD
+    const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
 
-  // handleBidChange = (event) => {
-  //   this.setState({ bidAmount: event.target.value });
-  // }
-
-  // handleSubmitBid = () => {
-  //   const { currentAuction, bidAmount, auctions } = this.state;
-  //   const newBid = parseFloat(bidAmount);
-
-  //   if (newBid > currentAuction.currentBid) {
-  //     const updatedAuctions = auctions.map(auction =>
-  //       auction.id === currentAuction.id ? { ...auction, currentBid: newBid } : auction
-  //     );
-  //     this.setState({
-  //       auctions: updatedAuctions,
-  //       isModalOpen: false,
-  //       bidAmount: '',
-  //       notification: 'Licitação registrada com sucesso!'
-  //     });
-  //   } else {
-  //     this.setState({ notification: 'O valor da licitação deve ser maior que a oferta atual.' });
-  //   }
-
-    // Limpar a mensagem de notificação após um intervalo de tempo
-  //   setTimeout(() => {
-  //     this.setState({ notification: '' });
-  //   }, 3000); // Tempo em milissegundos (3 segundos)
-  // }
-
-  selectTab = (tab) => {
-    this.setState({ selectedTab: tab, notification: '' });
-  }
-
-  handleSearchChange = (event) => {
-    this.setState({ searchTerm: event.target.value });
-  }
-
-  handleSortChange = (event) => {
-    this.setState({ sortBy: event.target.value });
-  }
-
-  render() {
-    const { selectedTab, auctions, pastAuctions, futureAuctions, isModalOpen, bidAmount, notification, searchTerm, sortBy } = this.state;
-
-    let displayedAuctions = [];
-    switch (selectedTab) {
-      case 'ativos':
-        displayedAuctions = auctions;
-        break;
-      case 'passados':
-        displayedAuctions = pastAuctions;
-        break;
-      case 'futuros':
-        displayedAuctions = futureAuctions;
-        break;
-      default:
-        displayedAuctions = auctions;
-    }
-
-    // Filtrando os leilões com base no termo de pesquisa
-    displayedAuctions = displayedAuctions.filter(async (auction) => {
-      const objectId = auction.id_achado;
-      const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
-      const actualObjectId = response.data.objAchado.id;
-      const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
-
-      return response1.data.obj.titulo.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-
-    // Ordenando os leilões com base na opção selecionada
-    displayedAuctions.sort((a, b) => {
-      if (a[sortBy] < b[sortBy]) return -1;
-      if (a[sortBy] > b[sortBy]) return 1;
-      return 0;
-    });
-
-    return (
-      <div>
-        <Header />
-        <div style={styles.container}>
-          <div style={styles.tabs}>
-            <div
-              style={selectedTab === 'passados' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-              onClick={() => this.selectTab('passados')}
-            >
-              Leilões Passados
-            </div>
-            <div
-              style={selectedTab === 'ativos' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-              onClick={() => this.selectTab('ativos')}
-            >
-              Leilões Ativos
-            </div>
-            <div
-              style={selectedTab === 'futuros' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-              onClick={() => this.selectTab('futuros')}
-            >
-              Leilões Futuros
-            </div>
-          </div>
-          <h2>{`Leilões ${selectedTab.charAt(0).toUpperCase() + selectedTab.slice(1)}`}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px', marginBottom: '10px' }}>
-            <input
-              type="text"
-              placeholder="Pesquisar"
-              value={searchTerm}
-              onChange={this.handleSearchChange}
-              style={{
-                marginRight: '10px',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '5px',
-                flex: 1,
-              }}
-            />
-            <select
-              value={sortBy}
-              onChange={this.handleSortChange}
-              style={{
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '5px',
-              }}
-            >
-              <option value="endDate">Ordenar por Data de Fim</option>
-              <option value="currentBid">Ordenar por Oferta Atual</option>
-            </select>
-          </div>
-          {notification && <div style={notification.includes('sucesso') ? styles.notification : styles.errorNotification}>{notification}</div>}
-          {displayedAuctions.map((auction) => (
-            <div key={auction.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', marginBottom: '10px' }}>
-              <div style={styles.auctionHeader}>
-                <h3 style={{ margin: 0 }}>{auction.title}</h3>
-                {!auction.isDone && (
-                <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`} style={{ textDecoration: 'none' }}>
-                  <button style={styles.bidButton} >Licitar</button>
-                </Link>
-                )}
-              </div>
-
-              <p><strong>Descrição:</strong> {auction.description}</p>
-              <p><strong>Data de Inicio:</strong> {auction.data_inicio}</p>
-              <p><strong>Data de fim:</strong> {auction.data_fim}</p>
-              <p><strong>Oferta Inicial:</strong> €{auction.valor}</p>
-              <p><strong>Oferta Atual:</strong> {auction.current_bid ? "€" + auction.current_bid : "No bids made"}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+    // Return the new date string
+    return formattedDate;
 }
+
+  function initiateAuction(auction) {
+    let now = new Date();
+
+    // Extract the components
+    let year = now.getFullYear();
+    let month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    let day = String(now.getDate()).padStart(2, '0');
+    let hours = String(now.getHours()).padStart(2, '0');
+    let minutes = String(now.getMinutes()).padStart(2, '0');
+    let formattedDate = `${year}-${month}-${day}`;
+
+    let fim = convertDateFormat(auction.data_fim);
+    
+    axios.put(
+      config.LINK_API + '/auction',
+      {id: auction.id, data_inicio: formattedDate, data_fim: fim, valor: auction.valor},
+      { headers: { 'Content-Type': 'application/json' } }
+    ).then(res => {
+        console.log("Auction updated successfully", res);
+        fetchAuctions();
+    }).catch(error => {
+        console.error("There was an error updating the auction!", error);
+    });
+  }
+
+  function terminarLeilao(auction) {
+    let now = new Date();
+
+    // Extract the components
+    let year = now.getFullYear();
+    let month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    let day = String(now.getDate()).padStart(2, '0');
+    let hours = String(now.getHours()).padStart(2, '0');
+    let minutes = String(now.getMinutes()).padStart(2, '0');
+    let formattedDate = `${year}-${month}-${day}`;
+
+    let inicio = convertDateFormat(auction.data_inicio);
+    
+    axios.put(
+      config.LINK_API + '/auction',
+      {id: auction.id, data_inicio: inicio, data_fim: formattedDate, valor: auction.valor},
+      { headers: { 'Content-Type': 'application/json' } }
+    ).then(res => {
+        console.log("Auction updated successfully", res);
+        fetchAuctions();
+    }).catch(error => {
+        console.error("There was an error updating the auction!", error);
+    });
+    axios.get(
+      config.LINK_API + "/auction/" + auction.id + "/history",
+      { headers: { 'Content-Type': 'application/json' } }
+    ).then(res => {
+      const nif = res.data.historico[res.data.historico.length - 1].nif;
+      console.log(nif)
+      axios.post(
+        config.LINK_API + '/auction/registerWinner',
+        {nif: nif, id_leilao: auction.id},
+        { headers: { 'Content-Type': 'application/json' } }
+      ).then(res => {
+          console.log("Winner registered successfully", res);
+      }).catch(error => {
+          console.error("There was an error registering the winner!", error);
+      });
+    }).catch(error => {
+      console.error("There was an error fetching the auction history!", error);
+    });
+
+  }
+
+  const selectTab = (tab) => {
+    setSelectedTab(tab);
+    setNotification('');
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const handleSortChange = (event) => {
+    setSortBy(event.target.value);
+  };
+
+  let displayedAuctions = [];
+  switch (selectedTab) {
+    case 'ativos':
+      displayedAuctions = auctions;
+      break;
+    case 'passados':
+      displayedAuctions = pastAuctions;
+      break;
+    case 'futuros':
+      displayedAuctions = futureAuctions;
+      break;
+    default:
+      displayedAuctions = auctions;
+  }
+
+  // Filtrando os leilões com base no termo de pesquisa
+  displayedAuctions = displayedAuctions.filter(async (auction) => {
+    const objectId = auction.id_achado;
+    const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
+    const actualObjectId = response.data.objAchado.id;
+    const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
+
+    return response1.data.obj.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  // Ordenando os leilões com base na opção selecionada
+  displayedAuctions.sort((a, b) => {
+    if (a[sortBy] < b[sortBy]) return -1;
+    if (a[sortBy] > b[sortBy]) return 1;
+    return 0;
+  });
+
+  return (
+    <div>
+      <Header />
+      <div style={styles.container}>
+        <div style={styles.tabs}>
+          <div
+            style={selectedTab === 'passados' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+            onClick={() => selectTab('passados')}
+          >
+            Leilões Passados
+          </div>
+          <div
+            style={selectedTab === 'ativos' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+            onClick={() => selectTab('ativos')}
+          >
+            Leilões Ativos
+          </div>
+          <div
+            style={selectedTab === 'futuros' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+            onClick={() => selectTab('futuros')}
+          >
+            Leilões Futuros
+          </div>
+        </div>
+        <h2>{`Leilões ${selectedTab.charAt(0).toUpperCase() + selectedTab.slice(1)}`}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px', marginBottom: '10px' }}>
+          <input
+            type="text"
+            placeholder="Pesquisar"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            style={{
+              marginRight: '10px',
+              padding: '8px',
+              border: '1px solid #ccc',
+              borderRadius: '5px',
+              flex: 1,
+            }}
+          />
+          <select
+            value={sortBy}
+            onChange={handleSortChange}
+            style={{
+              padding: '8px',
+              border: '1px solid #ccc',
+              borderRadius: '5px',
+            }}
+          >
+            <option value="endDate">Ordenar por Data de Fim</option>
+            <option value="currentBid">Ordenar por Oferta Atual</option>
+          </select>
+        </div>
+        {/* Notification rendering logic can remain the same */}
+        {notification && <div style={notification.includes('sucesso') ? styles.notification : styles.errorNotification}>{notification}</div>}
+        {displayedAuctions.map((auction) => (
+          <div key={auction.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', marginBottom: '10px' }}>
+            {/* Auction details rendering logic remains the same */}
+            <p><strong>Descrição: </strong> {auction.description}</p>
+            <p><strong>Data de Inicio: </strong> {auction.data_inicio}</p>
+            <p><strong>Data de fim: </strong> {auction.data_fim}</p>
+            <p><strong>Oferta Inicial: </strong> €{auction.valor}</p>
+            <p><strong>Oferta Atual: </strong> {auction.current_bid ? "€" + auction.current_bid : "No bids made"}</p>
+            {auction.isDone && <p><strong>Vencedor: </strong>{auction.vencedor}</p>}
+            {auction.vencedor == "Você" && auction.isDone && <PopupVenceLeilao ></PopupVenceLeilao>}
+            <div style={styles.auctionHeader}>
+              <h3 style={{ margin: 0 }}>{auction.title}</h3>
+              {!auction.isDone && (
+               <div style={{ display: 'flex', marginRight: '10px' }}>
+                  <Button onClick={() => terminarLeilao(auction)} style={{ ...styles.bidButton, backgroundColor: 'red', marginLeft: '10px' }}>Terminar</Button>
+                  <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`}>
+                    <button style={styles.bidButton}>Licitar</button>
+                  </Link>
+                </div>
+              )}
+              {auction.isEditable && (
+                <>
+                  <Link to={`/auction/Leiloes/EditarLeilao/${auction.id}`} style={{ textDecoration: 'none'}}>
+                    <Button variant='warning'>Editar</Button>
+                  </Link>
+                  <Link>
+                    <Button  onClick={() => initiateAuction(auction)} variant='success'>Iniciar Leilão</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default Leiloes;

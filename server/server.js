@@ -406,7 +406,6 @@ app.get("/police/:police_id", async (req, res) => {
 
     try {
         let results = await dbClient.query(querySelectPolicia);
-
         if (results.rowCount > 0) {
             res.status(200).send({ policia: results.rows[0] });
         } else {

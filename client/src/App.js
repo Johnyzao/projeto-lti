@@ -23,6 +23,9 @@ import CriarLeilao from './Components/CriarLeilao';
 import Leiloes from './Components/Leiloes';
 import ChatLeilao from './Components/ChatLeilao';
 import BidMessage from './Components/BidMessage';
+import EditarLeilao from './Components/EditarLeilao';
+import PopupVenceuLeilao from './Popups/PopupVenceuLeilao';
+import PaginaPagamento from './Pages/PaginaPagamento';
 
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -54,6 +57,9 @@ function App() {
           <Route path="/auction/Leiloes" element={<Leiloes/>} />
           <Route path="/auction/Leiloes/ChatLeilao/:idLeilao" element={<ChatLeilao/>} />
           <Route path="/auction/Leiloes/BidMessage" element={<BidMessage/>} />
+          <Route path="/auction/Leiloes/EditarLeilao/:idLeilao" element={<EditarLeilao/>} />
+          <Route path="/auction/Leiloes/PopupVenceuLeilao" element={<PopupVenceuLeilao/>} />
+          <Route path="/auction/Leiloes/PaginaPagamento" element={<PaginaPagamento/>} />
 
   
         </Routes>

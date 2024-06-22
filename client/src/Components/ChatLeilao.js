@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Container, ListGroup, ListGroupItem, InputGroup, FormControl, Button } from 'react-bootstrap';
+import { Container, ListGroup, ListGroupItem, InputGroup, FormControl, Button, Modal } from 'react-bootstrap';
 import BidMessage from './BidMessage';
 import Header from './Header';
+import PopupVenceLeilao from '../Popups/PopupVenceuLeilao';
 import axios from 'axios';
 import config from '../config';
 
@@ -17,6 +18,8 @@ const AuctionChat = () => {
   const { user, isAuthenticated, isLoading } = useAuth0();
   const [bids, setBids] = useState([]);
   const [newBid, setNewBid] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
     // Function to fetch auction data and bids
@@ -104,7 +107,8 @@ const AuctionChat = () => {
   const handleBidSubmit = () => {
     if (newBid) {
       if(newBid < leilao.valor) {
-        console.log("RIP") //TODO: POR POPUP
+        setModalMessage("A sua licitação deve ser superior à última licitação.");
+        setShowModal(true);
         setNewBid('');
       } else {
         axios.get(
@@ -113,7 +117,8 @@ const AuctionChat = () => {
         ).then ( (res) => {
           const latest_value = res.data.historico[res.data.historico.length - 1].valor;
           if(newBid <= latest_value) {
-            console.log("RIP") //TODO: POR POPUP
+            setModalMessage("A sua licitação deve ser superior à última licitação.");
+            setShowModal(true);
             setNewBid('');
           } else {
             const nif = user.sub.split("|")[1];
@@ -190,7 +195,21 @@ const AuctionChat = () => {
         <InputGroup>
           <Button variant="primary" onClick={handleBidSubmit}>Enviar</Button>
         </InputGroup>
+      
+        <PopupVenceLeilao ></PopupVenceLeilao> 
     </Container>
+
+    <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Aviso</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{modalMessage}</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Fechar</Button>
+        </Modal.Footer>
+      </Modal>
+      
+
     </>
   );
 };

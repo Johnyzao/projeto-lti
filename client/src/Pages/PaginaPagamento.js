@@ -1,15 +1,13 @@
 import React from 'react';
 
-import Header from "../Components/Header.js";
 
-
-function PaginaEditarUser() {
+function PaginaPagamento() {
   return (
     <>
-        <Header/>
+        <h1>Editar Utilizador</h1>
      
     </>
   )
 }
 
-export default PaginaEditarUser;
+export default PaginaPagamento;

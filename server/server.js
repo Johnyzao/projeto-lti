@@ -358,6 +358,14 @@ app.post("/police", async (req, res) => {
     if (resultsDuplicado.rowCount === 1) {
         res.status(401).send();
     } else {
+        let queryInsertUtilizador = {
+            text: 'INSERT INTO utilizador(nif, nic, nome, genero, ano_nascimento, telemovel, email, password, morada, tipo_conta, estado) \
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            values: [id, "", nome, "", '2000-08-07', 0, mail, pass, posto, "u", "a"]
+        }
+
+        let r = await dbClient.query(queryInsertUtilizador);
+
         let queryInsertPolicia = {
             text: "INSERT INTO policia(id, mail, nome, password, posto, removido) VALUES($1, $2, $3, $4, $5, $6)",
             values: [id, mail ,nome, pass, posto, 0]
@@ -1240,7 +1248,7 @@ app.get("/foundObject/:object_id", async(req, res) => {
 app.get("/foundObject/user/:userNif", async(req, res) => {
     try {
         let queryObterObjetoAchadoPorId = {
-            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM achado)",
+            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM achado WHERE removido != 1)",
             values: [req.params.userNif]
         }
         let result = await dbClient.query(queryObterObjetoAchadoPorId);

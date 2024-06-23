@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Container, ListGroup, ListGroupItem, InputGroup, FormControl, Button, Modal } from 'react-bootstrap';
 import BidMessage from './BidMessage';
 import Header from './Header';
-import PopupVenceLeilao from '../Popups/PopupVenceuLeilao';
 import axios from 'axios';
 import config from '../config';
 

@@ -5,7 +5,7 @@ import config from '../config';
 import Header from './Header';
 import { Button } from 'react-bootstrap';
 import { useAuth0 } from "@auth0/auth0-react";
-import PopupVenceLeilao from '../Popups/PopupVenceuLeilao';
+import PopupVenceuLeilao from '../Popups/PopupVenceuLeilao';
 
 const styles = {
   container: {
@@ -168,7 +168,12 @@ const Leiloes = () => {
           const currentDate = new Date();
           auction.data_inicio = startDate.toLocaleDateString();
           auction.data_fim = endDate.toLocaleDateString();
+          const u = await axios.get(config.LINK_API + "/user/" + nif).catch((error) => {
+            return null;
+          });
+          auction.podeTerminar = u != null && (u.data.tipo_conta == "a" || policia != null);
           if(currentDate > endDate) {
+            auction.podeTerminar = false;
             if(history.length == 0) {
               auction.vencedor = "Ninguém";
             } else {
@@ -176,9 +181,7 @@ const Leiloes = () => {
               if(winnersNif == nif) {
                 auction.vencedor = "Você";
               } else {
-                const u = await axios.get(config.LINK_API + "/user/" + winnersNif).catch((error) => {
-                  return null;
-                });
+                
                 auction.vencedor = u.data.nome;
               }
             }
@@ -191,9 +194,7 @@ const Leiloes = () => {
           } else if(currentDate < startDate) {
             auction.vencedor = "Ninguém";
             auction.isDone = true;
-            const u = await axios.get(config.LINK_API + "/user/" + nif).catch((error) => {
-              return null;
-            });
+            
             auction.isEditable = u.data.tipo_conta == "a" || policia != null;
             if(auction.description.toLowerCase().includes(searchTerm.toLowerCase())){
               futureAuctions.push(auction);
@@ -408,21 +409,25 @@ const Leiloes = () => {
             <p><strong>Oferta Inicial: </strong> €{auction.valor}</p>
             <p><strong>Oferta Atual: </strong> {auction.current_bid ? "€" + auction.current_bid : "No bids made"}</p>
             {auction.isDone && <p><strong>Vencedor: </strong>{auction.vencedor}</p>}
-            {auction.vencedor == "Você" && auction.isDone && <PopupVenceLeilao auction={auction} ></PopupVenceLeilao>}
+            {auction.vencedor == "Você" && auction.isDone && <PopupVenceuLeilao auction={auction} ></PopupVenceuLeilao>}
             {auction.vencedor != "Ninguém" != '' && auction.isDone && 
                   <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`}>
                     <button style={styles.bidButton}>Histórico</button>
                   </Link>}
             <div style={styles.auctionHeader}>
               <h3 style={{ margin: 0 }}>{auction.title}</h3>
-              {!auction.isDone && (
-               <div style={{ display: 'flex', marginRight: '10px' }}>
+              <div style={{ display: 'flex', marginRight: '10px' }}>
+
+              {auction.podeTerminar &&(
                   <Button onClick={() => terminarLeilao(auction)} style={{ ...styles.bidButton, backgroundColor: 'red', marginLeft: '10px' }}>Terminar</Button>
+              )}
+              {!auction.isDone && (
                   <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`}>
                     <button style={styles.bidButton}>Licitar</button>
                   </Link>
-                </div>
               )}
+              </div>
+
               {auction.isEditable && (
                 <>
                   <Link to={`/auction/Leiloes/EditarLeilao/${auction.id}`} style={{ textDecoration: 'none'}}>

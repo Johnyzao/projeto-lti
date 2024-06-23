@@ -114,7 +114,18 @@ CREATE TABLE Policia (
     removido INT
 );
 
-CREATE TABLE Achado (
+CREATE TABLE pertence(
+    nif INT,
+    id INT,
+    idPerd INT,
+    data TEXT,
+    PRIMARY KEY (nif, id),
+    FOREIGN KEY (nif) REFERENCES utilizador(nif),
+    FOREIGN KEY (id) REFERENCES Achado(id),    
+    FOREIGN KEY (idPerd) REFERENCES perdido(id)
+);
+
+CREATE TABLE achado (
     id INT UNIQUE,
     idAchado INT UNIQUE,
     data_leilao TEXT NOT NULL,
@@ -177,11 +188,13 @@ CREATE TABLE Regista (
 CREATE TABLE Reclamado (
     nif INT,
     id INT,
+    idPerd INT,
     data TEXT NOT NULL,
     aprovado INT,
     PRIMARY KEY (nif, id),
     FOREIGN KEY (nif) REFERENCES utilizador(nif),
-    FOREIGN KEY (id) REFERENCES Achado(id)
+    FOREIGN KEY (id) REFERENCES Achado(id),
+    FOREIGN KEY (idPerd) REFERENCES perdido(id)
 );
 
 

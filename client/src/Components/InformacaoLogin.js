@@ -34,9 +34,8 @@ function InformacaoLogin() {
                 { headers: {'Content-Type': 'application/json'}},
                 ).then ( (res) => {
                 if (res.status === 200) {
-                    if(res.data.tipo_conta === "a") {
+                    if ( res.data.tipo_conta === "a" ) {
                         setUserAdmin( true );
-                    
                     }
                 } 
             }).catch(function (error) {
@@ -98,6 +97,8 @@ function InformacaoLogin() {
                         <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
                         <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
                         <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
+                        <NavDropdown.Item href="/lostObject/search">Procurar objetos perdidos</NavDropdown.Item>
+                        <NavDropdown.Item href="/foundObject/getMatches">Procurar objetos achados</NavDropdown.Item>
                     </>
                     ) 
                     : null
@@ -110,7 +111,7 @@ function InformacaoLogin() {
                             <NavDropdown.Item href="/auction/register"> Criar Leilão </NavDropdown.Item>
                             <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
                             <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
-                            <NavDropdown.Item href="">Gerir entregas</NavDropdown.Item>
+                            <NavDropdown.Item href="/deliveries">Gerir entregas</NavDropdown.Item>
                         </>
                     ) 
                     : null

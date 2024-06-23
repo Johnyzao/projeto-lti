@@ -1070,7 +1070,7 @@ app.put("/location", async(req, res) => {
 app.get("/lostObject/user/:userNif", async(req, res) => {
     try {
         let queryObterObjetoPerdidoPorId = {
-            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM perdido)",
+            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM perdido WHERE removido=0)",
             values: [req.params.userNif]
         }
         let result = await dbClient.query(queryObterObjetoPerdidoPorId);
@@ -2180,7 +2180,7 @@ app.get("/compare/lostObject/:lost_id/foundObject/:found_id", async (req, res) =
 // Registo de possível dono
 app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
     try {   
-        let {nifDono, idObj, date} = req.body;
+        let {nifDono, idObj, date, idPerdido} = req.body;
 
         let queryObterDono = {
             text: "SELECT * FROM utilizador WHERE nif=$1",
@@ -2201,8 +2201,8 @@ app.post("/registerPossibleOwner/foundObject/", async (req, res) => {
         }
 
         let queryRegistarDono = {
-            text: "INSERT INTO reclamado (nif, id, data, aprovado) VALUES ($1,$2,$3,$4)",
-            values: [nifDono, idObj, date, 0]
+            text: "INSERT INTO reclamado (nif, id, idPerd ,data, aprovado) VALUES ($1,$2,$3,$4,$5)",
+            values: [nifDono, idObj, idPerdido,date, 0]
         }
         let registarDono = await dbClient.query( queryRegistarDono );
 
@@ -2265,7 +2265,7 @@ app.get("/objectReclamations", async (req, res) => {
             text: "SELECT * FROM reclamado"
         }
         let objetosReclamados = await dbClient.query( queryReclamacoes );
-        console.log(objetosReclamados);
+        console.log(objetosReclamados.rows);
 
         if ( objetosReclamados.rowCount > 0 ) {
             res.status(200).send({ objs: objetosReclamados.rows });
@@ -2307,17 +2307,35 @@ app.get("/objectReclamations/user/:nif", async (req, res) => {
 // Registo dono
 app.post("/registerOwner/foundObject/", async (req, res) => {
     try {   
-        let { nif, id, data } = req.body;
+        let { nif, id, data, idPerd } = req.body;
 
         let queryAtualizarAchado = {
             text: "UPDATE achado SET removido=1 WHERE id=$1",
-            values: [ req.params.object_id ]
+            values: [ id ]
         }
         let recuperarObjeto = await dbClient.query( queryAtualizarAchado );
+        if ( recuperarObjeto.rowCount <= 0 ) {
+            res.status(400).send("Error in updating the object.");
+        }
+
+        let queryAtualizarPerdido = {
+            text: "UPDATE perdido SET removido=1 WHERE id=$1",
+            values: [ idPerd ]
+        }
+        let atualizar = await dbClient.query( queryAtualizarPerdido );
+        if ( atualizar.rowCount <= 0 ) {
+            res.status(400).send("Error in updating the object.");
+        }
+
+        let queryRemoverPedidosDePosse = {
+            text: "DELETE FROM reclamado WHERE id=$1",
+            values: [ id ]
+        }
+        let atualizarPedidos = await dbClient.query( queryRemoverPedidosDePosse );
 
         let queryObterObjetosAchadosPossuidos = {
-            text: "INSERT INTO pertence(nif, id, data) VALUES ($1,$2,$3)",
-            values: [nif, id, data]
+            text: "INSERT INTO pertence(nif, id, idPerd ,data) VALUES ($1,$2,$3,$4)",
+            values: [nif, id, idPerd, data]
         }
         let reclamacoes = await dbClient.query(queryObterObjetosAchadosPossuidos);
 

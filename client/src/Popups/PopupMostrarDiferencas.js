@@ -15,9 +15,12 @@ import config from '../config';
 
 function PopupMostrarDiferencas(props) {
 
+    console.log( props.perdido );
+
     const [pagina, setPagina] = useState("gerais");
     const [camposPerdidos, setCamposPerdidos] = useState([]);
     const [camposAchados, setCamposAchados] = useState([]);
+    const [objPerdido, setObjPerdido] = useState({});
 
     async function obterCamposPerdido(id) {
         axios.get(
@@ -27,6 +30,20 @@ function PopupMostrarDiferencas(props) {
             setCamposPerdidos(res.data);
             console.log("PERDIDO:");
             console.log(res.data);
+        }).catch(function (error) {
+            if ( error.response ) {
+                let codigo = error.response.status;
+            }
+        });
+    }
+
+    async function obterObjetoPerdido(idObjetoPerido) {
+        await axios.get(
+            config.LINK_API + "/object/" + idObjetoPerido, 
+            { headers: {'Content-Type': 'application/json'}},
+        ).then ( (res) => {
+            setObjPerdido(res.data.obj);
+            console.log(res.data.obj);
         }).catch(function (error) {
             if ( error.response ) {
                 let codigo = error.response.status;
@@ -54,7 +71,7 @@ function PopupMostrarDiferencas(props) {
         let render = [];
 
         for(let id = 0; id < maiorTamanho; id++) {
-            render.push(<tr>
+            render.push(<tr key={id}>
                 <td> { camposPerdidos.length === maiorTamanho ? camposPerdidos[id].campo : camposAchados[id].campo } </td>
                 <td> { camposPerdidos[id].valor === '' ? "Não especificado" : camposPerdidos[id].valor}</td>
                 <td> { camposAchados[id].valor === '' ? "Não especificado" : camposAchados[id].valor}</td>
@@ -65,7 +82,8 @@ function PopupMostrarDiferencas(props) {
         return render;
     }
 
-    useEffect( () => { obterCamposPerdido(props.perdido.id) }, [props.perdido] );
+    useEffect( () => { obterObjetoPerdido(props.perdido) }, [props.perdido] );
+    useEffect( () => { obterCamposPerdido(props.perdido) }, [props.perdido] );
     useEffect( () => { obterCamposAchado(props.achado.id) }, [props.achado] );
 
     return (
@@ -111,21 +129,21 @@ function PopupMostrarDiferencas(props) {
                                 <tbody>
                                     <tr>
                                         <td>Título</td>
-                                        <td>{props.perdido.titulo}</td>
+                                        <td>{objPerdido.titulo}</td>
                                         <td>{props.achado.titulo}</td>
-                                        <td>{ (props.perdido.titulo !== props.achado.titulo) ? "Sim" : "Não" }</td>
+                                        <td>{ (objPerdido.titulo !== props.achado.titulo) ? "Sim" : "Não" }</td>
                                     </tr>
                                     <tr>
                                         <td>Descrição</td>
-                                        <td>{props.perdido.descricao}</td>
+                                        <td>{objPerdido.descricao}</td>
                                         <td>{props.achado.descricao}</td>
-                                        <td>{ (props.perdido.descricao !== props.achado.descricao) ? "Sim" : "Não" }</td>
+                                        <td>{ (objPerdido.descricao !== props.achado.descricao) ? "Sim" : "Não" }</td>
                                     </tr>
                                     <tr>
                                         <td>Categoria</td>
-                                        <td>{props.perdido.categoria}</td>
+                                        <td>{objPerdido.categoria}</td>
                                         <td>{props.achado.categoria}</td>
-                                        <td>{ (props.perdido.categoria !== props.achado.categoria) ? "Sim" : "Não" }</td>
+                                        <td>{ (objPerdido.categoria !== props.achado.categoria) ? "Sim" : "Não" }</td>
                                     </tr>
                                 </tbody>
                             </Table>

@@ -17,7 +17,6 @@ import PaginaEditarObjetoPerdido from './Pages/PaginaEditarObjetoPerdido';
 import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
 import PaginaProcuraObjetosPeridos from './Pages/PaginaProcuraObjetosPerdidos';
-import FormProcuraObjetosAchados from './Components/FormProcuraObjetosAchados';
 import PaginaProcurarMatches from './Pages/PaginaProcurarMatches';
 import CriarLeilao from './Components/CriarLeilao';
 import Leiloes from './Components/Leiloes';
@@ -66,6 +65,7 @@ function App() {
     </BrowserRouter>
     </>
   );
+
 }
 
 export default App;

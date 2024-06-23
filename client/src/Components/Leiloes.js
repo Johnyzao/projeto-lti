@@ -408,7 +408,7 @@ const Leiloes = () => {
             <p><strong>Oferta Inicial: </strong> €{auction.valor}</p>
             <p><strong>Oferta Atual: </strong> {auction.current_bid ? "€" + auction.current_bid : "No bids made"}</p>
             {auction.isDone && <p><strong>Vencedor: </strong>{auction.vencedor}</p>}
-            {auction.vencedor == "Você" && auction.isDone && <PopupVenceLeilao ></PopupVenceLeilao>}
+            {auction.vencedor == "Você" && auction.isDone && <PopupVenceLeilao auction={auction} ></PopupVenceLeilao>}
             {auction.vencedor != "Ninguém" != '' && auction.isDone && 
                   <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`}>
                     <button style={styles.bidButton}>Histórico</button>

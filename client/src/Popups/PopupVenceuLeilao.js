@@ -3,7 +3,7 @@ import { Modal, Button } from 'react-bootstrap';
 import Confetti from 'react-confetti';
 import { useNavigate } from 'react-router-dom';
 
-const PopupVenceuLeilao = () => {
+const PopupVenceuLeilao = ({ auction }) => {
     const [showModal, setShowModal] = useState(false);
     const [windowDimensions, setWindowDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
     const navigate = useNavigate();
@@ -20,7 +20,7 @@ const PopupVenceuLeilao = () => {
     const handleShow = () => setShowModal(true);
     const handleClose = () => {
         setShowModal(false);
-        navigate('../auction/Leiloes/PaginaPagamento'); // Use navigate instead of history.push
+        navigate('../auction/Leiloes/PaginaPagamento/' + auction.id); // Use navigate instead of history.push
     };
 
     return (

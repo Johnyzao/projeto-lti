@@ -1634,6 +1634,25 @@ app.get("/auction/:auction_id/history", async(req, res) => {
     }
 });
 
+app.get("/auction/:auction_id/objeto", async(req, res) => {
+    try {
+        let query = {
+            text: "SELECT Objeto.* FROM Leilao JOIN Achado ON Achado.id = Leilao.id_achado JOIN Objeto ON Objeto.id = Achado.id WHERE Leilao.id = $1;",
+            values: [req.params.auction_id]
+        }
+        let result = await dbClient.query(query);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({objeto: result.rows[0]});
+        }
+    } catch (error) {
+        console.log("Erro no /auction:id/objeto " + error);
+        res.status(500).send();
+    }
+});
+
 app.post("/makeOffer", async(req, res) => {
     try {
         let { nif, id_leilao, valor } = req.body;

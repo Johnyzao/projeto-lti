@@ -59,7 +59,7 @@ function App() {
           <Route path="/auction/Leiloes/BidMessage" element={<BidMessage/>} />
           <Route path="/auction/Leiloes/EditarLeilao/:idLeilao" element={<EditarLeilao/>} />
           <Route path="/auction/Leiloes/PopupVenceuLeilao" element={<PopupVenceuLeilao/>} />
-          <Route path="/auction/Leiloes/PaginaPagamento" element={<PaginaPagamento/>} />
+          <Route path="/auction/Leiloes/PaginaPagamento/:idLeilao" element={<PaginaPagamento/>} />
 
   
         </Routes>

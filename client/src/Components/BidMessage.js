@@ -9,7 +9,7 @@ const BidMessage = ({ bid }) => {
   return (
     <>
       <ListGroupItem>
-        <strong style={textStyle}>{bid.user}:</strong> ${bid.amount}
+        <strong style={textStyle}>{bid.user}:</strong> {bid.amount}€
       </ListGroupItem>
     </>
   );

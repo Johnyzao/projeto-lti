@@ -50,8 +50,8 @@ function App() {
           <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
           <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
           <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
-          <Route path="search" element={<PaginaProcuraObjetosPeridos/>} />
-          <Route path="lostObject/getMatches" element={<PaginaProcurarMatches/>} />
+          <Route path="lostObject/search" element={<PaginaProcuraObjetosPeridos/>} />
+          <Route path="foundObject/getMatches" element={<PaginaProcurarMatches/>} />
           <Route path="/auction/register" element={<CriarLeilao/>} />
           <Route path="/auction/Leiloes" element={<Leiloes/>} />
           <Route path="/auction/Leiloes/ChatLeilao/:idLeilao" element={<ChatLeilao/>} />

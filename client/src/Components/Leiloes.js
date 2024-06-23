@@ -189,16 +189,21 @@ const Leiloes = () => {
               pastAuctions.push(auction);
             }
           } else if(currentDate < startDate) {
+            auction.vencedor = "Ninguém";
             auction.isDone = true;
             const u = await axios.get(config.LINK_API + "/user/" + nif).catch((error) => {
               return null;
             });
             auction.isEditable = u.data.tipo_conta == "a" || policia != null;
-            futureAuctions.push(auction);
+            if(auction.description.toLowerCase().includes(searchTerm.toLowerCase())){
+              futureAuctions.push(auction);
+            }
           } else {
             auction.isDone = false;
             auction.isEditable = false;
-            actualAuctions.push(auction);
+            if(auction.description.toLowerCase().includes(searchTerm.toLowerCase())){
+              actualAuctions.push(auction);
+            }
           }
   
         }
@@ -239,7 +244,7 @@ const Leiloes = () => {
     
     axios.put(
       config.LINK_API + '/auction',
-      {id: auction.id, data_inicio: formattedDate, data_fim: fim, valor: auction.valor},
+      {id: auction.id, data_inicio: formattedDate, data_fim: fim, valor: auction.valor, aberto: 0},
       { headers: { 'Content-Type': 'application/json' } }
     ).then(res => {
         console.log("Auction updated successfully", res);

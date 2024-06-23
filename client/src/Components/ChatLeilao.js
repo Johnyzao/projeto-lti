@@ -59,41 +59,49 @@ const AuctionChat = () => {
         const historyResponse = await axios.get(
           `${config.LINK_API}/auction/${idLeilao}/history`,
           { headers: { 'Content-Type': 'application/json' } }
-        );
-        const historico = historyResponse.data.historico;
-        const nif = user.sub.split("|")[1];
-  
-        // Prepare an array to collect all bids
-        let allBids = [];
-  
-        // Fetch user data for each historical entry
-        await Promise.all(
-          historico.map(async (historicoItem) => {
-            if (historicoItem.nif == nif) {
-              // If it's the current user's bid
-              allBids.push({ user: "Você", amount: historicoItem.valor });
-            } else {
-              // Fetch user name for other bids
-              try {
-                const userResponse = await axios.get(
-                  `${config.LINK_API}/user/${historicoItem.nif}`,
-                  { headers: { 'Content-Type': 'application/json' } }
-                );
-                const userName = userResponse.data.nome;
-                allBids.push({ user: userName, amount: historicoItem.valor });
-              } catch (error) {
-                console.error("Error fetching user data:", error);
+        ).catch((error) => {
+          return null;
+        });
+
+        if(historyResponse != null) {
+          const historico = historyResponse.data.historico;
+          const nif = user.sub.split("|")[1];
+    
+          // Prepare an array to collect all bids
+          let allBids = [];
+    
+          // Fetch user data for each historical entry
+          await Promise.all(
+            historico.map(async (historicoItem) => {
+              if (historicoItem.nif == nif) {
+                // If it's the current user's bid
+                allBids.push({ user: "Você", amount: historicoItem.valor });
+              } else {
+                // Fetch user name for other bids
+                try {
+                  const userResponse = await axios.get(
+                    `${config.LINK_API}/user/${historicoItem.nif}`,
+                    { headers: { 'Content-Type': 'application/json' } }
+                  );
+                  const userName = userResponse.data.nome;
+                  allBids.push({ user: userName, amount: historicoItem.valor });
+                } catch (error) {
+                  console.error("Error fetching user data:", error);
+                }
               }
-            }
-          })
-        );
+            })
+          );
+
+          // Sort allBids array by amount descending
+          allBids.sort((a, b) => a.amount - b.amount);
+    
+          // Update bids state with sorted bids
+          setBids(allBids);
+          console.log(leilao);
+        }
+        
   
-        // Sort allBids array by amount descending
-        allBids.sort((a, b) => a.amount - b.amount);
-  
-        // Update bids state with sorted bids
-        setBids(allBids);
-        console.log(leilao)
+        
       } catch (error) {
         console.error("Error fetching auction data:", error);
       }
@@ -199,7 +207,6 @@ const AuctionChat = () => {
         <Button variant="primary" onClick={handleBidSubmit}>Enviar</Button>
       </InputGroup>
 
-      <PopupVenceLeilao />
     </>
   )}
     </Container>

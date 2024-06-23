@@ -22,7 +22,6 @@ const PopupVenceuLeilao = () => {
         setShowModal(false);
         navigate('../auction/Leiloes/PaginaPagamento'); // Use navigate instead of history.push
     };
-    console.log(handleShow);
 
     return (
         <>

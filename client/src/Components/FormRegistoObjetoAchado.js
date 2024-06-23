@@ -69,6 +69,8 @@ function FormRegistoObjetoAchado() {
     }
 
     function processarObjeto(infoObjeto, infoLocalizacao, values) {
+        let nif = user.sub.split("|")[1];
+        infoObjeto.nifUser = nif;
         axios.post(
             config.LINK_API + "/object", 
             infoObjeto, 

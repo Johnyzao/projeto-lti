@@ -705,8 +705,6 @@ app.post("/object", async(req, res) => {
 app.post("/object/setField", async(req, res) => {
     try {
         let { idObj, campo, valor } = req.body;
-        console.log("Categorias: ");
-        console.log( req.body );
 
         let queryInserirValorCampo = {
             text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
@@ -1259,6 +1257,34 @@ app.get("/foundObject/user/:userNif", async(req, res) => {
     }
 });
 
+app.get("/foundObjectAuction", async(req, res) => {
+    try {
+        let query = {
+            text: `SELECT * FROM objeto 
+                   WHERE id IN (
+                       SELECT id 
+                       FROM achado 
+                       WHERE removido != 1 
+                       AND id NOT IN (
+                           SELECT id_achado 
+                           FROM Leilao
+                       )
+                   )`,
+            values: []
+        }
+        let result = await dbClient.query(query);
+        let objetos = result.rows;
+
+        if(result.rowCount === 0){
+            res.status(404).send();
+        } else {
+            res.status(200).send({ objAchados: objetos });
+        }
+    } catch (error) {
+        console.log(error)
+    }
+});
+
 app.get("/foundObject", async(req, res) => {
     try {
         let queryObterObjetoAchadoPorId = {
@@ -1373,11 +1399,11 @@ app.get("/auction/:auction_id", async(req, res) => {
 
 app.put("/auction", async (req, res) => {
     try{
-        let { id, data_inicio, data_fim, valor } = req.body;
+        let { id, data_inicio, data_fim, valor, aberto } = req.body;
 
         let queryAtualizarLeilao={
-            text: "UPDATE leilao SET data_inicio=$2, data_fim=$3, valor=$4 WHERE id=$1",
-            values: [id, data_inicio, data_fim, valor]
+            text: "UPDATE leilao SET data_inicio=$2, data_fim=$3, valor=$4, aberto=$5 WHERE id=$1",
+            values: [id, data_inicio, data_fim, valor, aberto]
         }
         let result = await dbClient.query(queryAtualizarLeilao);
 
@@ -1595,7 +1621,7 @@ app.get("/auction/:auction_id/history", async(req, res) => {
         }
 
     } catch (error) {
-        console.log("Erro no /auction: " + error);
+        console.log("Erro no /auction:id/history " + error);
         res.status(500).send();
     }
 });
@@ -1609,10 +1635,12 @@ app.post("/makeOffer", async(req, res) => {
         }
         let id = (await dbClient.query(queryObterIdLicitacao)).rowCount + 1;
 
-        let tempoAtual = new Date().getFullYear() + "-" + (new Date().getMonth() + 1) + "-" + new Date().getDay();
+        let now = new Date();
+        const formattedDate = now.toISOString().split('T')[0];
+
         let queryObterLicitacoesDeUmLeilao= {
             text: "INSERT INTO licita(nif, id_leilao, valor, data, id) VALUES($1,$2,$3,$4,$5)",
-            values: [nif, id_leilao, valor, tempoAtual, id]
+            values: [nif, id_leilao, valor, formattedDate, id]
         }
         let result = await dbClient.query(queryObterLicitacoesDeUmLeilao);
 
@@ -1623,7 +1651,7 @@ app.post("/makeOffer", async(req, res) => {
         }
 
     } catch (error) {
-        console.log("Erro no /auction: " + error);
+        console.log("Erro no /makeOffer: " + error);
         res.status(500).send();
     }
 });

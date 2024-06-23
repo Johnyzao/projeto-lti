@@ -9,6 +9,7 @@ import config from '../config';
 
 import { useAuth0 } from "@auth0/auth0-react";
 
+
 const AuctionChat = () => {
   const { idLeilao } = useParams();
 
@@ -92,7 +93,7 @@ const AuctionChat = () => {
   
         // Update bids state with sorted bids
         setBids(allBids);
-  
+        console.log(leilao)
       } catch (error) {
         console.error("Error fetching auction data:", error);
       }
@@ -184,19 +185,23 @@ const AuctionChat = () => {
           <BidMessage key={index} bid={bid} />
         ))}
       </ListGroup>
+      {leilao.aberto === 0 && (
+    <>
       <InputGroup className="mt-3">
         <FormControl
           placeholder="Digite sua licitação"
           value={newBid}
-          onChange={(e) => setNewBid(e.target.value)} // Update the input value
+          onChange={(e) => setNewBid(e.target.value)}
         />
       </InputGroup>
-        <br></br>
-        <InputGroup>
-          <Button variant="primary" onClick={handleBidSubmit}>Enviar</Button>
-        </InputGroup>
-      
-        <PopupVenceLeilao ></PopupVenceLeilao> 
+      <br />
+      <InputGroup>
+        <Button variant="primary" onClick={handleBidSubmit}>Enviar</Button>
+      </InputGroup>
+
+      <PopupVenceLeilao />
+    </>
+  )}
     </Container>
 
     <Modal show={showModal} onHide={() => setShowModal(false)}>

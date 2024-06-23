@@ -138,64 +138,69 @@ const Leiloes = () => {
       const futureAuctions = [];
 
       for (let auction of auctions) {
-        const objectId = auction.id_achado;
-        const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
-        const actualObjectId = response.data.objAchado.id;
-        const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
-        const history = await axios.get(config.LINK_API + "/auction/" + auction.id + "/history").catch((error) => {
-          return [];
-        });
-        const nif = user.sub.split("|")[1];
-        const policia = await axios.get(
-          config.LINK_API + "/police/" + nif,
-          { headers: { 'Content-Type': 'application/json' } }
-        ).then(res => {
-          return res.data;
-        }).catch(error => {
-          //console.error("There was an error fetching the police!", error);
-          return null;
-        });
-        
-        if(history.length == 0) {
-          auction.current_bid = "";
-        } else {
-          auction.current_bid = history.data.historico[history.data.historico.length - 1].valor;
-        }
-        auction.description = response1.data.obj.descricao;
-        const startDate = new Date(auction.data_inicio);
-        const endDate = new Date(auction.data_fim);
-        const currentDate = new Date();
-        auction.data_inicio = startDate.toLocaleDateString();
-        auction.data_fim = endDate.toLocaleDateString();
-        if(currentDate > endDate) {
-          if(history.length == 0) {
-            auction.vencedor = "Ninguém";
-          } else {
-            const winnersNif = history.data.historico[history.data.historico.length - 1].nif;
-            if(winnersNif == nif) {
-              auction.vencedor = "Você";
-            } else {
-              const u = await axios.get(config.LINK_API + "/user/" + winnersNif).catch((error) => {
-                return null;
-              });
-              auction.vencedor = u.data.nome;
-            }
-          }
-          
-          auction.isDone = true;
-          auction.isEditable = false;
-          pastAuctions.push(auction);
-        } else if(currentDate < startDate) {
-          auction.isDone = true;
-          const u = await axios.get(config.LINK_API + "/user/" + nif).catch((error) => {
+        if(auction.removido === 0) {
+          const objectId = auction.id_achado;
+          const response = await axios.get(config.LINK_API + "/foundObject/" + objectId);
+          const actualObjectId = response.data.objAchado.id;
+          const response1 = await axios.get(config.LINK_API + "/object/" + actualObjectId);
+          const history = await axios.get(config.LINK_API + "/auction/" + auction.id + "/history").catch((error) => {
+            return [];
+          });
+          const nif = user.sub.split("|")[1];
+          const policia = await axios.get(
+            config.LINK_API + "/police/" + nif,
+            { headers: { 'Content-Type': 'application/json' } }
+          ).then(res => {
+            return res.data;
+          }).catch(error => {
+            //console.error("There was an error fetching the police!", error);
             return null;
           });
-          auction.isEditable = u.data.tipo_conta == "a" || policia != null;
-          futureAuctions.push(auction);
-        } else {
-          auction.isDone = false;
-          auction.isEditable = false;
-          actualAuctions.push(auction);
+          
+          if(history.length == 0) {
+            auction.current_bid = "";
+          } else {
+            auction.current_bid = history.data.historico[history.data.historico.length - 1].valor;
+          }
+          auction.description = response1.data.obj.descricao;
+          const startDate = new Date(auction.data_inicio);
+          const endDate = new Date(auction.data_fim);
+          const currentDate = new Date();
+          auction.data_inicio = startDate.toLocaleDateString();
+          auction.data_fim = endDate.toLocaleDateString();
+          if(currentDate > endDate) {
+            if(history.length == 0) {
+              auction.vencedor = "Ninguém";
+            } else {
+              const winnersNif = history.data.historico[history.data.historico.length - 1].nif;
+              if(winnersNif == nif) {
+                auction.vencedor = "Você";
+              } else {
+                const u = await axios.get(config.LINK_API + "/user/" + winnersNif).catch((error) => {
+                  return null;
+                });
+                auction.vencedor = u.data.nome;
+              }
+            }
+            
+            auction.isDone = true;
+            auction.isEditable = false;
+            if(auction.description.toLowerCase().includes(searchTerm.toLowerCase())){
+              pastAuctions.push(auction);
+            }
+          } else if(currentDate < startDate) {
+            auction.isDone = true;
+            const u = await axios.get(config.LINK_API + "/user/" + nif).catch((error) => {
+              return null;
+            });
+            auction.isEditable = u.data.tipo_conta == "a" || policia != null;
+            futureAuctions.push(auction);
+          } else {
+            auction.isDone = false;
+            auction.isEditable = false;
+            actualAuctions.push(auction);
+          }
+  
         }
       }
 
@@ -251,15 +256,13 @@ const Leiloes = () => {
     let year = now.getFullYear();
     let month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
     let day = String(now.getDate()).padStart(2, '0');
-    let hours = String(now.getHours()).padStart(2, '0');
-    let minutes = String(now.getMinutes()).padStart(2, '0');
     let formattedDate = `${year}-${month}-${day}`;
 
     let inicio = convertDateFormat(auction.data_inicio);
     
     axios.put(
       config.LINK_API + '/auction',
-      {id: auction.id, data_inicio: inicio, data_fim: formattedDate, valor: auction.valor},
+      {id: auction.id, data_inicio: inicio, data_fim: formattedDate, valor: auction.valor, aberto: 1},
       { headers: { 'Content-Type': 'application/json' } }
     ).then(res => {
         console.log("Auction updated successfully", res);
@@ -300,6 +303,10 @@ const Leiloes = () => {
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
   };
+
+  useEffect(() => {
+    fetchAuctions();
+  }, [searchTerm]);
 
   let displayedAuctions = [];
   switch (selectedTab) {
@@ -397,6 +404,10 @@ const Leiloes = () => {
             <p><strong>Oferta Atual: </strong> {auction.current_bid ? "€" + auction.current_bid : "No bids made"}</p>
             {auction.isDone && <p><strong>Vencedor: </strong>{auction.vencedor}</p>}
             {auction.vencedor == "Você" && auction.isDone && <PopupVenceLeilao ></PopupVenceLeilao>}
+            {auction.vencedor != "Ninguém" != '' && auction.isDone && 
+                  <Link to={`/auction/Leiloes/ChatLeilao/${auction.id}`}>
+                    <button style={styles.bidButton}>Histórico</button>
+                  </Link>}
             <div style={styles.auctionHeader}>
               <h3 style={{ margin: 0 }}>{auction.title}</h3>
               {!auction.isDone && (

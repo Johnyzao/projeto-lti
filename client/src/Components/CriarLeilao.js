@@ -23,11 +23,14 @@ function CriarLeilao() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        axios.get(`${config.LINK_API}/foundObject`)
+        axios.get(
+            config.LINK_API + "/foundObjectAuction",
+            { headers: { 'Content-Type': 'application/json' } }
+        )
             .then(response => {
-                console.log(response.data);
+                //const tempObjAchados = response.data;
+                //const finalObjAchados = [];
                 setObjetosAchados(response.data.objAchados);
-                console.log(objetosAchados);
             })
             .catch(error => {
                 console.error('Erro ao carregar objetos achados:', error);

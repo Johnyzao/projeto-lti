@@ -9,12 +9,14 @@ import Button from 'react-bootstrap/Button';
 import { useParams } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import config from '../config';
+import Header from './Header';
 
 function EditarLeilao() {
   const { idLeilao } = useParams();
   const { user, isAuthenticated, isLoading } = useAuth0();
   const [auction, setAuction] = useState(null);
   const [sucessoObjetoAchadoAtualizado, setSucessoObjetoAchadoAtualizado] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios.get(`${config.LINK_API}/auction/${idLeilao}`, { headers: { 'Content-Type': 'application/json' } })
@@ -75,6 +77,17 @@ function EditarLeilao() {
 
   function apagarAuction() {
     console.log("Apagar Auction");
+    console.log(auction);
+
+    axios.delete(
+      config.LINK_API + "/auction/" + auction.id,
+      { headers: { 'Content-Type': 'application/json' } }
+    ).then(res => {
+      console.log("Auction deleted successfully", res);
+      navigate("/auction/Leiloes");
+    }).catch(error => {
+      console.error("There was an error deleting the auction!", error);
+    });
   }
 
   if (!auction) {
@@ -82,6 +95,7 @@ function EditarLeilao() {
   }
 
   return (
+    <div><Header />
     <Container className='bg-light' fluid="sm">
       <h1 className='text-center'> Edição do Leilão </h1>
       <h4> Preencha os campos abaixo se pretende editar a informação do Leilão </h4>
@@ -135,6 +149,7 @@ function EditarLeilao() {
           </Container>
       </Form>
     </Container>
+    </div>
   );
 }
 

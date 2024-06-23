@@ -8,7 +8,6 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const cors = require('cors')
 const validator = require('validator');
-const jwt = require('jsonwebtoken');
 
 const dbClient = require('./connect_db');
 const queries = require('./utils/queries');
@@ -66,13 +65,13 @@ async function obterId(nomeTabela) {
 
     let todasAsEntradas = await dbClient.query(queryId);
     let novoId = 1;
-    
-    todasAsEntradas.rows.forEach( entrada => {
-        if ( novoId < entrada.id ) {
+
+    todasAsEntradas.rows.forEach(entrada => {
+        if (novoId < entrada.id) {
             novoId = entrada.id;
         }
 
-        if ( novoId === entrada.id ) {
+        if (novoId === entrada.id) {
             novoId += 1;
         }
     })
@@ -80,7 +79,7 @@ async function obterId(nomeTabela) {
     return novoId;
 }
 
-app.post("/register", async (req, res) => {
+app.post("/register", async(req, res) => {
     try {
         // ###########################################################
         // #### 1. Validação e limpeza de dados; Hashing da pass. ####
@@ -89,7 +88,7 @@ app.post("/register", async (req, res) => {
         //Objeto com informação para o front-end
         const statusMessage = {};
         //Objeto com cópia da receção do pedido
-        const parametros = { ...req.body }
+        const parametros = {...req.body }
 
         //Validação de dados
         const validacaoDados = validateData(parametros);
@@ -166,13 +165,15 @@ app.post("/register", async (req, res) => {
             default: //Outros tipos de erros
                 res.status(500).send();
                 return;
-            //statusMessage.erroInterno = true
+                //statusMessage.erroInterno = true
         }
     }
 
 });
 
-app.post("/login", async (req, res) => {
+// TODO: Funcionar com contas de policia...
+// TODO: Fazer jwt...
+app.post("/login", async(req, res) => {
     try {
         const { mail, pass } = req.body;
 
@@ -241,7 +242,7 @@ app.post("/user/:nif/verifyPassword", async (req, res) => {
     }
 });
 
-app.put("/user", async (req, res) => {
+app.put("/user", async(req, res) => {
     try {
         let resultado = await dbClient.query(queries.queryUpdateUser(req.body));
         let userAtualizado = resultado.rowCount === 1 ? true : false;
@@ -258,7 +259,7 @@ app.put("/user", async (req, res) => {
     }
 });
 
-app.delete("/user/:userNif", async (req, res) => {
+app.delete("/user/:userNif", async(req, res) => {
     try {
 
         const nif = req.params.userNif;
@@ -278,7 +279,7 @@ app.delete("/user/:userNif", async (req, res) => {
     }
 });
 
-app.put("/user/:userNif/deactivate", async (req, res) => {
+app.put("/user/:userNif/deactivate", async(req, res) => {
     try {
         const nif = req.params.userNif;
         console.log(nif);
@@ -299,42 +300,42 @@ app.put("/user/:userNif/deactivate", async (req, res) => {
     }
 });
 
-app.post("/searchUsers", async (req, res) => {
-    try{
+app.post("/searchUsers", async(req, res) => {
+    try {
         let { nome, telemovel, mail, dnasc, genero } = req.body;
 
         let textoQuery = "SELECT * FROM utilizador WHERE ";
 
-        if ( nome === "" ) {
+        if (nome === "") {
             nome = "%";
         } else {
             nome += "%";
         }
 
-        if ( telemovel === "" ) {
+        if (telemovel === "") {
             telemovel = "%";
         } else {
             telemovel += "%";
         }
 
-        if ( mail === "" ) {
+        if (mail === "") {
             mail = "%";
         } else {
             mail += "%";
         }
 
-        if ( genero === "" ) {
+        if (genero === "") {
             genero = "%";
         }
 
         const queryProcurarUsers = {
             text: "SELECT * FROM utilizador WHERE nome LIKE $1 AND telemovel LIKE $2 AND email LIKE $3 AND genero LIKE $4",
-            values: [nome, telemovel,mail,genero]
+            values: [nome, telemovel, mail, genero]
         }
         let result = await dbClient.query(queryProcurarUsers);
 
-        if ( result.rowCount > 0 ) {
-            res.status(200).send( {resultados: result.rows} );
+        if (result.rowCount > 0) {
+            res.status(200).send({ resultados: result.rows });
         } else {
             res.status(404).send();
         }
@@ -357,6 +358,14 @@ app.post("/police", async (req, res) => {
     if (resultsDuplicado.rowCount === 1) {
         res.status(401).send();
     } else {
+        let queryInsertUtilizador = {
+            text: 'INSERT INTO utilizador(nif, nic, nome, genero, ano_nascimento, telemovel, email, password, morada, tipo_conta, estado) \
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            values: [id, "", nome, "", '2000-08-07', 0, mail, pass, posto, "u", "a"]
+        }
+
+        let r = await dbClient.query(queryInsertUtilizador);
+
         let queryInsertPolicia = {
             text: "INSERT INTO policia(id, mail, nome, password, posto, removido) VALUES($1, $2, $3, $4, $5, $6)",
             values: [id, mail ,nome, pass, posto, 0]
@@ -386,7 +395,7 @@ app.put("/police", async (req, res) => {
     }
 });
 
-app.get("/police", async (req, res) => {
+app.get("/police", async(req, res) => {
     let querySelectPolicias = {
         text: "SELECT * FROM policia",
     }
@@ -403,12 +412,17 @@ app.get("/police/:police_id", async (req, res) => {
         values: [req.params.police_id]
     }
 
-    let results = await dbClient.query(querySelectPolicia);
+    try {
+        let results = await dbClient.query(querySelectPolicia);
+        if (results.rowCount > 0) {
+            res.status(200).send({ policia: results.rows[0] });
+        } else {
+            res.status(404).send("No officer matching this ID was found.");
+        }
 
-    if ( results.rowCount > 0 ) {
-        res.status(200).send({policia: results.rows[0]});
-    } else {
-        res.status(404).send("No officer mathcing this ID was found.");
+    } catch (err) {
+        console.error("Error retrieving police officer:", err);
+        res.status(500).send("Internal server error");
     }
 });
 
@@ -426,7 +440,7 @@ app.delete("/police/:id", async (req, res) => {
     }
 });
 
-app.get("/police/policeStation/:stationId", async (req, res) => {
+app.get("/police/policeStation/:stationId", async(req, res) => {
     let queryVerificarPostoPolicia = {
         text: "SELECT * FROM policia WHERE posto=$1",
         values: [req.params.stationId]
@@ -438,7 +452,7 @@ app.get("/police/policeStation/:stationId", async (req, res) => {
 });
 
 // Por testar...
-app.delete("/police/policeStation/:stationId", async (req, res) => {
+app.delete("/police/policeStation/:stationId", async(req, res) => {
     let queryRemoverPolicasDoPosto = {
         text: "UPDATE policia SET removido=1 WHERE posto=$1",
         values: [req.params.stationId]
@@ -449,7 +463,7 @@ app.delete("/police/policeStation/:stationId", async (req, res) => {
     res.status(200).send();
 });
 
-app.put("/user/:userNif/reactivate", async (req, res) => {
+app.put("/user/:userNif/reactivate", async(req, res) => {
     try {
         const nif = req.params.userNif;
         const queryAtivarUser = queries.queryActivateUser(nif);
@@ -468,7 +482,7 @@ app.put("/user/:userNif/reactivate", async (req, res) => {
     }
 });
 
-app.get("/checkMailDuplicate/:userMail", async (req, res) => {
+app.get("/checkMailDuplicate/:userMail", async(req, res) => {
     try {
         const queryMailDuplicado = {
             name: "fetch-emails",
@@ -479,9 +493,9 @@ app.get("/checkMailDuplicate/:userMail", async (req, res) => {
         let results = await dbClient.query(queryMailDuplicado);
 
         let existeDuplicado = false;
-        results.rowCount === 0
-            ? existeDuplicado = true
-            : existeDuplicado = false;
+        results.rowCount === 0 ?
+            existeDuplicado = true :
+            existeDuplicado = false;
 
         if (existeDuplicado) {
             res.status(200).send();
@@ -545,7 +559,7 @@ app.put("/user/:userNif/changePassword", async (req, res) => {
     }
 });
 
-app.get("/user/:userNif", async (req, res) => {
+app.get("/user/:userNif", async(req, res) => {
     try {
         queryUser = {
             text: "SELECT * FROM utilizador WHERE nif=$1",
@@ -578,7 +592,7 @@ app.get("/user/:userNif", async (req, res) => {
     }
 });
 
-app.post("/policeStation", async (req, res) => {
+app.post("/policeStation", async(req, res) => {
     const { codp, morada, localidade, telefone } = req.body;
 
     const querySelectPostos = {
@@ -619,7 +633,8 @@ app.put("/policeStation", async (req, res) => {
     }
 });
 
-app.delete("/policeStation/:id", async (req, res) => {
+// TODO: Por testar
+app.delete("/policeStation/:id", async(req, res) => {
     try {
         const queryApagarPostos = {
             name: "remove-station",
@@ -641,7 +656,7 @@ app.delete("/policeStation/:id", async (req, res) => {
     }
 });
 
-app.get("/policeStation", async (req, res) => {
+app.get("/policeStation", async(req, res) => {
 
     const querySelectPostos = {
         text: "SELECT * FROM posto",
@@ -653,7 +668,7 @@ app.get("/policeStation", async (req, res) => {
     res.status(200).send(postos);
 });
 
-app.get("/policeStation/:id", async (req, res) => {
+app.get("/policeStation/:id", async(req, res) => {
     const querySelectPostos = {
         text: "SELECT * FROM posto WHERE id=$1",
         values: [req.params.id]
@@ -665,14 +680,14 @@ app.get("/policeStation/:id", async (req, res) => {
     res.status(200).send(posto);
 });
 
-app.post("/object", async (req, res) => {
+app.post("/object", async(req, res) => {
     try {
         let { titulo, nifUser, desc, imagens, dataRegisto, categoria } = req.body;
 
         imagens == [] ? imagens = null : imagens;
 
         let imagensEmString = "";
-        imagens.forEach( (imagem) => { imagensEmString += imagem.data_url + "?" } );
+        imagens.forEach((imagem) => { imagensEmString += imagem.data_url + "?" });
 
         let queryObterIdNovoObjeto = {
             text: "SELECT * FROM objeto",
@@ -681,25 +696,23 @@ app.post("/object", async (req, res) => {
 
         let queryCriarObjeto = {
             text: "INSERT INTO objeto(id,nifUser,descricao,titulo,imagens, dataRegisto, categoria) VALUES($1,$2,$3,$4,$5,$6,$7)",
-            values: [id,nifUser,desc,titulo,imagensEmString, dataRegisto, categoria]
+            values: [id, nifUser, desc, titulo, imagensEmString, dataRegisto, categoria]
         }
         let result = await dbClient.query(queryCriarObjeto);
-
+        console.log(result);
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(201).send({id: id});
+            res.status(201).send({ id: id });
         }
     } catch (error) {
         console.log(error);
     }
 });
 
-app.post("/object/setField", async (req, res) => {
+app.post("/object/setField", async(req, res) => {
     try {
         let { idObj, campo, valor } = req.body;
-        console.log("Categorias: ");
-        console.log( req.body );
 
         let queryInserirValorCampo = {
             text: "INSERT INTO atributoobjeto(idObj, campo, valor) VALUES($1,$2,$3)",
@@ -717,7 +730,7 @@ app.post("/object/setField", async (req, res) => {
     } 
 });
 
-app.put("/object/setField", async (req, res) => {
+app.put("/object/setField", async(req, res) => {
     try {
         let { idObj, campo, valor } = req.body;
 
@@ -741,24 +754,24 @@ app.put("/object/setField", async (req, res) => {
     } catch (error) {
         res.status(500).send();
         console.log(error);
-    } 
+    }
 });
 
-app.put("/object", async (req, res) => {
+app.put("/object", async(req, res) => {
     try {
         let { idObj, titulo, desc, imagens, categoria } = req.body;
 
         imagens == [] ? imagens = null : imagens;
 
         let imagensEmString = "";
-        imagens.forEach( (imagem) => { imagensEmString += imagem.data_url + "?" } );
+        imagens.forEach((imagem) => { imagensEmString += imagem.data_url + "?" });
 
         let queryAtualizarObjeto = {
             text: "UPDATE objeto SET descricao=$3, titulo=$2, imagens=$4, categoria=$5 WHERE id=$1",
             values: [idObj, titulo, desc, imagensEmString, categoria]
         }
         let result = await dbClient.query(queryAtualizarObjeto);
-        if ( result.rowCount === 1 ) {
+        if (result.rowCount === 1) {
             res.status(200).send();
         } else {
             res.status(401).send();
@@ -768,7 +781,7 @@ app.put("/object", async (req, res) => {
     }
 });
 
-app.get("/object/user/:userNif", async (req, res) => {
+app.get("/object/user/:userNif", async(req, res) => {
     try {
         let queryObterObjetosUser = {
             text: "SELECT * FROM objeto WHERE nifUser=$1",
@@ -779,7 +792,7 @@ app.get("/object/user/:userNif", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({objetos: result.rows});
+            res.status(200).send({ objetos: result.rows });
         }
     } catch (error) {
         console.log(error);
@@ -787,7 +800,7 @@ app.get("/object/user/:userNif", async (req, res) => {
     }
 });
 
-app.get("/object/:object_id", async (req, res) => {
+app.get("/object/:object_id", async(req, res) => {
     try {
         let queryObterObjeto = {
             text: "SELECT * FROM objeto WHERE id=$1",
@@ -799,7 +812,7 @@ app.get("/object/:object_id", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({obj: objeto});
+            res.status(200).send({ obj: objeto });
         }
     } catch (error) {
         console.log(error);
@@ -807,7 +820,7 @@ app.get("/object/:object_id", async (req, res) => {
     }
 });
 
-app.get( "/object/atributes/:object_id", async (req, res) => {
+app.get("/object/atributes/:object_id", async(req, res) => {
     try {
 
         let queryObterAtributos = {
@@ -836,7 +849,7 @@ app.delete("/object/:object_id", async (req, res) => {
             text: "UPDATE objeto SET removido=1 WHERE id=$1",
             values: [req.params.object_id]
         }
-        
+
         let resultado = await dbClient.query(queryApagarObjeto);
         let objetoApagado = resultado.rowCount;
 
@@ -848,7 +861,7 @@ app.delete("/object/:object_id", async (req, res) => {
     }
 });
 
-app.post("/categoryName", async (req, res) => {
+app.post("/categoryName", async(req, res) => {
     try {
         let { nomeCat } = req.body;
 
@@ -871,7 +884,7 @@ app.post("/categoryName", async (req, res) => {
     }
 });
 
-app.post("/category", async (req, res) => {
+app.post("/category", async(req, res) => {
     try {
         let { cat, campo } = req.body;
 
@@ -894,7 +907,7 @@ app.post("/category", async (req, res) => {
     }
 });
 
-app.get("/category", async (req, res) => {
+app.get("/category", async(req, res) => {
     try {
 
         let queryObterCategorias = {
@@ -915,7 +928,7 @@ app.get("/category", async (req, res) => {
     }
 });
 
-app.get("/categoryFields/:categoryName", async (req, res) => {
+app.get("/categoryFields/:categoryName", async(req, res) => {
     try {
 
         let queryObterCategorias = {
@@ -937,15 +950,15 @@ app.get("/categoryFields/:categoryName", async (req, res) => {
     }
 });
 
-app.post("/field", async (req, res) => {
+app.post("/field", async(req, res) => {
     try {
-        let { nomeCampo, tipoValor, valores } = req.body;
+        let { nomeCampo, tipoValor } = req.body;
 
         valores = null;
 
         let queryCriarCampo = {
-            text: "INSERT INTO campo(nome, tipo_valor, valores) VALUES($1, $2, $3)",
-            values: [nomeCampo, tipoValor, valores]
+            text: "INSERT INTO campo(nome, tipo_valor) VALUES($1, $2)",
+            values: [nomeCampo, tipoValor]
         }
 
         let criarNomeCat = await dbClient.query(queryCriarCampo);
@@ -961,7 +974,7 @@ app.post("/field", async (req, res) => {
     }
 });
 
-app.get("/field/:fieldName", async (req, res) => {
+app.get("/field/:fieldName", async(req, res) => {
     try {
         let queryObterInfoCampo = {
             text: "SELECT * FROM campo WHERE nome=$1",
@@ -972,7 +985,7 @@ app.get("/field/:fieldName", async (req, res) => {
         if (results.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(201).send( results.rows );
+            res.status(201).send(results.rows);
         }
 
     } catch (error) {
@@ -981,9 +994,9 @@ app.get("/field/:fieldName", async (req, res) => {
     }
 });
 
-app.get("/location/:location_id", async (req, res) => {
+app.get("/location/:location_id", async(req, res) => {
     try {
-        
+
         let queryObterLocalidade = {
             text: "SELECT * FROM localizacao WHERE id=$1",
             values: [req.params.location_id]
@@ -994,7 +1007,7 @@ app.get("/location/:location_id", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({loc: loc});
+            res.status(200).send({ loc: loc });
         }
     } catch (error) {
         console.log(error);
@@ -1002,9 +1015,9 @@ app.get("/location/:location_id", async (req, res) => {
     }
 });
 
-app.post("/location", async (req, res) => {
+app.post("/location", async(req, res) => {
     try {
-        let {pais,dist,munc,freg,rua,morada,codp} = req.body;
+        let { pais, dist, munc, freg, rua, morada, codp } = req.body;
 
         dist === "" ? dist = null : dist;
         munc === "" ? munc = null : munc;
@@ -1023,27 +1036,28 @@ app.post("/location", async (req, res) => {
             values: [id, pais, dist, munc, freg, rua, morada, codp, null]
         }
         let result = await dbClient.query(queryCriarLocalizacao);
-
+        console.log(result);
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(201).send({id: id});
+            console.log("CREATED NEW LOCATION");
+            res.status(201).send({ id: id });
         }
     } catch (error) {
         console.log(error);
     }
 });
 
-app.put("/location", async (req, res) => {
+app.put("/location", async(req, res) => {
     try {
-        let {id, pais, dist, munc, freg, rua, morada, codp, coords} = req.body;
+        let { id, pais, dist, munc, freg, rua, morada, codp, coords } = req.body;
 
         let queryAtualizarLocalizacao = {
             text: "UPDATE localizacao SET pais=$1, dist=$2, munc=$3, freg=$4, rua=$5, morada=$6, codp=$7, coords=$8 WHERE id=$9",
             values: [pais, dist, munc, freg, rua, morada, codp, coords, id]
         }
         let result = await dbClient.query(queryAtualizarLocalizacao);
-        if ( result.rowCount === 1 ) {
+        if (result.rowCount === 1) {
             res.status(200).send();
         } else {
             res.status(401).send();
@@ -1053,7 +1067,7 @@ app.put("/location", async (req, res) => {
     }
 });
 
-app.get("/lostObject/user/:userNif", async (req, res) => {
+app.get("/lostObject/user/:userNif", async(req, res) => {
     try {
         let queryObterObjetoPerdidoPorId = {
             text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM perdido WHERE removido=0)",
@@ -1065,7 +1079,7 @@ app.get("/lostObject/user/:userNif", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({objPerdidos: objetos});
+            res.status(200).send({ objPerdidos: objetos });
         }
     } catch (error) {
         console.log(error);
@@ -1073,7 +1087,7 @@ app.get("/lostObject/user/:userNif", async (req, res) => {
     }
 });
 
-app.get("/lostObject/:object_id", async (req, res) => {
+app.get("/lostObject/:object_id", async(req, res) => {
     try {
         let queryObterObjetoPerdido = {
             text: "SELECT * FROM perdido WHERE id=$1",
@@ -1085,7 +1099,7 @@ app.get("/lostObject/:object_id", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({objPerdido: objeto});
+            res.status(200).send({ objPerdido: objeto });
         }
     } catch (error) {
         console.log(error);
@@ -1095,7 +1109,7 @@ app.get("/lostObject/:object_id", async (req, res) => {
 
 app.post("/lostObject", async (req, res) => {
     try {
-        let {idObj,idLoc,lostDate,lostTime,lostDateInfLim,lostDateSupLim } = req.body;
+        let { idObj, idLoc, lostDate, lostTime, lostDateInfLim, lostDateSupLim } = req.body;
         if (lostTime === "" && lostDate === "") {
             lostTime = null;
             lostDate = null;
@@ -1113,14 +1127,14 @@ app.post("/lostObject", async (req, res) => {
 
         let queryCriarObjeto = {
             text: "INSERT INTO perdido(id,idPerdido,objetoAchado,perdido_em,lostDate,lostTime,lostDateInfLim,lostDateSupLim,removido) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-            values: [idObj,idPerdido, null, idLoc, lostDate,lostTime,lostDateInfLim,lostDateSupLim,0]
+            values: [idObj, idPerdido, null, idLoc, lostDate, lostTime, lostDateInfLim, lostDateSupLim, 0]
         }
         let result = await dbClient.query(queryCriarObjeto);
 
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(201).send({id: idPerdido});
+            res.status(201).send({ id: idPerdido });
         }
 
     } catch (error) {
@@ -1128,7 +1142,7 @@ app.post("/lostObject", async (req, res) => {
     }
 });
 
-app.put("/lostObject", async (req, res) => {
+app.put("/lostObject", async(req, res) => {
     try {
         let { idObj, lostDate, lostTime, lostDateInfLim, lostDateSupLim } = req.body;
 
@@ -1137,7 +1151,7 @@ app.put("/lostObject", async (req, res) => {
             values: [idObj, lostDate, lostTime, lostDateInfLim, lostDateSupLim]
         }
         let result = await dbClient.query(queryAtualizarObjetoPerdido);
-        if ( result.rowCount === 1 ) {
+        if (result.rowCount === 1) {
             res.status(200).send();
         } else {
             res.status(401).send();
@@ -1148,9 +1162,9 @@ app.put("/lostObject", async (req, res) => {
 });
 
 // TODO: Por testar...
-app.delete("/lostObject/:lostObject_id", async (req, res) => {
+app.delete("/lostObject/:lostObject_id", async(req, res) => {
     try {
-        let queryApagarObjetoPerdido  = {
+        let queryApagarObjetoPerdido = {
             text: "UPDATE perdido SET removido=1 WHERE idperdido=$1",
             values: [req.params.lostObject_id]
         }
@@ -1167,9 +1181,9 @@ app.delete("/lostObject/:lostObject_id", async (req, res) => {
     }
 });
 
-app.post("/foundObject", async (req, res) => {
+app.post("/foundObject", async(req, res) => {
     try {
-        let {idObj,idLoc,policia,foundDate,foundTime,foundDateInfLim,foundDateSupLim } = req.body;
+        let { idObj, idLoc, policia, foundDate, foundTime, foundDateInfLim, foundDateSupLim } = req.body;
         if (foundTime === "" && foundDate === "") {
             foundTime = null;
             foundDate = null;
@@ -1180,7 +1194,7 @@ app.post("/foundObject", async (req, res) => {
             foundDateSupLim = null;
         }
 
-        if ( policia === "" ) {
+        if (policia === "") {
             policia = null;
         }
 
@@ -1192,7 +1206,7 @@ app.post("/foundObject", async (req, res) => {
         let dataLeilao = new Date();
         dataLeilao.setDate((dataLeilao.getDate() + 7));
 
-        let dataCompleta =  dataLeilao.getDate() + "/" + (dataLeilao.getMonth() + 1) + "/" + dataLeilao.getFullYear();
+        let dataCompleta = dataLeilao.getDate() + "/" + (dataLeilao.getMonth() + 1) + "/" + dataLeilao.getFullYear();
 
         let queryCriarObjetoAchado = {
             text: "INSERT INTO achado(id,idachado,data_leilao,achado_em,policia,founddate,foundtime,foundDateInfLim,foundDateSupLim, removido ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
@@ -1203,7 +1217,7 @@ app.post("/foundObject", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(201).send({id: idAchado});
+            res.status(201).send({ id: idAchado });
         }
 
     } catch (error) {
@@ -1211,7 +1225,7 @@ app.post("/foundObject", async (req, res) => {
     }
 });
 
-app.get("/foundObject/:object_id", async (req, res) => {
+app.get("/foundObject/:object_id", async(req, res) => {
     try {
         let queryObterObjetoAchado = {
             text: "SELECT * FROM achado WHERE id=$1",
@@ -1223,7 +1237,7 @@ app.get("/foundObject/:object_id", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({objAchado: objeto});
+            res.status(200).send({ objAchado: objeto });
         }
     } catch (error) {
         console.log(error);
@@ -1231,10 +1245,10 @@ app.get("/foundObject/:object_id", async (req, res) => {
     }
 });
 
-app.get("/foundObject/user/:userNif", async (req, res) => {
+app.get("/foundObject/user/:userNif", async(req, res) => {
     try {
         let queryObterObjetoAchadoPorId = {
-            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM achado)",
+            text: "SELECT * FROM objeto WHERE nifuser=$1 AND id IN (SELECT id FROM achado WHERE removido != 1)",
             values: [req.params.userNif]
         }
         let result = await dbClient.query(queryObterObjetoAchadoPorId);
@@ -1243,7 +1257,7 @@ app.get("/foundObject/user/:userNif", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({objAchados: objetos});
+            res.status(200).send({ objAchados: objetos });
         }
     } catch (error) {
         console.log(error);
@@ -1251,7 +1265,55 @@ app.get("/foundObject/user/:userNif", async (req, res) => {
     }
 });
 
-app.put("/foundObject", async (req, res) => {
+app.get("/foundObjectAuction", async(req, res) => {
+    try {
+        let query = {
+            text: `SELECT * FROM objeto 
+                   WHERE id IN (
+                       SELECT id 
+                       FROM achado 
+                       WHERE removido != 1 
+                       AND id NOT IN (
+                           SELECT id_achado 
+                           FROM Leilao
+                       )
+                   )`,
+            values: []
+        }
+        let result = await dbClient.query(query);
+        let objetos = result.rows;
+
+        if(result.rowCount === 0){
+            res.status(404).send();
+        } else {
+            res.status(200).send({ objAchados: objetos });
+        }
+    } catch (error) {
+        console.log(error)
+    }
+});
+
+app.get("/foundObject", async(req, res) => {
+    try {
+        let queryObterObjetoAchadoPorId = {
+            text: "SELECT * FROM objeto WHERE id IN (SELECT id FROM achado WHERE removido != 1)",
+            values: []
+        }
+        let result = await dbClient.query(queryObterObjetoAchadoPorId);
+        let objetos = result.rows;
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({ objAchados: objetos });
+        }
+    } catch (error) {
+        console.log(error);
+
+    }
+});
+
+app.put("/foundObject", async(req, res) => {
     try {
         let { idObj, foundDate, foundTime, foundDateInfLim, foundDateSupLim } = req.body;
 
@@ -1260,7 +1322,7 @@ app.put("/foundObject", async (req, res) => {
             values: [idObj, foundDate, foundTime, foundDateInfLim, foundDateSupLim]
         }
         let result = await dbClient.query(queryAtualizarObjetoAchado);
-        if ( result.rowCount === 1 ) {
+        if (result.rowCount === 1) {
             res.status(200).send();
         } else {
             res.status(401).send();
@@ -1271,9 +1333,9 @@ app.put("/foundObject", async (req, res) => {
 });
 
 // TODO: Por testar...
-app.delete("/foundObject/:foundObject_id", async (req, res) => {
+app.delete("/foundObject/:foundObject_id", async(req, res) => {
     try {
-        let queryApagarObjetoAchado  = {
+        let queryApagarObjetoAchado = {
             text: "UPDATE achado SET removido=1 WHERE idachado=$1",
             values: [req.params.foundObject_id]
         }
@@ -1292,19 +1354,21 @@ app.delete("/foundObject/:foundObject_id", async (req, res) => {
 
 /** TODO: auction **/
 // Validações
-app.post("/auction", async (req, res) => {
+app.post("/auction", async(req, res) => {
 
     let { data_inicio, data_fim, valor, id_achado } = req.body;
 
-    try{
+    try {
 
-        let id = obterId("leilao");
+        let id = await obterId("leilao");
+        console.log(id);
+        console.log(req.body);
+
         let queryCriarLeilao = {
             text: "INSERT INTO leilao(id, data_inicio, data_fim, valor, id_achado, removido, aberto) VALUES ($1,$2,$3,$4,$5,$6,$7)",
             values: [id, data_inicio, data_fim, valor, id_achado, 0, 0]
         }
         let result = await dbClient.query(queryCriarLeilao);
-        // Falta a validação aqui...
 
         if (result.rowCount === 0) {
             res.status(404).send();
@@ -1318,10 +1382,10 @@ app.post("/auction", async (req, res) => {
     }
 });
 
-app.get("/auction/:auction_id", async (req, res) => {
-    try{
+app.get("/auction/:auction_id", async(req, res) => {
+    try {
 
-        let queryObterLeilao= {
+        let queryObterLeilao = {
             text: "SELECT * FROM leilao WHERE id=$1",
             values: [req.params.auction_id]
         }
@@ -1332,7 +1396,7 @@ app.get("/auction/:auction_id", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({ leilao: result.rows });
+            res.status(200).send({ leilao: result.rows[0] });
         }
 
     } catch (error) {
@@ -1343,15 +1407,13 @@ app.get("/auction/:auction_id", async (req, res) => {
 
 app.put("/auction", async (req, res) => {
     try{
-        let { id, titulo, data_inicio, data_fim, valor } = req.body;
+        let { id, data_inicio, data_fim, valor, aberto } = req.body;
 
         let queryAtualizarLeilao={
-            text: "UPDATE leilao SET titulo=$2, data_inicio=$3, data_fim=$4, valor=$5 WHERE id=$1",
-            values: [id, titulo, data_inicio, data_fim, valor]
+            text: "UPDATE leilao SET data_inicio=$2, data_fim=$3, valor=$4, aberto=$5 WHERE id=$1",
+            values: [id, data_inicio, data_fim, valor, aberto]
         }
         let result = await dbClient.query(queryAtualizarLeilao);
-
-        // Faltam as validações...
 
         if (result.rowCount === 0) {
             res.status(404).send();
@@ -1365,10 +1427,10 @@ app.put("/auction", async (req, res) => {
     }
 });
 
-app.delete("/auction/:auction_id", async (req, res) => {
-    try{
+app.delete("/auction/:auction_id", async(req, res) => {
+    try {
 
-        let queryRemoverLeilao={
+        let queryRemoverLeilao = {
             text: "UPDATE leilao SET removido=1 WHERE id=$1",
             values: [req.params.auction_id]
         }
@@ -1387,12 +1449,12 @@ app.delete("/auction/:auction_id", async (req, res) => {
     }
 });
 
-app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
+// TODO: Verificar
+app.get("/auction/getAllByDate/:data_inicio/:data_fim", async (req, res) => {
     try{
-
-        let queryObterLeiloesPorData={
-            text: "SELECT * FROM leilao WHERE initialDate>=$1 AND finalDate<=$2",
-            values: [req.params.initialDate, req.params.finalDate]
+        let queryObterLeiloesPorData = {
+            text: "SELECT * FROM leilao WHERE data_inicio>=$1 AND data_fim<=$2",
+            values: [req.params.data_inicio, req.params.data_fim]
         }
         let result = await dbClient.query(queryObterLeiloesPorData);
 
@@ -1400,7 +1462,7 @@ app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send({leiloes: result.rows});
+            res.status(200).send({ leiloes: result.rows });
         }
 
     } catch (error) {
@@ -1409,8 +1471,8 @@ app.get("/auction/getAllByDate/:initialDate/:finalDate", async (req, res) => {
     }
 });
 
-app.post("/auction/:auction_id/subscribe/:nif", async (req, res) => {
-    try{
+app.post("/auction/:auction_id/subscribe/:nif", async(req, res) => {
+    try {
 
         let queryVerificarInscricao = {
             text: "SELECT * FROM subscrever WHERE nif=$1",
@@ -1419,12 +1481,12 @@ app.post("/auction/:auction_id/subscribe/:nif", async (req, res) => {
 
         let userExiste = await dbClient.query(queryVerificarInscricao);
 
-        if ( userExiste.rowCount > 0 ) {
+        if (userExiste.rowCount > 0) {
             res.status(403).send();
         } else {
-            let queryInscreverUserEmLeilao={
+            let queryInscreverUserEmLeilao = {
                 text: "INSERT INTO subscrever(nif, id_leilao, removido) VALUES ($1, $2, $3)",
-                values: [req.params.auction_id, req.params.nif, 0]
+                values: [req.params.nif, req.params.auction_id, 0]
             }
             let result = await dbClient.query(queryInscreverUserEmLeilao);
 
@@ -1433,7 +1495,7 @@ app.post("/auction/:auction_id/subscribe/:nif", async (req, res) => {
                 res.status(404).send();
             } else {
                 res.status(200).send();
-        }
+            }
         }
 
     } catch (error) {
@@ -1442,12 +1504,12 @@ app.post("/auction/:auction_id/subscribe/:nif", async (req, res) => {
     }
 });
 
-app.put("/auction/:auction_id/unsubscribe/:nic", async (req, res) => {
+app.delete("/auction/:auction_id/unsubscribe/:nif", async (req, res) => {
     try{
 
         let queryDesinscreverUserEmLeilao={
-            text: "UPDATE subscrever SET removido=$2 WHERE nif=$1",
-            values: [req.params.auction_id, req.params.nif]
+            text: "DELETE FROM subscrever WHERE nif=$1 AND id_leilao=$2",
+            values: [req.params.nif, req.params.auction_id]
         }
         let result = await dbClient.query(queryDesinscreverUserEmLeilao);
 
@@ -1464,16 +1526,11 @@ app.put("/auction/:auction_id/unsubscribe/:nic", async (req, res) => {
     }
 });
 
-// TODO...
-app.get("/auction/:auction_id/notify", async (req, res) => {
-
-});
-
 app.put("/auction/:auction_id/begin", async (req, res) => {
     try{
 
         let queryAbrirLeilao={
-            text: "UPDATE subscrever SET aberto=1 WHERE id=$1",
+            text: "UPDATE leilao SET aberto=1 WHERE id=$1",
             values: [req.params.auction_id]
         }
         let result = await dbClient.query(queryAbrirLeilao);
@@ -1491,11 +1548,11 @@ app.put("/auction/:auction_id/begin", async (req, res) => {
     }
 });
 
-app.put("/auction/:auction_id/end", async (req, res) => {
-    try{
+app.put("/auction/:auction_id/end", async(req, res) => {
+    try {
 
         let queryFecharLeilao={
-            text: "UPDATE subscrever SET aberto=0 WHERE id=$1",
+            text: "UPDATE leilao SET aberto=0 WHERE id=$1",
             values: [req.params.auction_id]
         }
         let result = await dbClient.query(queryFecharLeilao);
@@ -1513,10 +1570,52 @@ app.put("/auction/:auction_id/end", async (req, res) => {
     }
 });
 
-app.get("/auction/:auction_id/history", async (req, res) => {
-    try{
+app.get("/licitante/:nif", async(req, res) => {
+    try {
 
-        let queryObterLicitacoesDeUmLeilao={
+        let queryObterLicitante = {
+            text: "SELECT * FROM licitante WHERE nif=$1",
+            values: [req.params.nif]
+        }
+        let result = await dbClient.query(queryObterLicitante);
+        if (result.rowCount === 0) {
+            res.status(400).send();
+        }
+        else {
+            res.status(200).send({licitante: result.rows[0]});
+        }
+    } catch (error) {
+        console.log("Erro no /auction: " + error);
+        res.status(500).send();
+    }
+});
+
+app.post("/licitante", async(req, res) => {
+    let queryObterLicitante = {
+        text: "SELECT * FROM licitante WHERE nif=$1",
+        values: [req.body.nif]
+    }
+    let result = await dbClient.query(queryObterLicitante);
+    if (result.rowCount === 0) {
+        let queryCriarLicitante = {
+            text: "INSERT INTO licitante(nif) VALUES($1)",
+            values: [req.body.nif]
+        }
+        let result = await dbClient.query(queryCriarLicitante);
+        if (result.rowCount === 0) {
+            res.status(400).send();
+        } else {
+            res.status(200).send();
+        }
+    } else {
+        res.status(201).send();
+    }
+});
+
+app.get("/auction/:auction_id/history", async(req, res) => {
+    try {
+
+        let queryObterLicitacoesDeUmLeilao = {
             text: "SELECT * from licita WHERE id_leilao=$1",
             values: [req.params.auction_id]
         }
@@ -1526,32 +1625,52 @@ app.get("/auction/:auction_id/history", async (req, res) => {
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
-            res.status(200).send();
+            res.status(200).send({historico: result.rows});
         }
 
     } catch (error) {
-        console.log("Erro no /auction: " + error);
+        console.log("Erro no /auction:id/history " + error);
         res.status(500).send();
     }
 });
 
-app.post("/makeOffer", async (req, res) => {
-    try{
-        let {nif, id_leilao, valor} = req.body;
+app.get("/auction/:auction_id/objeto", async(req, res) => {
+    try {
+        let query = {
+            text: "SELECT Objeto.* FROM Leilao JOIN Achado ON Achado.id = Leilao.id_achado JOIN Objeto ON Objeto.id = Achado.id WHERE Leilao.id = $1;",
+            values: [req.params.auction_id]
+        }
+        let result = await dbClient.query(query);
+
+        if (result.rowCount === 0) {
+            res.status(404).send();
+        } else {
+            res.status(200).send({objeto: result.rows[0]});
+        }
+    } catch (error) {
+        console.log("Erro no /auction:id/objeto " + error);
+        res.status(500).send();
+    }
+});
+
+app.post("/makeOffer", async(req, res) => {
+    try {
+        let { nif, id_leilao, valor } = req.body;
 
         let queryObterIdLicitacao = {
-            text: "SELECT * FROM licita WHERE nif=$1 AND id_leilao=$2",
-            values:[nif, id_leilao]
+            text: "SELECT * FROM licita",
         }
         let id = (await dbClient.query(queryObterIdLicitacao)).rowCount + 1;
 
-        let queryObterLicitacoesDeUmLeilao={
+        let now = new Date();
+        const formattedDate = now.toISOString().split('T')[0];
+
+        let queryObterLicitacoesDeUmLeilao= {
             text: "INSERT INTO licita(nif, id_leilao, valor, data, id) VALUES($1,$2,$3,$4,$5)",
-            values: [nif, id_leilao, valor, new Date().getTime, id]
+            values: [nif, id_leilao, valor, formattedDate, id]
         }
         let result = await dbClient.query(queryObterLicitacoesDeUmLeilao);
 
-        // Faltam as validações...
         if (result.rowCount === 0) {
             res.status(404).send();
         } else {
@@ -1559,64 +1678,19 @@ app.post("/makeOffer", async (req, res) => {
         }
 
     } catch (error) {
-        console.log("Erro no /auction: " + error);
-        res.status(500).send();
-    }
-});
-
-// Devolve todas as licitações em que participou.
-app.get("/user/:nif/subscribedAuctions", async (req, res) => {
-    try{
-
-        let queryObterLeiloesInscritos={
-            text: "SELECT * FROM subscrever WHERE nif=$1",
-            values: [req.params.nif]
-        }
-        let result = await dbClient.query(queryObterLeiloesInscritos);
-
-        // Faltam as validações...
-        if (result.rowCount === 0) {
-            res.status(404).send();
-        } else {
-            res.status(200).send();
-        }
-
-    } catch (error) {
-        console.log("Erro no /auction: " + error);
-        res.status(500).send();
-    }
-});
-
-// Devolve apenas os leilões em que participou, ou seja nos quais licitou.
-app.get("/user/:nif/subscribedAuctions", async (req, res) => {
-    try{
-
-        let queryObterLeiloesParticipou={
-            text: "SELECT DISTINCT id_leilao FROM licita WHERE nif=$1",
-            values: [req.params.nif]
-        }
-        let result = await dbClient.query(queryObterLeiloesParticipou);
-
-        // Faltam as validações...
-        if (result.rowCount === 0) {
-            res.status(404).send();
-        } else {
-            res.status(200).send();
-        }
-
-    } catch (error) {
-        console.log("Erro no /auction: " + error);
+        console.log("Erro no /makeOffer: " + error);
         res.status(500).send();
     }
 });
 
 // Pagar objeto no fim do leilão
-app.post("/user/:nif/payAuction/:auction_id", async (req, res) => {
+app.post("/auction/registerWinner", async (req, res) => {
     try{
+        let { nif, id_leilao } = req.body;
 
         let queryPagarLeilao={
-            text: "",
-            values: [req.params.nif, req.params.auction_id]
+            text: "INSERT INTO ganha(nif, id_leilao) VALUES ($1, $2)",
+            values: [nif, id_leilao]
         }
         let result = await dbClient.query(queryPagarLeilao);
 
@@ -1634,34 +1708,11 @@ app.post("/user/:nif/payAuction/:auction_id", async (req, res) => {
 });
 
 // TODO: ...
-app.post("/auction/registerWinner", async (req, res) => {
+app.get("auction/user/:nif/auctionsWon", async (req, res) => {
     try{
 
-        let queryRegistarVencedorLeilao={
-            text: "",
-            values: []
-        }
-        let result = await dbClient.query(queryRegistarVencedorLeilao);
-
-        // Faltam as validações...
-        if (result.rowCount === 0) {
-            res.status(404).send();
-        } else {
-            res.status(200).send();
-        }
-
-    } catch (error) {
-        console.log("Erro no /auction: " + error);
-        res.status(500).send();
-    }
-});
-
-// TODO: ...
-app.get("/user/:nif/auctionsWon", async (req, res) => {
-    try{
-
-        let queryPagarLeilao={
-            text: "",
+        let queryPagarLeilao = {
+            text: "SELECT * FROM objeto WHERE id IN ( SELECT  )",
             values: [req.params.nif, req.params.auction_id]
         }
         let result = await dbClient.query(queryPagarLeilao);

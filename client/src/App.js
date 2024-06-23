@@ -18,37 +18,54 @@ import PaginaEditarObjetoAchado from "./Pages/PaginaEditarObjetoAchado";
 import PaginaObjetoAchado from './Pages/PaginaObjetoAchado';
 import PaginaProcuraObjetosPeridos from './Pages/PaginaProcuraObjetosPerdidos';
 import PaginaProcurarMatches from './Pages/PaginaProcurarMatches';
-import PaginaEntregasObjetos from './Pages/PaginaEntregasObjetos';
+import CriarLeilao from './Components/CriarLeilao';
+import Leiloes from './Components/Leiloes';
+import ChatLeilao from './Components/ChatLeilao';
+import BidMessage from './Components/BidMessage';
+import EditarLeilao from './Components/EditarLeilao';
+import PopupVenceuLeilao from './Popups/PopupVenceuLeilao';
+import PaginaPagamento from './Pages/PaginaPagamento';
+
+import { useAuth0 } from "@auth0/auth0-react";
 
 function App() {
-    return (
-      <>
-      <BrowserRouter>
-          <Routes>
-            <Route index path="/" element={<Home/>} />
-            <Route path="register/success" element={<RegistoComSucesso/>}/>
-            <Route path="register" element={<RegistoNovoUtilizador/>}/>
-            <Route path="login" element={<LoginUtilizador/>}/>
-            <Route path="editUser" element={<GestaoDeConta/>}/>
-            <Route path="accountDeactivated" element={<ContaDesativada/>}/>
-            <Route path="accountDeleted" element={<ContaApagada/>}/>
-            <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>}/>
-            <Route path="admin" element={<PaginaAdmin/>}/>
-            <Route path="lostObject/register" element={<PaginaObjetoPerdido/>}/>
-            <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
-            <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
-            <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
-            <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
-            <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
-            <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
-            <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
-            <Route path="lostObject/search" element={<PaginaProcuraObjetosPeridos/>} />
-            <Route path="foundObject/getMatches" element={<PaginaProcurarMatches/>} />
-            <Route path="deliveries" element={<PaginaEntregasObjetos/>} />
-          </Routes>
-      </BrowserRouter>
-      </>
-    );
+  return (
+    <>
+    <BrowserRouter>
+        <Routes>
+          <Route index path="/" element={<Home/>} />
+          <Route path="register/success" element={<RegistoComSucesso/>}/>
+          <Route path="register" element={<RegistoNovoUtilizador/>}/>
+          <Route path="login" element={<LoginUtilizador/>}/>
+          <Route path="editUser" element={<GestaoDeConta/>}/>
+          <Route path="accountDeactivated" element={<ContaDesativada/>}/>
+          <Route path="accountDeleted" element={<ContaApagada/>}/>
+          <Route path="user/passwordChange" element={<PaginaPasswordAlterada/>} />
+          <Route path="admin" element={<PaginaAdmin/>} />
+          <Route path="lostObject/register" element={<PaginaObjetoPerdido/>}/>
+          <Route path="lostObject/view" element={<PaginaObjetoPerdido/>}/>
+          <Route path="lostObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+          <Route path="lostObject/edit/:idLostObject" element={<PaginaEditarObjetoPerdido/>} />
+          <Route path="objects/list" element={<PaginaVerObjetosRegistados/>} />
+          <Route path="foundObject/register" element={<PaginaObjetoAchado/>} />
+          <Route path="foundObject/register/success" element={<PaginaObjetoPerdidoSucesso/>}/>
+          <Route path="foundObject/edit/:idLostObject" element={<PaginaEditarObjetoAchado/>} />
+          <Route path="search" element={<PaginaProcuraObjetosPeridos/>} />
+          <Route path="lostObject/getMatches" element={<PaginaProcurarMatches/>} />
+          <Route path="/auction/register" element={<CriarLeilao/>} />
+          <Route path="/auction/Leiloes" element={<Leiloes/>} />
+          <Route path="/auction/Leiloes/ChatLeilao/:idLeilao" element={<ChatLeilao/>} />
+          <Route path="/auction/Leiloes/BidMessage" element={<BidMessage/>} />
+          <Route path="/auction/Leiloes/EditarLeilao/:idLeilao" element={<EditarLeilao/>} />
+          <Route path="/auction/Leiloes/PopupVenceuLeilao" element={<PopupVenceuLeilao/>} />
+          <Route path="/auction/Leiloes/PaginaPagamento/:idLeilao" element={<PaginaPagamento/>} />
+
+  
+        </Routes>
+    </BrowserRouter>
+    </>
+  );
+
 }
 
 export default App;

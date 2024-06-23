@@ -28,7 +28,7 @@ function InformacaoLogin() {
     }
 
     async function obterPaginaAdmin(user){
-        if (user !== undefined) {
+        if (user !== undefined) {                    
             await axios.get(
                 config.LINK_API + "/user/" + user.sub.split("|")[1],
                 { headers: {'Content-Type': 'application/json'}},
@@ -39,10 +39,11 @@ function InformacaoLogin() {
                     }
                 } 
             }).catch(function (error) {
+                console.log(error)
                 if ( error.response ) {
                     let codigo = error.response.status;
 
-                    if ( codigo === 404 ) {
+                    if ( codigo === 404 || codigo == 500) {
                         setUserAdmin(false);
                     }
                 }
@@ -63,7 +64,7 @@ function InformacaoLogin() {
                 if ( error.response ) {
                     let codigo = error.response.status;
 
-                    if ( codigo === 404 ) {
+                    if ( codigo === 404 || codigo == 500 ) {
                         setUserPolicia(false);
                     }
                 }
@@ -95,6 +96,7 @@ function InformacaoLogin() {
                         <NavDropdown.Item href="/editUser">Gestão de conta</NavDropdown.Item>
                         <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
                         <NavDropdown.Item href="/lostObject/register">Registar um Objeto Perdido</NavDropdown.Item>
+                        <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
                         <NavDropdown.Item href="/lostObject/search">Procurar objetos perdidos</NavDropdown.Item>
                         <NavDropdown.Item href="/foundObject/getMatches">Procurar objetos achados</NavDropdown.Item>
                     </>
@@ -106,6 +108,9 @@ function InformacaoLogin() {
                     ? (
                         <>
                             <NavDropdown.Item href="/foundObject/register">Registar um Objeto Achado</NavDropdown.Item>
+                            <NavDropdown.Item href="/auction/register"> Criar Leilão </NavDropdown.Item>
+                            <NavDropdown.Item href="/auction/Leiloes">Leilões</NavDropdown.Item>
+                            <NavDropdown.Item href="/objects/list">Ver objetos registados</NavDropdown.Item>
                             <NavDropdown.Item href="/deliveries">Gerir entregas</NavDropdown.Item>
                         </>
                     ) 

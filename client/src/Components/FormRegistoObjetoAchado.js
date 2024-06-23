@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageUploading from 'react-images-uploading';
+
+// mapbox
+import mapboxgl from 'mapbox-gl';
+import "mapbox-gl/dist/mapbox-gl.css";
+import mbxGeocoding from '@mapbox/mapbox-sdk/services/geocoding';
+
 
 // Informacoes da API.
 import config from '../config';
@@ -40,11 +46,14 @@ function FormRegistoObjetoAchado() {
     const maxNumber = 3;
 
     function obterValorDoCampo(nomeCampo) {
+        console.log("Nome do campo: " + nomeCampo);
+        console.log("Documentos: " + document.forms['form']);
         let valor = document.forms['form'][''+nomeCampo].value;
         return valor;
     }
 
     function registarValorDoCampo(idObj, campo, valor) {
+        console.log("A CHEGAR AO SET FIELD");
         axios.post(
             config.LINK_API + "/object/setField",
             { idObj: idObj, campo: campo, valor: valor },
@@ -52,31 +61,42 @@ function FormRegistoObjetoAchado() {
         ).then ( (res) => {
         }).catch(function (error) {
             if ( error.response ) {
+                console.log(error.response);
+                console.log("OBJECT ERROR");
                 let codigo = error.response.status;
             }
         });
     }
 
     function processarObjeto(infoObjeto, infoLocalizacao, values) {
+        let nif = user.sub.split("|")[1];
+        infoObjeto.nifUser = nif;
         axios.post(
             config.LINK_API + "/object", 
             infoObjeto, 
             { headers: {'Content-Type': 'application/json'}},
 
         ).then ( (res) => {
+            console.log(res.status);
+            console.log("TEST2");
             if (res.status === 201) {
+                console.log(res.data);
                 let idObj = res.data.id;
-
+                console.log("ANTES DO SET FIELD");
+                console.log(camposDaCategoria);
                 camposDaCategoria.map( campo => {
                     let valor = obterValorDoCampo(campo);
+                    console.log("VALUR DO CAMP: " + valor);
                     registarValorDoCampo( idObj, campo, valor );
                 });
-
+                console.log("DEPOIS DO SET FIELD");
                 axios.post(
                     config.LINK_API + "/location", 
                     infoLocalizacao, 
                     { headers: {'Content-Type': 'application/json'}},
                 ).then ( (res) => {
+                    console.log("TEST3");
+                    console.log(res.status);
                     if (res.status === 201) {
                         let idLoc = res.data.id;
 
@@ -90,16 +110,14 @@ function FormRegistoObjetoAchado() {
                             foundDateSupLim: values.foundDateSupLim
                         }
                         console.log(infoObjetoAchado);
-
+                        console.log("TEST")
                         axios.post(
                             config.LINK_API + "/foundObject", 
                             infoObjetoAchado, 
                             { headers: {'Content-Type': 'application/json'}},
                         ).then ( (res) => {
                             if (res.status === 201) {
-
                                 setErroInternoRegistoAchado(false);
-                                navigate("/foundObject/register/success");
                             } 
                         }).catch(function (error) {
                             if ( error.response ) {
@@ -109,13 +127,17 @@ function FormRegistoObjetoAchado() {
 
                     } 
                 }).catch(function (error) {
+                    console.log(error)
+                    console.log("ERRO?")
                     if ( error.response ) {
                         setErroInternoRegistoAchado(true);
                     }
                 });
-
+                console.log("TEST4");
             } 
         }).catch(function (error) {
+            console.log("TEST5");
+            console.log(error);
             if ( error.response ) {
                 setErroInternoRegistoAchado(true);
             }
@@ -268,6 +290,123 @@ function FormRegistoObjetoAchado() {
         return errors;
     }
 
+    const mapContainerRef = useRef(null);
+    const userLocationMarker = useRef(null);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const selectedLocationMarker = useRef(null);
+    const [selectedLocationCoordinates, setSelectedLocationCoordinates] = useState(null);
+
+
+    useEffect(() => {
+        if (!mapContainerRef.current) return;
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHhvanZwbHcwNXBoMmpxeXlsaW45b29pIn0.8-giJPprtRSTtpSNHowNng';
+
+        const map = new mapboxgl.Map({
+            container: mapContainerRef.current,
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-8.0, 39.5],
+            zoom: 6
+        });
+        
+        const addMarker = (lng, lat, color, markerRef) => {
+            if (markerRef.current) {
+                markerRef.current.remove();
+            }
+
+            const newMarker = new mapboxgl.Marker({
+                color,
+                draggable: false
+            })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+            markerRef.current = newMarker;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+        };
+
+        map.on('click', (e) => {
+            const { lng, lat } = e.lngLat;
+            setSelectedLocation({ lng, lat });
+            setSelectedLocationCoordinates({ lng, lat });
+            addMarker(lng, lat, '#ff0000', selectedLocationMarker);
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setCenter([longitude, latitude]);
+                    map.setZoom(12);
+                    addMarker(longitude, latitude, '#0000ff', userLocationMarker);
+                },
+                (error) => {
+                    console.error('Error retrieving location:', error);
+                }
+            );
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+
+        return () => map.remove();
+    }, [user]);
+
+
+    const geocodingClient = mbxGeocoding({ accessToken: 'pk.eyJ1Ijoiam9hbmEyNCIsImEiOiJjbHd6aW1oY2IwNzQ3MmpxdWY1dXJkaTh3In0.ynaz2urwBsr7vgv0Pn9ppg' });
+
+    const useStreetName = (selectedLocationCoordinates) => {
+        const [streetName, setStreetName] = useState('');
+    
+        useEffect(() => {
+            const fetchStreetName = async () => {
+                if (selectedLocationCoordinates) {
+                    try {
+                        const response = await geocodingClient.reverseGeocode({
+                            query: [selectedLocationCoordinates.lng, selectedLocationCoordinates.lat],
+                            types: ['address'],
+                        }).send();
+    
+                        const match = response.body.features[0];
+                        if (match) {
+                            setStreetName(match.place_name);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching street name:', error);
+                    }
+                }
+            };
+    
+            fetchStreetName();
+        }, [selectedLocationCoordinates]);
+    
+        return streetName;
+    };
+
+    //const streetName = useStreetName(selectedLocationCoordinates);
+
+    const streetName = useStreetName(selectedLocationCoordinates);
+
+    const getAddress = () => {
+        if (streetName === '') return '';
+        return streetName.split(",")[0];
+    };
+
+    const getPostalCode = () => {
+        if (streetName === '') return '';
+        return streetName.split(",")[1].substring(1, 9);
+    };
+
+    const getMunicipality = () => {
+        if (streetName === '') return '';
+        return streetName.split(",")[2].substring(1);
+    };
+
+    const getCoords = () => {
+        if (selectedLocationCoordinates === null) return '';
+        return selectedLocationCoordinates.lat + ", " + selectedLocationCoordinates.lng;
+    };
+
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: {
@@ -317,6 +456,10 @@ function FormRegistoObjetoAchado() {
         },
     });
 
+    useEffect(() => { formik.setFieldValue('rua', getAddress()); }, [streetName]);
+    useEffect(() => { formik.setFieldValue('codp', getPostalCode()); }, [streetName]);
+    useEffect(() => { formik.setFieldValue('munc', getMunicipality()); }, [streetName]);
+        
     useEffect( () => { obterCategorias() }, [] );
     useEffect( () => { setCategoria( Object.keys(categorias)[0] ) }, [categorias] );
     useEffect( () => { obterCampos(categoria) }, [categoria] );
@@ -324,7 +467,7 @@ function FormRegistoObjetoAchado() {
     const desenharCategorias = Object.keys(categorias).map( cat => {
         return (<option key={cat} value={cat}> {cat} </option>);
     });
-
+   
     const desenharCamposDaCategoria = camposDaCategoria.map( campo => {
         obterInfoCampo( campo );
         return(
@@ -500,7 +643,7 @@ function FormRegistoObjetoAchado() {
                 <Form.Label htmlFor="distrito">Distrito:<span className='text-danger'>*</span> </Form.Label>
                 <Form.Select                    
                     id="dist"
-                    name="dist"
+                    name="dist" 
                     onChange={(e) => {setDistrito(e.target.value)}}>
                     <option values="Aveiro">Aveiro</option>
                     <option values="Beja">Beja</option>
@@ -523,6 +666,8 @@ function FormRegistoObjetoAchado() {
             <br/>
             <br/>
 
+            <div ref={mapContainerRef} style={{ width: '100%', height: '400px' }} />
+
             <p> Se introduzir algum dos campos abaixo, garanta que existe. </p>
                 <Form.Label htmlFor="munc">Município: </Form.Label>
                 <Form.Control                        
@@ -531,7 +676,7 @@ function FormRegistoObjetoAchado() {
                     type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    value={formik.values.munc}/>
+                    value={getMunicipality()}/>
             { formik.errors.munc ? (<p className='text-danger'> {formik.errors.munc} </p>) : null } 
 
             <br/>
@@ -553,7 +698,7 @@ function FormRegistoObjetoAchado() {
                     type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    value={formik.values.rua}/>
+                    value={getAddress()}/>
             { formik.errors.rua ? (<p className='text-danger'> {formik.errors.rua} </p>) : null } 
 
             <br/>
@@ -575,7 +720,7 @@ function FormRegistoObjetoAchado() {
                     type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    value={formik.values.codp}/>
+                    value={getPostalCode()}/>
             <Form.Text className="text-muted">Um código postal tem o formato: XXXX-XXX.</Form.Text> 
             { formik.errors.codp ? (<p className='text-danger'> {formik.errors.codp} </p>) : null } 
 
@@ -584,13 +729,13 @@ function FormRegistoObjetoAchado() {
 
             <br/>
             <br/>
-            <h4>Categorização do objeto</h4>
+            <h4>Categorização do objeto</h4> 
             <Form.Group className='border'>
             <p>Escolha uma categoria que ache útil para descrever o objeto e preencha os campos.</p>
             <Form.Label htmlFor="categoria">Categoria:<span className='text-danger'>*</span> </Form.Label>
                 <Form.Select                    
                     id="categoria"
-                    name="categoria"
+                    name="categoria"  
                     onChange={(e) => {setCategoria(e.target.value);}}
                 >
                     {desenharCategorias}

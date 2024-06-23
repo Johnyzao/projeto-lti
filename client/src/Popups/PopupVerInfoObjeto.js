@@ -22,7 +22,7 @@ function PopupVerInfoObjeto(props) {
           >
             <Modal.Dialog>
               <Modal.Header>
-                <Modal.Title>Informações deste objeto</Modal.Title>
+                <Modal.Title>Informações objeto</Modal.Title>
                 <Button variant='danger' onClick={close}>
                   &times;
                 </Button>
@@ -33,7 +33,7 @@ function PopupVerInfoObjeto(props) {
                 <br/>
                 <p>Descrição: {descricao}</p>
                 <br/>
-                <p>Localização: {} </p>
+                <p>Localização: {props.objeto.localizacao} </p>
                 <br/>
                 <p>Categoria: {categoria} </p>
                 <p>Campo: blabla</p>
@@ -44,6 +44,7 @@ function PopupVerInfoObjeto(props) {
         )}
       </Popup>
     )
+  
 }
 
-export default PopupVerInfoObjeto
+export default PopupVerInfoObjeto;

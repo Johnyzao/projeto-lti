@@ -40,7 +40,7 @@ const PopupVenceuLeilao = ({ auction }) => {
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="danger" onClick={handleClose}>
-                        Fechar
+                        Pagar
                     </Button>
                 </Modal.Footer>
             </Modal>

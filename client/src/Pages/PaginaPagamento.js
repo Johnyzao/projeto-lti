@@ -45,6 +45,7 @@ function PaginaPagamento() {
       console.error(err);
     });
   }, [user]);
+  if(isLoading || valor == 0) return <div>Loading...</div>;
   return (
     <>
       <style>
@@ -97,7 +98,7 @@ function PaginaPagamento() {
                 return actions.order.create({
                   purchase_units: [
                     {
-                      description: String(descricao),
+                      description: descricao,
                       amount: {
                         currency_code: "EUR",
                         value: valor,

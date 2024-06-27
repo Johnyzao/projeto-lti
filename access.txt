@@ -1,0 +1,31 @@
+
+################################################
+#               ACCESS CREDENTIALS             #
+################################################
+
+-------------- AWS --------------
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+REGION_NAME=
+KEY_NAME=
+
+------------------------------------------------
+
+-------------- KEEPALIVED  --------------
+PASS=
+
+--- TAKEOVER SCRIPT KEEPALIVED [Front] ---
+ENI_ID=
+ALLOC_ID=
+
+--- TAKEOVER SCRIPT KEEPALIVED [Back] ---
+ENI_ID=
+ALLOC_ID=
+------------------------------------------------
+
+-------------- DB --------------
+USER=
+DATABASE=
+PASSWORD=
+------------------------------------------------
+
